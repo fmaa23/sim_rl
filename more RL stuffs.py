@@ -125,6 +125,77 @@ def dyna_q(num_episodes, alpha, gamma, epsilon, n,A,actions,threshold):
 
 
 
+"""
+AARON:
+"""
+
+class Node:
+    def __init__(self, buffer_size, service_time):
+        self._buffer_size = buffer_size
+        self._service_time = service_time
+        self.queue_length = 0
+
+class System:
+    def __init__(self, nodes):
+        self.nodes = nodes
+    
+    def step(self, state, action):    
+        reward = None
+    
+        return reward
+
+    def reset(self):
+        for node in self.nodes:
+            node.queue_length = 0
+
+
+def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
+    """
+    Function which trains the Dyna-Q learning agent.
+    -   state = node that agent is at
+    -   action = routing proportion at this node (action space is different for
+        every node)
+    -   reward = service_time*queue_length, summed over all nodes and *(-1)
+    -   Q and A are DICTIONARIES rather than tables because action space is
+        different for every node
+    
+    State and actions are identified by their indices. States: keys in the
+    dictionaries Q and A. Actions: indices in the numpy array Q[key] or A[key]
+
+    Args:
+        n_episodes (int)    : number of epsiodes to train agent on
+        alpha (float)       : learning rate (alpha)
+        gamma (float)       : discount factor
+        epsilon_i (float)   : initial value of epsilon
+        n (int)             : number of times planning loop is executed
+        nodes (list)        : list of node instances
+        A (dict)            : key = node index, value = np.ndarray of actions
+    """
+    keys = np.arange(len(nodes))     # indices from 0, ... n_nodes-1
+    Q = dict.fromkeys(keys, 0)
+    for k in A.keys():
+        Q[k] = np.zeros(A[k].shape)
+
+    # initialise Model(s,a)
+    epsilon = epsilon_i
+    for episode in range(n_episodes):
+        state = np.random.choice(len(nodes))            # (a)
+        action = epsilon_greedy(state, Q, epsilon)      # (b)
+        next_state, reward = step(state, action)        # (c)
+
+        # (d)
+        Q[state][action] += alpha*(reward + \
+                                   gamma*np.max(Q[next_state][action]) - \
+                                    Q[state][action])
+
+        Model[(state, action)] = (reward, next_state)   # (e)
+
+        # (f)
+        for _ in range(n):
+            pass
+
+
+
 
 
 if __name__ == "__main__":
