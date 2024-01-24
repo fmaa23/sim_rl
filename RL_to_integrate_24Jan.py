@@ -76,25 +76,27 @@ def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
     Model = Q.copy()
     
     epsilon = epsilon_i
-    for _ in range(n_episodes):                                     # loop forever
-        # visited = {key = state :value = set of taken actions}
+    for episode in range(n_episodes):                                     # loop forever
+        # visited = {key = state: value = set of taken actions}
         visited = {}
-        state = np.random.choice(len(nodes))                        # (a) 
-        action = epsilon_greedy(state, Q, epsilon)                  # (b)
+
+        if episode == 1:
+            state = np.random.choice(len(nodes))                        # (a) 
+        action = epsilon_greedy(state, Q, epsilon)                      # (b)
 
         if state in visited.keys():
             visited[state].add(action)
         else:
             visited[state] = set([action])
 
-        next_state, reward = get_next_state(state, action)          # (c)
+        next_state, reward = get_next_state(state, action)              # (c)
 
         # (d)
         Q[state][action] += alpha*(reward + \
                                 gamma*np.max(Q[next_state]) - \
                                     Q[state][action])
         
-        Model[state][action] = (reward, next_state)                 # (e)
+        Model[state][action] = (reward, next_state)                     # (e)
 
         for _ in range(n):
             s = np.random.choice(list(visited.keys()))
@@ -103,6 +105,7 @@ def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
             Q[s][a] += alpha*(reward + \
                                 gamma*np.max(Q[next_state]) - \
                                 Q[s][a])
+            state = s
         
         epsilon *= 0.999
 
