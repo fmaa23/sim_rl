@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import product
 
 class Node:
     def __init__(self, buffer_size, service_time):
@@ -6,12 +7,45 @@ class Node:
         self._service_time = service_time
         self.queue_length = 0
 
+def generate_action_space(adja_list, interval):
+    """
+    Args:
+        adja_list (dict):   Here, key = node index, value = np.array of nodes
+                            connected downstream to this node (identified by indices) e.g. adja_list = {0:[1], 1:[2,3,4]}
+                            means node 1 is connected to nodes 2,3,4
+        interval (float):   How action space will be discretised e.g. interval
+                            = 0.2 means routing proportions can only change
+                            in increments/decrements of 0.2
+
+    Returns:
+        A (dict)        :   Action space of problem as a dictionary. Key = node
+                            index. value = nested np.ndarray. len(value) = no.
+                            of nodes, and each element is a np.ndarray of the
+                            appropriate size representing the routing
+                            proportions at this node.
+
+    Example. If node with index 0 is connected to two downstream nodes, with
+    interval = 0.2, the output is of the form:
+                            
+    A = {   0: [ [0,1], [0.2,0.8], [0.4,0.6], [0.6,0.4], [0.8,0.2], [1,0] ], 
+            1: ...
+        }
+    """
+    A = {}
+    values = np.arange(0, 1+interval, interval)
+    for node in adja_list.keys():
+        n = len(adja_list[node])        # no. of nodes connected downstream
+        actions = [np.array(x) for x in product(*[values]*n) if sum(x) == 1]
+        A[node] = np.array(actions)
+    return A
+
+
 def epsilon_greedy(state, Q, epsilon):
     if np.random.rand() < epsilon:
         return np.random.choice(len(Q[state]))
     else:
         return np.argmax(Q[state])
-
+    
 def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
     """
     Function which trains the Dyna-Q learning agent.
