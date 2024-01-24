@@ -116,11 +116,8 @@ q_args    = {
 qn = qt.QueueNetwork(g=g, q_classes=q_classes, q_args=q_args, seed=13)
 
 # Questions to ask: 
-# How often do we reset: reach a threshold of the throuput rate? or reach a maximum number of steps for each episode?
-# What is a good simulation time: do you mean traning time?
+# How often do we reset
+# What is a good simulation time
 # The reward is calculated as a cost of how many states or should I make the reward function time dependent?
-
-# Moli's Question to ask:
-# what does the get_reward function return?
 
 breakpoint()
