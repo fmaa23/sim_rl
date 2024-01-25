@@ -5,10 +5,11 @@ from numpy.random import uniform
 from queueing_tool.queues.choice import _choice, _argmin
 
 class RLEnv: 
-    def __init__(self, net, start_state=None, n=5000): 
+    def __init__(self, net, adja_list, start_state=None, n=5000): 
         # The queue network to optimize actions on 
         self.net = net # Assuming it is a queuing network applied on the sample 
         self.transition_proba = self.net.transitions(False)  # Equal proportion for next nodes 
+        self.adja_list= adja_list
         self.sim_n = n # Take next step (num_events)
         self.iter = 1
         # self._t = 0 
@@ -89,52 +90,55 @@ class RLEnv:
                 service_time /= len(edge_data)
                 reward_queue = queue_data[edge] * service_time
                 reward_array.append(reward_queue)
-        return reward_array
+        reward = np.sum(np.array(reward_array))
+        return reward
                 
 
     def reset(self): 
         self.net.clear_data()
         self.__init__(self.net)
-        
-import queueing_tool as qt
-import numpy as np
-adja_list = {0:[1],1:[2,3], 2:[4], 3:[4]}
-edge_list = {0: {1:1}, 1:{2:2, 3:2}, 2: {4: 3}, 3: {4: 2}}
-# edge_list contains the source queue as key the value is a dict, 
-# where each key is the respective target to that source and the value is the type of the connection 
-g = qt.adjacency2graph(adjacency=adja_list, edge_type=edge_list)
 
-def rate(t):
-    return 250 + 350 * np.sin(np.pi * t / 2)**2
-def arr_f(t):
-    return qt.poisson_random_measure(t, rate, 375)
-def ser_f(t):
-    return t + np.random.exponential(0.0001)
+def sample_run(): 
+        adja_list = {0:[1],1:[2,3], 2:[4], 3:[4]}
+        edge_list = {0: {1:1}, 1:{2:2, 3:2}, 2: {4: 3}, 3: {4: 2}}
+        # edge_list contains the source queue as key the value is a dict, 
+        # where each key is the respective target to that source and the value is the type of the connection 
+        g = qt.adjacency2graph(adjacency=adja_list, edge_type=edge_list)
 
-Q_type =qt.QueueServer
+        def rate(t):
+            return 250 + 350 * np.sin(np.pi * t / 2)**2
+        def arr_f(t):
+            return qt.poisson_random_measure(t, rate, 375)
+        def ser_f(t):
+            return t + np.random.exponential(0.0001)
+        Q_type =qt.QueueServer
 
-q_classes = {1:Q_type, 2: Q_type}
-q_args    = {
-    1: {
-        'arrival_f': arr_f,
-        'service_f': lambda t: t+100,
-        'AgentFactory': qt.Agent
-    },
-    2: {
-        'num_servers': 1,
-        'service_f': ser_f,
-    },
+        q_classes = {1:Q_type, 2: Q_type}
+        q_args    = {
+            1: {
+            'arrival_f': arr_f,
+            'service_f': lambda t: t+100,
+            'AgentFactory': qt.Agent
+            },
+            2: {
+            'num_servers': 1,
+            'service_f': ser_f,
+            },
     
-    3: {
-        'num_servers': 1,
-        'service_f': lambda t:t+300,
-    }
-}
-qn = qt.QueueNetwork(g=g, q_classes=q_classes, q_args=q_args, seed=13)
+            3: {
+            'num_servers': 1,
+            'service_f': lambda t:t+300,
+            }
+        }
+        qn = qt.QueueNetwork(g=g, q_classes=q_classes, q_args=q_args, seed=13)
+        return qn, adja_list
+def get_env(): 
+    qn, adja_list = sample_run()
+    env = RLEnv(qn, adja_list=adja_list)
+    return env 
 
-# Questions to ask: 
-# How often do we reset
-# What is a good simulation time
-# The reward is calculated as a cost of how many states or should I make the reward function time dependent?
 
-breakpoint()
+if __name__=="__main__": 
+    qn = sample_run()
+    env= get_env()
+    breakpoint()
