@@ -115,6 +115,7 @@ class Queue_network:
                         }
             else:
                 q_info = {"service_f": self.services_f[index],
+                        "qbuffer":self.buffer_size_for_each_queue[index],
                         "AgentFactory": qt.Agent
                         }
             q_args[q] = q_info
