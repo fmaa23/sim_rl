@@ -132,7 +132,8 @@ q_args    = {
 qn = qt.QueueNetwork(g=g, q_classes=q_classes, q_args=q_args, seed=13)
 
 # Questions to ask: 
-# How often do we reset 
+# How often do we reset
 # What is a good simulation time
 # The reward is calculated as a cost of how many states or should I make the reward function time dependent?
+
 breakpoint()
