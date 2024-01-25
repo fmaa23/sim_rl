@@ -1,6 +1,6 @@
 import queueing_tool as qt
 import numpy as np
-import tkinter as tk
+import matplotlib.pyplot as plt
 
 class Queue_network:
     def __init__(self):
@@ -126,6 +126,8 @@ class Queue_network:
         self.queueing_network = qt.QueueNetwork(g=g, q_classes = self.q_classes, q_args = self.q_args)
         self.queueing_network.set_transitions(self.transition_proba)
         self.queueing_network.draw(figsize=(6, 3))
+        plt.savefig("network_graph.png")
+        plt.close()
     
     def run_simulation(self, num_events = 50, collect_data = True):
         # specify which edges and queue to activate at the beginning
