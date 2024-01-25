@@ -86,6 +86,7 @@ class RLEnv:
                 edge_data = self.net.get_queue_data(queues=edge)
                 for points in edge_data:
                     service_time += abs(points[2]-points[1])
+                service_time /= len(edge_data)
                 reward_queue = queue_data[edge] * service_time
                 reward_array.append(reward_queue)
         return reward_array
