@@ -1,5 +1,7 @@
 import numpy as np
 from itertools import product
+from RLEnvV2 import get_env
+
 
 class Node:
     def __init__(self, buffer_size, service_time):
@@ -46,7 +48,8 @@ def epsilon_greedy(state, Q, epsilon):
     else:
         return np.argmax(Q[state])
     
-def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
+
+def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, A, env):
     """
     Function which trains the Dyna-Q learning agent.
     -   state = node that agent is at
@@ -69,19 +72,19 @@ def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
         A (dict)            : key = node index, value = np.ndarray of actions
     """
     # Initialise Q(s,a) and Model(s,a) for all states and actions
-    keys = np.arange(len(nodes))            # indices from 0, ... n_nodes-1
+    keys = env.adja_list.keys()                                         # indices from 0, ... n_nodes-1
     Q = dict.fromkeys(keys, 0)
     for k in A.keys():
         Q[k] = np.zeros(A[k].shape)
     Model = Q.copy()
     
     epsilon = epsilon_i
-    for episode in range(n_episodes):                                     # loop forever
+    for episode in range(n_episodes):                                   # loop forever
         # visited = {key = state: value = set of taken actions}
         visited = {}
 
         if episode == 1:
-            state = np.random.choice(len(nodes))                        # (a) 
+            state = np.random.choice(len(keys))                         # (a) 
         action = epsilon_greedy(state, Q, epsilon)                      # (b)
 
         if state in visited.keys():
@@ -89,7 +92,21 @@ def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
         else:
             visited[state] = set([action])
 
-        next_state, reward = get_next_state(state, action)              # (c)
+        """
+        Get_next_state(action, state) gives 3 items
+         - first item = numpy array of queue lengths
+         - second item = new queue id (new edge index)
+         - third item = 4 tuple = (source vertex, target vertex, edge index, edge type)
+        and we are interested in the target vertex.
+        """
+        _, _, third = env.get_next_state(action, state)
+        # next_state = third[1]                                           # (c)
+        reward = env.get_reward()
+
+        if state < keys[-1]:
+            next_state = state + 1
+        else:
+            next_state = 0
 
         # (d)
         Q[state][action] += alpha*(reward + \
@@ -108,8 +125,21 @@ def dyna_q(n_episodes, alpha, gamma, epsilon_i, n, nodes, A):
             state = s
         
         epsilon *= 0.999
+    
+    return Q
 
+
+def test_training():
+    env = get_env()                 # instance of RLEnv
+    n_episodes, n = 10,10
+    alpha,gamma = 0.05, 0.9
+    epsilon_i = 0.9
+    adja_list = env.adja_list
+    A = generate_action_space(adja_list=adja_list, interval=0.5)
+    Q = dyna_q(n_episodes, alpha, gamma, epsilon_i, n, A, env)
+    print(Q)
 
 
 if __name__ == "__main__":
-    pass
+    test_training()
+    
