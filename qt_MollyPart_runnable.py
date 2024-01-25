@@ -73,7 +73,6 @@ class Queue_network:
         # create q_class from self.edge_list and specify each queue type
         """
         example: q_classes = {1: qt.QueueServer, 2: qt.QueueServer}
-        # When we have specific buffer size we have to change it as follows to LossQueue(qbuffer=0) class 
         """
         # Getting the unique types of queues 
         LossQueueList = [] 
