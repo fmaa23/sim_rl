@@ -1,5 +1,6 @@
 import queueing_tool as qt 
 import numpy as np
+import random
 
 from numpy.random import uniform
 from queueing_tool.queues.choice import _choice, _argmin
@@ -40,7 +41,7 @@ class RLEnv:
 
     def get_state(self):
         # Returns the queue length (backlog) in the current state queue ()
-        for edge in range(self.net.num_edges-self.departure_nodes):
+        for edge in range((self.net.num_edges-self.departure_nodes)):
             edge_data = self.net.get_queue_data(queues=edge)
             self._state[edge]=edge_data[-1][4]
         return self._state     
@@ -71,18 +72,15 @@ class RLEnv:
         self.current_edge_tuple = self.net.edge2queue[self.current_queue_id].edge
         self.current_queue = self.net.edge2queue[self.current_queue_id]
 
-        return self.get_state(), new_queue_id, self.current_edge_tuple # Convert as a dictionary
+        return self.get_state(), self.current_edge_tuple # Convert as a dictionary
 
     def get_reward(self):
-        if isinstance(self.current_queue, qt.NullQueue):
-            pass
-        else: 
             # Loop over nodes: 
                # Average service time for each node * queue length for each node  
             queue_data = self.get_state()
             reward_array=[]
             # Returns the queue length (backlog) in the current state queue ()
-            for edge in range(self.net.num_edges-self.departure_nodes): 
+            for edge in range((self.net.num_edges-self.departure_nodes)): 
                 service_time=0
                 edge_data = self.net.get_queue_data(queues=edge)
                 for points in edge_data:
@@ -90,13 +88,13 @@ class RLEnv:
                 service_time /= len(edge_data)
                 reward_queue = queue_data[edge] * service_time
                 reward_array.append(reward_queue)
-        reward = np.sum(np.array(reward_array))
-        return reward
+            reward = -np.sum(np.array(reward_array))/self.sim_n
+            return reward
                 
 
     def reset(self): 
         self.net.clear_data()
-        self.__init__(self.net)
+        self.__init__(self.net, self.adja_list)
 
 def sample_run(): 
         adja_list = {0:[1],1:[2,3], 2:[4], 3:[4]}
@@ -110,14 +108,14 @@ def sample_run():
         def arr_f(t):
             return qt.poisson_random_measure(t, rate, 375)
         def ser_f(t):
-            return t + np.random.exponential(0.0001)
+            return t + np.random.exponential(200)
         Q_type =qt.QueueServer
 
-        q_classes = {1:Q_type, 2: Q_type}
+        q_classes = {1:Q_type, 2: Q_type, 3:Q_type}
         q_args    = {
             1: {
             'arrival_f': arr_f,
-            'service_f': lambda t: t+100,
+            'service_f': lambda t: t+random.randint(10,100),
             'AgentFactory': qt.Agent
             },
             2: {
@@ -127,7 +125,7 @@ def sample_run():
     
             3: {
             'num_servers': 1,
-            'service_f': lambda t:t+300,
+            'service_f': lambda t:t+300-random.randint(10,200),
             }
         }
         qn = qt.QueueNetwork(g=g, q_classes=q_classes, q_args=q_args, seed=13)
@@ -135,6 +133,16 @@ def sample_run():
 def get_env(): 
     qn, adja_list = sample_run()
     env = RLEnv(qn, adja_list=adja_list)
+    print("\n\n\nRunning get_state() method")
+    print('\nEnvironment Current State: ')
+    print(env.get_state())
+    print("\n\n\n")
+    for i in range(7):
+        print('\nTaking a step in the environment: ')
+        print(env.get_next_state([1, 0]))
+        print('Current state reward:')
+        print(env.get_reward())
+    print("\n\n\n")
     return env 
 
 
