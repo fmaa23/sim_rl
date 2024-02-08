@@ -32,6 +32,7 @@ class Queue_network:
         self.get_q_arg()
         print("q_arg:", self.q_args)
 
+        # Takes an adjacency list, dict, or matrix and returns a graph
         self.g = qt.adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list)
         if transition_proba is None: 
             self.transition_proba = qt.graph.generate_transition_matrix(self.g)
