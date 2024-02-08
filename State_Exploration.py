@@ -4,7 +4,7 @@ import itertools
 
 def explore_state(DDPG_agent, queue_model, num_sample, visit_counts, w1 = 0.5, w2 = 0.5, epsilon = 1):
     """
-    This function is used for state exploration for real word environment
+    This function is used for state exploration for real word environment.
     It helps the agent decide which state to explore next based on factors, including Q-values and visit counts. 
     
     Parameters:
