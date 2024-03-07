@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 After installing the required dependencies, you can start the training process. Ensure you're still in the directory containing the train_model.py script and run the following command in your terminal:
 ```bash
-python train_model.py --config /path/to/config.yaml --params /path/to/hyperparams.yaml
+python train.py --config /path/to/config.yaml --params /path/to/hyperparams.yaml
 ```
 
 ## Queue Network Configuration Parameters Explanations
