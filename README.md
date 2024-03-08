@@ -22,14 +22,14 @@ pip install -r requirements.txt
 #### Training Process
 After installing the required dependencies, you can start the training process. Ensure you're still in the directory containing the train_model.py script and run the following command in your terminal:
 ```bash
-python main_eval.py --config /path/to/config.yaml --params /path/to/hyperparams.yaml
+python main_eval.py --config /user_config/queueing_configuration.yaml --params /user_config/eval_hyperparameters.yaml
 ```
 This command starts the training process using the specified configuration and hyperparameter YAML files.
 
 #### Tuning Process
 To perform hyperparameter tuning, use the main_tune.py script. Execute the following command in the terminal, making sure you are in the directory containing main_tune.py:
 ```bash
-python main_tune.py --project_name YourProjectName --num_runs NumberOfRuns --tune_param_filepath /path/to/tuning_hyperparams.yaml --plot_best_param True --param_filepath /path/to/tuning_params.yaml
+python main_tune.py --project_name DataSparq_Project --num_runs 100 --tune_param_filepath /user_config/tuning_hyperparams.yaml --plot_best_param True --param_filepath /user_config/eval_hyperparameters.yaml
 ```
 Replace YourProjectName with the name of your project, NumberOfRuns with the desired number of tuning iterations, and the file paths with the actual paths to your YAML files. The --plot_best_param flag is optional and can be set to True or False. If you wish to save the best parameters found during the tuning process, provide a path for --param_filepath.
 
