@@ -78,40 +78,6 @@ transition_proba_all:
   7: {9: 1}
   8: {9: 1}
   9: {10: 1}
-q_classes:
-  0: NullQueue
-  1: LossQueue
-  2: LossQueue
-  3: LossQueue
-  4: LossQueue
-  5: LossQueue
-q_args:
-  1:
-    arrival_f: arr
-    service_f: ser_f
-  2:
-    service_f: services_f[0]
-    qbuffer: 20
-  3:
-    service_f: services_f[1]
-    qbuffer: 20
-  4:
-    service_f: services_f[2]
-    qbuffer: 20
-  5:
-    service_f: services_f[3]
-    qbuffer: 20
-edge_list:
-  0: {1: 1}
-  1: {2: 1, 3: 1, 4: 1}
-  2: {5: 2}
-  3: {6: 3, 7: 4}
-  4: {8: 5}
-  5: {9: 2}
-  6: {9: 4}
-  7: {9: 3}
-  8: {9: 5}
-  9: {10: 0}
 ```
 
 ## Training Hyperparameters Configuration
