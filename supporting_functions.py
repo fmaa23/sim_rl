@@ -9,6 +9,8 @@ from RL_Environment import RLEnv
 from ddpg import DDPGAgent
 from State_Exploration import *
 from queueing_network import *
+from wandb_tuning import *
+from plot_datasparq import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -255,13 +257,12 @@ def get_params_for_train(params):
     - tuple: A tuple containing parameters specific to training.
     """
     num_episodes = params['num_episodes']
-    threshold = params['threshold']
     batch_size = params['batch_size']
     num_epochs = params['num_epochs']
     time_steps = params['time_steps']
     target_update_frequency = params['target_update_frequency']
 
-    return num_episodes, threshold, batch_size, num_epochs, time_steps, target_update_frequency
+    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency
 
 def train(params, agent, env):
     """
@@ -284,7 +285,7 @@ def train(params, agent, env):
     action_dict = {}
 
     num_sample, device, w1, w2, epsilon_state_exploration = get_param_for_state_exploration(params)
-    num_episodes, threshold, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
+    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
 
     agent.train()
     for episode in range(num_episodes):
@@ -409,7 +410,7 @@ def start_train(config_file, param_file, save_file = True):
 
     params, hidden = load_hyperparams(param_file)
 
-    sim_environment = create_simulation_env(params, hidden, param_file)
+    sim_environment = create_simulation_env(params, hidden, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
 
     rewards_list_all, next_state_list_all, \
@@ -422,3 +423,31 @@ def start_train(config_file, param_file, save_file = True):
         critic_loss_list_all, actor_loss_list_all, \
         reward_list, action_dict, gradient_dict, \
         transition_probas)
+
+def plot_best():
+    plot()
+
+def start_tuning(project_name, num_runs, tune_param_filepath, plot_best_param = True, param_filepath = ''):
+
+    init_wandb(project_name, tune_param_filepath, num_runs, opt_target = 'reward')
+    best_param = get_best_param(project_name, opt_target = 'reward')
+
+    if plot_best_param:
+        params_file = (open(param_filepath, 'r'))
+        parameter_dictionary = yaml.load(params_file, Loader=yaml.FullLoader)
+        hidden = parameter_dictionary['hidden']
+
+        sim_environment = create_simulation_env(params, hidden, config_file)
+        agent = create_ddpg_agent(sim_environment, params, hidden)
+
+        rewards_list_all, next_state_list_all, \
+            critic_loss_list_all, actor_loss_list_all, \
+            reward_list, action_dict, gradient_dict, \
+            transition_probas = train(best_param, agent, sim_environment)
+
+        save_all(rewards_list_all, next_state_list_all, \
+                 critic_loss_list_all, actor_loss_list_all, \
+                 reward_list, action_dict, gradient_dict, \
+                 transition_probas)
+
+        plot_best()
