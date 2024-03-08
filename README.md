@@ -29,9 +29,10 @@ This command starts the training process using the specified configuration and h
 #### Tuning Process
 To perform hyperparameter tuning, use the main_tune.py script. Execute the following command in the terminal, making sure you are in the directory containing main_tune.py:
 ```bash
-python main_tune.py --project_name YourProjectName --num_runs NumberOfRuns --tune_param_filepath /path/to/tuning_hyperparams.yaml --plot_best_param True --param_filepath /optional/path/to/save/best_params.yaml
+python main_tune.py --project_name YourProjectName --num_runs NumberOfRuns --tune_param_filepath /path/to/tuning_hyperparams.yaml --plot_best_param True --param_filepath /path/to/tuning_params.yaml
 ```
 Replace YourProjectName with the name of your project, NumberOfRuns with the desired number of tuning iterations, and the file paths with the actual paths to your YAML files. The --plot_best_param flag is optional and can be set to True or False. If you wish to save the best parameters found during the tuning process, provide a path for --param_filepath.
+
 ## Queue Network Configuration Parameters Explanations
 
 The simulation environment requires the following parameters to be defined in the configuration file:
