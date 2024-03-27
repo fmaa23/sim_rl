@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import queueing_tool as qt 
 import numpy as np
-
+import os
 from RL_Environment import RLEnv
 from ddpg import DDPGAgent
 from State_Exploration import *
@@ -14,7 +14,7 @@ from plot_datasparq import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_config(config_filepath):
+def load_config(env_param_filepath):
     """
     Load configuration parameters from a YAML file.
 
@@ -25,9 +25,13 @@ def load_config(config_filepath):
     - dict: A dictionary containing the configuration parameters.
     """
 
-    config_params = (open(config_filepath, 'r'))
-    config_dictionary = yaml.load(config_params, Loader=yaml.FullLoader)
-    return config_dictionary
+    base_path = os.path.dirname(os.getcwd())
+    abs_file_path = os.path.join(base_path, env_param_filepath)
+
+    with open(abs_file_path, 'r') as env_param_file:
+        config_params = yaml.load(env_param_file, Loader=yaml.FullLoader)
+
+    return config_params
 
 def load_hyperparams(param_filepath):
     """
@@ -89,43 +93,8 @@ def create_params(config_file):
     """
     config_params = load_config(config_file)
 
-    if False:
-        def ser_f(t):
-            return t + np.exp(config_params['sef_rate_first_node'])
-
-        def rate(t):
-
-            return 25 + 350 * np.sin(np.pi * t / 2)**2
-
-        def arr(t):
-            return qt.poisson_random_measure(t, rate, 375)
-
-        def get_service_time(miu_list):
-            # compute the time of an agent’s service time from service rate
-            services_f = []
-            for miu in miu_list:
-                def ser_f(t):
-                    return t + np.exp(miu)
-                services_f.append(ser_f)
-            return services_f
-        
-        lamda_list = config_params['lambda_list']
-        miu_list = config_params['miu_list']
-        active_cap = config_params['active_cap']
-        deactive_t = config_params['deactive_t']
-        adjacent_list = config_params['adjacent_list']
-        buffer_size_for_each_queue = config_params['buffer_size']
-        transition_proba_all = config_params['transition_proba']
-        services_f = get_service_time(miu_list)
-        
-        q_classes = config_params['q_classes']
-        q_args = config_params['q_args']
-
-        edge_list = config_params['edge_list']
-
-    # hard code for now
     def ser_f(t):
-        return t + np.exp(0.2 / 2.1)
+        return t + np.exp(config_params['sef_rate_first_node'])
 
     def rate(t):
 
@@ -139,39 +108,21 @@ def create_params(config_file):
         services_f = []
         for miu in miu_list:
             def ser_f(t):
-                return t + np.exp(1.2)
+                return t + np.exp(miu)
             services_f.append(ser_f)
         return services_f
-    lamda_list = [0.2, 0.2, 0.2, 0.2,0.2, 0.2, 0.2, 0.2]
-    miu_list = [0.5, 1, 1.2, 0.2]
-    active_cap = 5
-    deactive_t = 0.12
-    adjacent_list = {0: [1], 1:[2,3,4], 2:[5],3: [6,7],4:[8], 5:[9], 6:[9], 7:[9], 8:[9], 9:[10]}
-    buffer_size_for_each_queue = [10, 10, 10, 10,10, 10, 10, 10, 10, 10, 10, 10]
-    transition_proba_all = {0:{1:1}, 1:{2:0.33,3:0.33,4:0.34}, 2:{5:1}, 3:{6:0.5, 7:0.5},4:{8:1}, 5:{9:1}, 6:{9:1}, 7:{9:1}, 8:{9:1}, 9:{10:1}}
+        
+    lamda_list = config_params['lambda_list']
+    miu_list = config_params['miu_list']
+    active_cap = config_params['active_cap']
+    deactive_t = config_params['deactive_t']
+    adjacent_list = config_params['adjacent_list']
+    buffer_size_for_each_queue = config_params['buffer_size']
+    transition_proba_all = config_params['transition_proba']
     services_f = get_service_time(miu_list)
     
-    q_classes = {0: qt.NullQueue, 1: qt.LossQueue, 2: qt.LossQueue, 3:qt.LossQueue, 4:qt.LossQueue, 5:qt.LossQueue}
-    q_args = {1: {
-        'arrival_f': arr,
-        'service_f': ser_f,
-    },
-    2:{
-        'service_f': services_f[0],
-        'qbuffer':20,
-    },
-    3:{
-        'service_f': services_f[1],
-        'qbuffer':20,
-    },
-    4:{
-        'service_f': services_f[2],
-        'qbuffer':20
-    },
-    5:{
-        'service_f': services_f[3],
-        'qbuffer':20
-    }}
+    q_classes = config_params['q_classes']
+    q_args = config_params['q_args']
 
     edge_list = {0:{1:1}, 1: {k: 1 for k in range(2, 5)}, 2:{5:2}, 3:{6:3, 7:4},4:{8:5}, 5:{9:2}, 6:{9:4}, 7:{9:3}, 8:{9:5}, 9:{10:0}}
     
@@ -196,7 +147,7 @@ def create_queueing_env(config_file):
     q_net.create_env()
     return q_net
 
-def create_RL_env(q_net, params, hidden):
+def create_RL_env(q_net, params):
     """
     Create a reinforcement learning environment.
 
@@ -427,17 +378,18 @@ def start_train(config_file, param_file, save_file = True):
 def plot_best():
     plot()
 
-def start_tuning(project_name, num_runs, tune_param_filepath, plot_best_param = True, param_filepath = ''):
+def start_tuning(project_name, num_runs, tune_param_filepath, plot_best_param = True, config_param_filepath = ''):
 
-    init_wandb(project_name, tune_param_filepath, num_runs, opt_target = 'reward')
+    init_wandb(project_name, tune_param_filepath, config_param_filepath, num_runs = num_runs, opt_target = 'reward')
+    
     best_param = get_best_param(project_name, opt_target = 'reward')
 
     if plot_best_param:
-        params_file = (open(param_filepath, 'r'))
+        params_file = (open(config_param_filepath, 'r'))
         parameter_dictionary = yaml.load(params_file, Loader=yaml.FullLoader)
         hidden = parameter_dictionary['hidden']
 
-        sim_environment = create_simulation_env(params, hidden, config_file)
+        sim_environment = create_simulation_env(params, hidden, config_param_filepath)
         agent = create_ddpg_agent(sim_environment, params, hidden)
 
         rewards_list_all, next_state_list_all, \

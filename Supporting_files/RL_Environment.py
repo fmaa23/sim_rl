@@ -4,7 +4,7 @@ from queueing_network import *
 transition_proba = {}
 
 class RLEnv: 
-    def __init__(self, qn_net, start_state, num_sim): 
+    def __init__(self, qn_net, num_sim, start_state = None): 
 
         self.qn_net = qn_net
         self.net = qn_net.queueing_network
@@ -13,7 +13,12 @@ class RLEnv:
 
         self.initialize_qn_params(num_sim)
 
-        self.simulate()
+        # Starting simulation to allow for external arrivals
+        self.net.start_collecting_data()
+
+        # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
+        self.net.initialize(queues=0)
+        self.net.simulate(n=num_sim)
 
         self.initialize_params_for_visualization()
     
@@ -94,7 +99,7 @@ class RLEnv:
         if np.isnan(element):
             TypeError("Encounter NaN")
     
-    def get_correct_action_format(self, action)
+    def get_correct_action_format(self, action):
         if isinstance(action, list):
             action = np.array(action)
         elif isinstance(action, torch.Tensor):
@@ -103,6 +108,11 @@ class RLEnv:
         return action
 
     def simulate(self):
+
+
+        # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
+        self.net.initialize(queues=0)
+
         self.iter +=1
         self.net.clear_data()
         self.net.start_collecting_data()

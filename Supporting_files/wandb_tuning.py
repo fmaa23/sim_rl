@@ -1,16 +1,25 @@
+import os
+
+# Set the environment variable
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+
 from ddpg import DDPGAgent
-from RL_Environment import RLEnv, get_env
-from supporting_functions import *
+from RL_Environment import RLEnv
 import torch
 import numpy as np
 import wandb
+import yaml
+import os
+from base_functions import *
 
 def load_tuning_config(tune_param_filepath):
 
-    tune_params_file = (open(tune_param_filepath, 'r'))
-    tune_params = yaml.load(tune_param_file, Loader=yaml.FullLoader)
+    base_path = os.path.dirname(os.getcwd())
+    abs_file_path = os.path.join(base_path, tune_param_filepath)
 
-    # retrieve config from tune_params
+    with open(abs_file_path, 'r') as tune_params_file:
+        tune_params = yaml.load(tune_params_file, Loader=yaml.FullLoader)
 
     config = {
         'method': 'bayes',  # or 'grid', 'random'
@@ -20,21 +29,21 @@ def load_tuning_config(tune_param_filepath):
         },
         'parameters': {
             'learning_rate': {
-                'min': 0.001,
-                'max': 0.1
+                'min': tune_params['learning_rate_min'],
+                'max': tune_params['learning_rate_max']
             },
             'epochs': {
-                'values': [10, 20, 30]
+                'values': tune_params['epochs_list']
             },
             'batch_size': {
-                'values': [16, 32, 64]
+                'values': tune_params['batch_size']
             }
         }
     }
 
     return config
 
-def init_wandb(project_name, tune_param_filepath, opt_target = 'reward', num_runs = 100):
+def init_wandb(project_name, tune_param_filepath, config_param_filepath, opt_target = 'reward', num_runs = 100):
     # initialize W&B
     wandb.login()
 
@@ -42,24 +51,34 @@ def init_wandb(project_name, tune_param_filepath, opt_target = 'reward', num_run
     wandb.init(project = project_name)
 
     # read hyperparameter files
-    config = load_tuning_config(tune_param_filepath)
-    sweep_id = wandb.sweep(config, project=project_name)
+    tuning_config = load_tuning_config(tune_param_filepath)
+    env_config = load_config(config_param_filepath)
+    sweep_id = wandb.sweep(tuning_config, project=project_name)
+
 
     def wandb_train():
         with wandb.init() as run:
-            env = get_env()
+            queue_env = create_queueing_env(config_param_filepath)
+            env = create_RL_env(queue_env, env_config)
 
             config = run.config
             num_sample = config['num_sample']
-            device = config['device']
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             w1 = config['w1']
             w2 = config['w2']
             epsilon_state_exploration = config['epsilon_state_exploration']
             num_episodes = config['num_episodes']
             batch_size = config['batch_size']
-            num_epochs = config['num_epoches']
+            num_epochs = config['epochs_list']
             time_steps = config['time_steps']
-            target_update_frequency['target_update_frequency']
+            target_update_frequency = config['target_update_frequency']
+
+            reward_list = []
+            action_dict = {}
+
+            n_states = len(env.get_state())
+            n_actions = len(env.get_state()) - 2
+            agent = DDPGAgent(n_states, n_actions, config.parameters)
 
             agent.train()
             for episode in range(num_episodes):
@@ -78,7 +97,7 @@ def init_wandb(project_name, tune_param_filepath, opt_target = 'reward', num_run
                         node_list.append(value)
                         action_dict[index] = node_list
 
-                    next_state, transition_probas = env.get_next_state(action)
+                    next_state, _ = env.get_next_state(action)
                     next_state = torch.tensor(next_state).float().to(device)
                     reward = env.get_reward()
 
@@ -99,7 +118,7 @@ def init_wandb(project_name, tune_param_filepath, opt_target = 'reward', num_run
                     if t % target_update_frequency == 0:
                         agent.soft_update(network="critic")
                         agent.soft_update(network="actor")
-                wandb.log({"episode": episode, opt_target: episode_reward})
+                wandb.log({"episode": episode, opt_target: np.mean(reward_list)})
     wandb.agent(sweep_id, wandb_train, count=num_runs)
 
 def get_best_param(project_name, opt_target = 'reward'):

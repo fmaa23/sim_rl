@@ -1,65 +1,21 @@
 ---
-adjacent_list:
-  0:
-    - 1
-    - 2
-    - 3
-  1:
-    - 4
-  2:
-    - 5
-  3:
-    - 6
-  4:
-    - 7
-  5:
-    - 8
-  6:
-    - 9
-  7:
-    - 10
-  8:
-    - 10
-  9:
-    - 10
+learning_rate_max: 0.1
+learning_rate_min: 0.001
 
-lambda_list:
-  - 0.2
-  - 0.2 
-  - 0.2
-  - 0.2
-  - 0.2 
-  - 0.2
-  - 0.2
-  - 0.2 
-  - 0.2
-  - 0.2
+epochs_list:
+  - 10
+  - 20
+  - 30
 
-buffer_size:
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
+batch_size:
+  - 16
+  - 32
+  - 64
 
-miu_list:
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-
-active_cap: 5
-deactive_cap: 0.12
+num_sample: 50
+w1: 0.5
+w2: 0.5
+epsilon_state_exploration: 0.8
+num_episodes: 5
+time_steps: 10
+target_update_frequency: 2

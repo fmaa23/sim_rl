@@ -1,5 +1,5 @@
 import argparse
-from supporting_functions import start_tuning  # Ensure this is the correct import
+from Supporting_files.supporting_functions import start_tuning
 
 # Setup argparse
 parser = argparse.ArgumentParser(description='Start the tuning process with configuration and hyperparameters files.')
