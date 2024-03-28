@@ -1,65 +1,71 @@
 ---
-adjacent_list:
-  0:
-    - 1
-    - 2
-    - 3
-  1:
-    - 4
-  2:
-    - 5
-  3:
-    - 6
-  4:
-    - 7
-  5:
-    - 8
-  6:
-    - 9
-  7:
-    - 10
-  8:
-    - 10
-  9:
-    - 10
+params:
+  num_episodes: 10
+  
+  threshold: 64
 
-lambda_list:
-  - 0.2
-  - 0.2 
-  - 0.2
-  - 0.2
-  - 0.2 
-  - 0.2
-  - 0.2
-  - 0.2 
-  - 0.2
-  - 0.2
+  num_epochs: 10
+  
+  time_steps: 10
+  
+  target_update_frequency: 100
+  
+  batch_size: 64
+  
+  num_sim: 5000
+  
+  tau: 0.001
+  
+  lr: 0.1
+  
+  discount: 0.2
+  
+  planning_steps: 10
+  
+  epsilon: 0.2
+  
+  epsilon_f: 0.1
+  
+  actor_lr: 0.1
+  
+  num_sample: 50
+  
+  w1: 0.5
+  
+  w2: 0.5
+  
+  epsilon_state_exploration: 1
 
-buffer_size:
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
-  - 10
+  miu_list:
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
+    - 0.1
 
-miu_list:
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
-  - 0.1
+  active_cap: 5
+  deactive_cap: 0.12
 
-active_cap: 5
-deactive_cap: 0.12
+hidden:
+  actor:
+    - 32
+    - 32
+  
+  critic:
+    - 64
+    - 64
+  
+  reward_model:
+    - 64
+    - 64
+  
+  next_state_model:
+    - 64
+    - 64
+
+  threshold: 10

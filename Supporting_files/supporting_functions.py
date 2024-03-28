@@ -5,12 +5,14 @@ import pandas as pd
 import queueing_tool as qt 
 import numpy as np
 import os
-from RL_Environment import RLEnv
-from ddpg import DDPGAgent
-from State_Exploration import *
-from queueing_network import *
-from wandb_tuning import *
-from plot_datasparq import *
+
+from .RL_Environment import RLEnv
+
+from .ddpg import DDPGAgent
+from .State_Exploration import *
+from .queueing_network import *
+from .wandb_tuning import *
+from .plot_datasparq import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -25,15 +27,21 @@ def load_config(env_param_filepath):
     - dict: A dictionary containing the configuration parameters.
     """
 
-    base_path = os.path.dirname(os.getcwd())
-    abs_file_path = os.path.join(base_path, env_param_filepath)
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Go up one directory to the MScDataSparqProject directory
+    project_dir = os.path.dirname(script_dir)
+
+    # Build the path to the configuration file
+    abs_file_path = os.path.join(project_dir, env_param_filepath)
 
     with open(abs_file_path, 'r') as env_param_file:
         config_params = yaml.load(env_param_file, Loader=yaml.FullLoader)
 
     return config_params
 
-def load_hyperparams(param_filepath):
+def load_hyperparams(eval_param_filepath):
     """
     Load hyperparameters from a YAML file.
 
@@ -44,14 +52,23 @@ def load_hyperparams(param_filepath):
     - tuple: A tuple containing two dictionaries, `params` for hyperparameters and `hidden` for hidden layer configurations.
     """
 
-    params_file = (open(param_filepath, 'r'))
-    parameter_dictionary = yaml.load(params_file, Loader=yaml.FullLoader)
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Go up one directory to the MScDataSparqProject directory
+    project_dir = os.path.dirname(script_dir)
+
+    # Build the path to the configuration file
+    abs_file_path = os.path.join(project_dir, eval_param_filepath)
+    
+    with open(abs_file_path, 'r') as env_param_file:
+        parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
     params = parameter_dictionary['params']
     hidden = parameter_dictionary['hidden']
-    
 
     # since we do not have the above now, we will hard-code for now
-    params = {
+    if False:
+        params = {
             'num_episodes': 10,
             'threshold': 64,
             'num_epochs':10,
@@ -72,61 +89,14 @@ def load_hyperparams(param_filepath):
             'epsilon_state_exploration':1
             }
     
-    hidden = {
-        'actor': [32, 32],
-        'critic': [64, 64],
-        'reward_model': [64, 64],
-        'next_state_model': [64, 64]
-    }
+        hidden = {
+            'actor': [32, 32],
+            'critic': [64, 64],
+            'reward_model': [64, 64],
+            'next_state_model': [64, 64]
+        }
 
     return params, hidden
-
-def create_params(config_file):
-    """
-    Generate parameters for the queueing environment based on a configuration file.
-
-    Parameters:
-    - config_file (str): The file path to the environment configuration file.
-
-    Returns:
-    - Multiple return values including lists and dictionaries essential for creating the queueing environment.
-    """
-    config_params = load_config(config_file)
-
-    def ser_f(t):
-        return t + np.exp(config_params['sef_rate_first_node'])
-
-    def rate(t):
-
-        return 25 + 350 * np.sin(np.pi * t / 2)**2
-
-    def arr(t):
-        return qt.poisson_random_measure(t, rate, 375)
-
-    def get_service_time(miu_list):
-        # compute the time of an agent’s service time from service rate
-        services_f = []
-        for miu in miu_list:
-            def ser_f(t):
-                return t + np.exp(miu)
-            services_f.append(ser_f)
-        return services_f
-        
-    lamda_list = config_params['lambda_list']
-    miu_list = config_params['miu_list']
-    active_cap = config_params['active_cap']
-    deactive_t = config_params['deactive_t']
-    adjacent_list = config_params['adjacent_list']
-    buffer_size_for_each_queue = config_params['buffer_size']
-    transition_proba_all = config_params['transition_proba']
-    services_f = get_service_time(miu_list)
-    
-    q_classes = config_params['q_classes']
-    q_args = config_params['q_args']
-
-    edge_list = {0:{1:1}, 1: {k: 1 for k in range(2, 5)}, 2:{5:2}, 3:{6:3, 7:4},4:{8:5}, 5:{9:2}, 6:{9:4}, 7:{9:3}, 8:{9:5}, 9:{10:0}}
-    
-    return lamda_list, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
 
 def create_queueing_env(config_file):
     """
@@ -138,14 +108,114 @@ def create_queueing_env(config_file):
     Returns:
     - Queue_network: An instance of the queueing environment.
     """
-    lamda_list, miu_list, q_classes, q_args, \
-        adjacent_lits, edge_list, transition_proba_all = create_params(config_file)
+    arrival_rate, miu_list, q_classes, q_args, \
+        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
     
     q_net = Queue_network()
-    q_net.process_input(lamda_list, miu_list, q_classes, q_args, adjacent_list, 
+    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
                         edge_list, transition_proba_all)
     q_net.create_env()
     return q_net
+
+def create_params(config_file):
+    """
+    Generate parameters for the queueing environment based on a configuration file.
+
+    Parameters:
+    - config_file (str): The file path to the environment configuration file.
+
+    Returns:
+    - Multiple return values including lists and dictionaries essential for creating the queueing environment.
+    """
+
+    def get_service_time(miu_list):
+        # compute the time of an agent’s service time from service rate
+        services_f = []
+        for miu in miu_list:
+            def ser_f(t):
+                return t + np.exp(1.2)
+            services_f.append(ser_f)
+        return services_f
+    
+    config_params = load_config(config_file)
+
+    num_queues = config_params['num_queues']
+    arrival_rate = config_params['arrival_rate']
+    miu_list = config_params['miu_list']
+    active_cap = config_params['active_cap']
+    deactive_t = config_params['deactive_cap']
+    adjacent_list = config_params['adjacent_list']
+    buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
+    transition_proba_all = config_params['transition_proba_all']
+    services_f = get_service_time(miu_list)
+
+    q_classes, q_args, edge_list = init_env(config_params, buffer_size_for_each_queue, services_f, num_queues)
+    return arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
+
+def create_q_classes(num_queues):
+
+    q_classes = {}
+    q_classes[0] = qt.NullQueue
+    for i in range(num_queues):
+        q_classes[i+1] = qt.LossQueue
+    # q_classes = {0: qt.NullQueue, 1: qt.LossQueue, 2: qt.LossQueue, 3:qt.LossQueue, 4:qt.LossQueue, 5:qt.LossQueue}
+    return q_classes
+
+def create_q_args(config_params, buffer_size_for_each_queue, services_f, num_queues):
+    # feel free to add other properties
+    def ser_f(t):
+        return t + np.exp(config_params['sef_rate_first_node'])
+
+    def rate(t):
+
+        return 25 + 350 * np.sin(np.pi * t / 2)**2
+
+    def arr(t):
+        return qt.poisson_random_measure(t, rate, config_params['arrival_rate'])
+    
+    q_args = {}
+    q_args[1] = {
+        'arrival_f': arr,
+        'service_f': ser_f,
+        }
+
+    for i in range(num_queues - 1):
+        q_args[i+2] = {
+        'service_f': services_f[i],
+        'qbuffer':buffer_size_for_each_queue[i],
+        }
+
+    if False:
+        q_args = {1: {
+            'arrival_f': arr,
+            'service_f': ser_f,
+        },
+        2:{
+            'service_f': services_f[0],
+            'qbuffer':20,
+        },
+        3:{
+            'service_f': services_f[1],
+            'qbuffer':20,
+        },
+        4:{
+            'service_f': services_f[2],
+            'qbuffer':20
+        },
+        5:{
+            'service_f': services_f[3],
+            'qbuffer':20
+        }}
+    
+    return q_args
+
+def init_env(config_params, buffer_size_for_each_queue, services_f, num_queues):
+
+    q_classes = create_q_classes(num_queues)
+    q_args = create_q_args(config_params, buffer_size_for_each_queue, services_f, num_queues)
+
+    edge_list = {0:{1:1}, 1: {k: 1 for k in range(2, 5)}, 2:{5:2}, 3:{6:3, 7:4},4:{8:5}, 5:{9:2}, 6:{9:4}, 7:{9:3}, 8:{9:5}, 9:{10:0}}
+    return q_classes, q_args, edge_list 
 
 def create_RL_env(q_net, params):
     """
@@ -159,10 +229,10 @@ def create_RL_env(q_net, params):
     Returns:
     - RLEnv: An instance of the RL environment.
     """
-    env = RLEnv(q_net, n = params['num_sim'])
+    env = RLEnv(q_net, num_sim = params['num_sim'])
     return env
 
-def create_simulation_env(params, hidden, config_file):
+def create_simulation_env(params, config_file):
     """
     Create a simulation environment for reinforcement learning based on given parameters and a configuration file.
 
@@ -175,7 +245,7 @@ def create_simulation_env(params, hidden, config_file):
     - RLEnv: The RL environment ready for simulation.
     """
     q_net = create_queueing_env(config_file)
-    RL_env = create_RL_env(q_net, params, hidden)
+    RL_env = create_RL_env(q_net, params)
 
     return RL_env
 
@@ -190,12 +260,12 @@ def get_param_for_state_exploration(params):
     - tuple: A tuple containing parameters specific to state exploration.
     """
     num_sample = params['num_sample']
-    device = device
+    device_here = device
     w1 = params['w1']
     w2 = params['w2']
     epsilon = params['epsilon_state_exploration']
 
-    return num_sample, device, w1, w2, epsilon
+    return num_sample, device_here, w1, w2, epsilon
 
 def get_params_for_train(params):
     """
@@ -212,8 +282,9 @@ def get_params_for_train(params):
     num_epochs = params['num_epochs']
     time_steps = params['time_steps']
     target_update_frequency = params['target_update_frequency']
+    threshold = params['threshold']
 
-    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency
+    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold
 
 def train(params, agent, env):
     """
@@ -236,7 +307,7 @@ def train(params, agent, env):
     action_dict = {}
 
     num_sample, device, w1, w2, epsilon_state_exploration = get_param_for_state_exploration(params)
-    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
+    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
 
     agent.train()
     for episode in range(num_episodes):
@@ -361,7 +432,7 @@ def start_train(config_file, param_file, save_file = True):
 
     params, hidden = load_hyperparams(param_file)
 
-    sim_environment = create_simulation_env(params, hidden, config_file)
+    sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
 
     rewards_list_all, next_state_list_all, \

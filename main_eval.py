@@ -1,5 +1,5 @@
 import argparse
-from supporting_functions import start_train
+from Supporting_files.supporting_functions import start_train
 
 # Setup argparse
 parser = argparse.ArgumentParser(description='Start the training process with configuration and parameter files.')

@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-from model import Actor, Critic, RewardModel, NextStateModel, check_validity
-from buffer import ReplayBuffer
+from .model import Actor, Critic, RewardModel, NextStateModel, check_validity
+from .buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
 
 

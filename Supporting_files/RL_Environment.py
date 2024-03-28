@@ -1,10 +1,10 @@
 import numpy as np
-from State_Exploration import *
-from queueing_network import *
+from .State_Exploration import *
+from .queueing_network import *
 transition_proba = {}
 
 class RLEnv: 
-    def __init__(self, qn_net, num_sim, start_state = None): 
+    def __init__(self, qn_net, num_sim = 5000, start_state = None): 
 
         self.qn_net = qn_net
         self.net = qn_net.queueing_network
@@ -68,13 +68,7 @@ class RLEnv:
 
     def get_next_state(self, action):
 
-        for node in list(self.transition_proba[1].keys()): 
-            current_proba = self.transition_proba[1][node]
-            probas = transition_proba.setdefault(node, [])
-            probas.append(current_proba) 
-            transition_proba[node] = probas
-
-        self.test_action_equal_nodes(action)
+        # self.test_action_equal_nodes(action)
         action = self.get_correct_action_format(action)
 
         for i, node in enumerate(self.transition_proba.keys()):
@@ -88,14 +82,14 @@ class RLEnv:
                     self.test_nan(action_probs[j])
                     self.transition_proba[node][next_node]=action_probs[j]
         
-        current_state, transition_proba = self.simulate()
+        current_state = self.simulate()
         return current_state, transition_proba
     
     def test_actions_equal_nodes(self, action):
         if len(action) != self.net.num_nodes - 1:
             raise ValueError('The action space is incomatible with the dimensions')
     
-    def test_nan(element):
+    def test_nan(self, element):
         if np.isnan(element):
             TypeError("Encounter NaN")
     
@@ -118,7 +112,7 @@ class RLEnv:
         self.net.start_collecting_data()
         self.net.simulate(n = self.sim_n) 
         
-        return self.get_state(), transition_proba
+        return self.get_state()
 
     def get_reward(self):
         reward = 0

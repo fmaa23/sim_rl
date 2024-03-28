@@ -40,12 +40,11 @@ class Queue_network:
             transition_proba = None
         return lambda_list, miu_list, active_cap, deactive_cap, adjacent_list, buffer_size_for_each_queue, transition_proba
     
-    def process_input(self, lamda_list, miu_list, q_classes, q_args, adjacent_list, 
+    def process_input(self, arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
                         edge_list, transition_proba):
 
         # param for first server
-        self.node_ids = list(range(1, len(lamda_list) + 1))
-        self.lamda = lamda_list
+        self.lamda = arrival_rate
         self.miu = miu_list 
         
         # Configure the network

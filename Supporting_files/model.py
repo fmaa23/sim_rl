@@ -38,14 +38,16 @@ class Actor(nn.Module):
         layers.append(nn.Sigmoid())                             # clip logits to [0,1] in masked action vector
         self.layers = nn.Sequential(*layers)
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     def forward(self, x):
         if type(x)==np.ndarray: 
             x = torch.tensor(x)
         x = x.float()
         #if np.isnan(1/self.layers(x)[-1].item()):
         #    print('nan')
-        return self.layers(x.to("cuda:0"))
-    
+        # return self.layers(x.to("cuda:0"))
+        return self.layers(x.to(self.device))
 
 class Critic(nn.Module):
     def __init__(self, n_states, n_actions, hidden):
@@ -75,6 +77,8 @@ class Critic(nn.Module):
         # layers.append(nn.ReLU())
         self.layer3 = nn.Sequential(*layers)
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     def forward(self,xa):
         """
         Parameters:
@@ -92,7 +96,9 @@ class Critic(nn.Module):
             a = torch.tensor(x)
         x = x.float()
 
-        out = self.layer1(x.to("cuda:0"))
+        # out = self.layer1(x.to("cuda:0"))
+        out = self.layer1(x.to(self.device))
+
         if len(a.shape) == 1: 
             out = self.layer2(torch.cat([out,a]))
         else: 

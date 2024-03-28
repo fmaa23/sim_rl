@@ -83,3 +83,5 @@ buffer_size_for_each_queue:
   - 20
 
 num_sim: 5000
+
+arrival_rate: 375

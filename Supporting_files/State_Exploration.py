@@ -1,8 +1,8 @@
 # from tensorflow import random
 import numpy as np
-from ddpg import DDPGAgent
+from .ddpg import DDPGAgent
 import torch
-from queueing_network import Queue_network
+from .queueing_network import Queue_network
 
 def explore_state(DDPG_agent, queue_model, num_sample, device, visit_counts, w1 = 0.5, w2 = 0.5, epsilon = 1):
     """
