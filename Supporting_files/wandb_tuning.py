@@ -15,8 +15,14 @@ from .base_functions import *
 
 def load_tuning_config(tune_param_filepath):
 
-    base_path = os.path.dirname(os.getcwd())
-    abs_file_path = os.path.join(base_path, tune_param_filepath)
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Go up one directory to the MScDataSparqProject directory
+    project_dir = os.path.dirname(script_dir)
+
+    # Build the path to the configuration file
+    abs_file_path = os.path.join(project_dir, tune_param_filepath)
 
     with open(abs_file_path, 'r') as tune_params_file:
         tune_params = yaml.load(tune_params_file, Loader=yaml.FullLoader)
