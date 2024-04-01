@@ -1,4 +1,5 @@
 stages:
+  - prepare
   - test
 before_script:
   - echo "Starting CI/CD Pipeline"
