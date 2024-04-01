@@ -3,7 +3,7 @@ stages:
   - test
 
 variables:
-  GIT_STRATEGY: none
+  GIT_STRATEGY: fetch
 
 before_script:
   - apt-get update
