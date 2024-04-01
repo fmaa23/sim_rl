@@ -10,7 +10,9 @@ test:
   stage: test  # This indicates which stage the job belongs to.
   script:  # 'script' is a list of shell commands executed by the runner.
     - echo "Running tests"  # First, print a message to the log.
-    - python -m unittest discover -s tests  # Then, run Python unittest discovery in the 'tests' directory to find and run all tests.
+    #- python -m unittest discover -s tests  # Then, run Python unittest discovery in the 'tests' directory to find and run all tests.
+    - pip install pytest  # Ensure pytest is installed.
+    - pytest tests  # Run pytest to execute tests.
 
   # 'only' specifies the branches for which this job and stage will be run.
   only:
