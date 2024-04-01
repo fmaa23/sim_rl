@@ -11,7 +11,7 @@ sync_files:
   stage: prepare
   image: ubuntu:20.04
   script:
-    - cp -r supporting_files/* tests/
+    - cp -r Supporting_files/* tests/
   only:
     - debug_branch
 
