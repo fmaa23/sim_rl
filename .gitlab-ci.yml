@@ -26,9 +26,9 @@ before_script:
     # Install Python and pip
     - apt-get install -y python3 python3-pip
     # Install pytest
-    - pip3 install pytest
+    - pip install pytest
     # Run pytest
     - pytest tests
   only:
-    - debug_branch
-    - develop_branch
+    #- debug_branch
+    #- develop_branch
