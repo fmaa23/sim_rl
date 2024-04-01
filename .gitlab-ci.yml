@@ -2,7 +2,9 @@
 stages:
   - test
 before_script:
-  - echo "Starting CI/CD Pipeline" 
+  - echo "Starting CI/CD Pipeline"
+  - pip3 install torch
+
 
 test:
   stage: test
