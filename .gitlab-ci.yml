@@ -30,5 +30,5 @@ before_script:
     # Run pytest
     - pytest tests
   only:
-    #- debug_branch
+    - debug_branch
     - develop_branch
