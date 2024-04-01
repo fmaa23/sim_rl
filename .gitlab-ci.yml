@@ -1,0 +1,14 @@
+stages:
+  - test
+
+before_script:
+  - echo "Starting CI/CD Pipeline"
+
+test:
+  stage: test
+  script:
+    - echo "Running tests"
+    - python -m unittest discover -s tests
+  only:
+    - main
+    - dev
