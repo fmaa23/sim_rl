@@ -6,7 +6,7 @@ before_script:
   - echo "Starting CI/CD Pipeline"  # This command prints a message to the log.
 
 # Define a job named 'test'. This job is part of the 'test' stage as defined above.
-test:
+"""test:
   stage: test  # This indicates which stage the job belongs to.
   script:  # 'script' is a list of shell commands executed by the runner.
     - echo "Running tests"  # First, print a message to the log.
@@ -14,7 +14,21 @@ test:
     - pip install pytest  # Ensure pytest is installed.
     - pytest tests  # Run pytest to execute tests.
 
-  # 'only' specifies the branches for which this job and stage will be run.
+  # 'only' specifies the branches for which this job and stage will be run."""
+  test:
+  stage: test
+  image: ubuntu:20.04
+  script:
+    - echo "Starting CI/CD Pipeline"
+    - echo "Running tests"
+    # Update package lists
+    - apt-get update
+    # Install Python and pip
+    - apt-get install -y python3 python3-pip
+    # Install pytest
+    - pip3 install pytest
+    # Run pytest
+    - pytest tests
   only:
     #- debug_branch
     - develop_branch
