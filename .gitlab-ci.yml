@@ -1,23 +1,22 @@
 
-stages:
-  - test
-before_script:
-  - echo "Starting CI/CD Pipeline"
-  - apt-get update
-  - apt-get install -y python3 python3-pip
-  - pip3 install torch
+cache:
+  paths:
+    - .cache/pip
+    - venv/
 
+before_script:
+  - apt-get update && apt-get install -y python3 python3-pip python3-venv
+  - python3 -m venv venv
+  - source venv/bin/activate
+  - pip3 install --cache-dir .cache/pip torch numpy pytest
 
 test:
   stage: test
   image: ubuntu:20.04
   script:
-    - echo "Starting CI/CD Pipeline"
-    - echo "Running tests"
-    - apt-get update
-    - apt-get install -y python3 python3-pip
-    - pip3 install pytest
+    - source venv/bin/activate
     - pytest tests
   only:
     - debug_branch
     - develop_branch
+
