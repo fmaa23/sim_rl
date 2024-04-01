@@ -32,11 +32,15 @@ class ReplayBuffer():
         """ 
         # state, action, reward, next_state = transition
         
-        if self.current_size > self.max_size:
+        """if self.current_size > self.max_size:
             self.buffer.pop(0)
       
         self.buffer += [transition]
-        self.current_size += 1
+        self.current_size += 1"""
+
+        if len(self.buffer) == self.max_size:
+            self.buffer.pop(0)  # Remove oldest transition
+        self.buffer.append(transition)  # Add new transition
             
 
     def sample(self, batch_size):
@@ -49,6 +53,9 @@ class ReplayBuffer():
         Returns:
             iterable list) with objects sampled from buffer without replacement
         """
+         # Check if there are enough transitions to sample the requested batch size
+        if batch_size > len(self.buffer):
+            raise ValueError("Sample size larger than buffer")
         return random.sample(self.buffer, batch_size)
     
     def get_items(self):
