@@ -1,14 +1,18 @@
+# Define the stages used in the pipeline. In this example, there's only one stage named 'test'.
 stages:
   - test
-
+# 'before_script' is a list of commands that run before each job's script.
 before_script:
-  - echo "Starting CI/CD Pipeline"
+  - echo "Starting CI/CD Pipeline"  # This command prints a message to the log.
 
+# Define a job named 'test'. This job is part of the 'test' stage as defined above.
 test:
-  stage: test
-  script:
-    - echo "Running tests"
-    - python -m unittest discover -s tests
+  stage: test  # This indicates which stage the job belongs to.
+  script:  # 'script' is a list of shell commands executed by the runner.
+    - echo "Running tests"  # First, print a message to the log.
+    - python -m unittest discover -s tests  # Then, run Python unittest discovery in the 'tests' directory to find and run all tests.
+
+  # 'only' specifies the branches for which this job and stage will be run.
   only:
-    - main
-    - dev
+    - debug_branch
+    - develop_branch
