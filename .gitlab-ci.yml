@@ -16,5 +16,5 @@ test:
 
   # 'only' specifies the branches for which this job and stage will be run.
   only:
-    - debug_branch
+    #- debug_branch
     - develop_branch
