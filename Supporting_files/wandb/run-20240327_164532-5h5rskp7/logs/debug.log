@@ -1,0 +1,69 @@
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Current SDK version is 0.16.5
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Configure stats pid to 18208
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Loading settings from C:\Users\jinya\.config\wandb\settings
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Loading settings from D:\MScDataSparqProject\Supporting_files\wandb\settings
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'Supporting_files\\main_test.py', 'program_abspath': 'd:\\MScDataSparqProject\\Supporting_files\\main_test.py', 'program': 'd:\\MScDataSparqProject\\Supporting_files\\main_test.py'}
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_init.py:_log_setup():527] Logging user logs to D:\MScDataSparqProject\Supporting_files\wandb\run-20240327_164532-5h5rskp7\logs\debug.log
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_init.py:_log_setup():528] Logging internal logs to D:\MScDataSparqProject\Supporting_files\wandb\run-20240327_164532-5h5rskp7\logs\debug-internal.log
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_init.py:init():567] calling init triggers
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_init.py:init():574] wandb.init called with sweep_config: {}
+config: {}
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_init.py:init():617] starting backend
+2024-03-27 16:45:32,549 INFO    MainThread:18208 [wandb_init.py:init():621] setting up manager
+2024-03-27 16:45:32,557 INFO    MainThread:18208 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=spawn, using: spawn
+2024-03-27 16:45:32,565 INFO    MainThread:18208 [wandb_init.py:init():629] backend started and connected
+2024-03-27 16:45:32,580 INFO    MainThread:18208 [wandb_init.py:init():721] updated telemetry
+2024-03-27 16:45:32,947 INFO    MainThread:18208 [wandb_init.py:init():754] communicating run to backend with 90.0 second timeout
+2024-03-27 16:45:35,139 INFO    MainThread:18208 [wandb_run.py:_on_init():2344] communicating current version
+2024-03-27 16:45:36,632 INFO    MainThread:18208 [wandb_run.py:_on_init():2353] got version response 
+2024-03-27 16:45:36,632 INFO    MainThread:18208 [wandb_init.py:init():805] starting run threads in backend
+2024-03-27 16:45:53,619 INFO    MainThread:18208 [wandb_run.py:_console_start():2323] atexit reg
+2024-03-27 16:45:53,619 INFO    MainThread:18208 [wandb_run.py:_redirect():2178] redirect: wrap_raw
+2024-03-27 16:45:53,619 INFO    MainThread:18208 [wandb_run.py:_redirect():2243] Wrapping output streams.
+2024-03-27 16:45:53,619 INFO    MainThread:18208 [wandb_run.py:_redirect():2268] Redirects installed.
+2024-03-27 16:45:53,627 INFO    MainThread:18208 [wandb_init.py:init():848] run started, returning control to user process
+2024-03-27 16:46:59,247 INFO    MainThread:18208 [pyagent.py:run():324] Starting sweep agent: entity=None, project=None, count=10
+2024-03-27 16:47:14,709 WARNING MsgRouterThr:18208 [router.py:message_loop():77] message_loop has been closed
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Current SDK version is 0.16.5
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Configure stats pid to 18208
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Loading settings from C:\Users\jinya\.config\wandb\settings
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Loading settings from D:\MScDataSparqProject\Supporting_files\wandb\settings
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Loading settings from environment variables: {'project': 'datasparq', 'entity': 'datasparq', 'root_dir': 'D:\\MScDataSparqProject\\Supporting_files', 'sweep_id': 'tnkl56fe', 'run_id': 'iiqk8d4u', 'sweep_param_path': 'D:\\MScDataSparqProject\\Supporting_files\\wandb\\sweep-tnkl56fe\\config-iiqk8d4u.yaml'}
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Applying setup settings: {'_disable_service': False}
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'Supporting_files\\main_test.py', 'program_abspath': 'd:\\MScDataSparqProject\\Supporting_files\\main_test.py', 'program': 'd:\\MScDataSparqProject\\Supporting_files\\main_test.py'}
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_init.py:_log_setup():527] Logging user logs to D:\MScDataSparqProject\Supporting_files\wandb\run-20240327_164722-iiqk8d4u\logs\debug.log
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_init.py:_log_setup():528] Logging internal logs to D:\MScDataSparqProject\Supporting_files\wandb\run-20240327_164722-iiqk8d4u\logs\debug-internal.log
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_init.py:init():567] calling init triggers
+2024-03-27 16:47:22,082 INFO    Thread-18 (_run_job):18208 [wandb_init.py:init():574] wandb.init called with sweep_config: {'batch_size': 64, 'epochs': 30, 'learning_rate': 0.08978157043924027}
+config: {}
+2024-03-27 16:47:22,087 INFO    Thread-18 (_run_job):18208 [wandb_init.py:init():612] wandb.init() called when a run is still active
+2024-03-27 16:47:23,440 ERROR   Thread-18 (_run_job):18208 [wandb_init.py:init():1215] error
+Traceback (most recent call last):
+  File "d:\py\Lib\site-packages\wandb\sdk\wandb_init.py", line 1187, in init
+    run = wi.init()
+          ^^^^^^^^^
+  File "d:\py\Lib\site-packages\wandb\sdk\wandb_init.py", line 613, in init
+    with telemetry.context() as tel:
+  File "d:\py\Lib\site-packages\wandb\sdk\lib\telemetry.py", line 42, in __exit__
+    self._run._telemetry_callback(self._obj)
+  File "d:\py\Lib\site-packages\wandb\sdk\wandb_run.py", line 763, in _telemetry_callback
+    self._telemetry_flush()
+  File "d:\py\Lib\site-packages\wandb\sdk\wandb_run.py", line 774, in _telemetry_flush
+    self._backend.interface._publish_telemetry(self._telemetry_obj)
+  File "d:\py\Lib\site-packages\wandb\sdk\interface\interface_shared.py", line 101, in _publish_telemetry
+    self._publish(rec)
+  File "d:\py\Lib\site-packages\wandb\sdk\interface\interface_sock.py", line 51, in _publish
+    self._sock_client.send_record_publish(record)
+  File "d:\py\Lib\site-packages\wandb\sdk\lib\sock_client.py", line 221, in send_record_publish
+    self.send_server_request(server_req)
+  File "d:\py\Lib\site-packages\wandb\sdk\lib\sock_client.py", line 155, in send_server_request
+    self._send_message(msg)
+  File "d:\py\Lib\site-packages\wandb\sdk\lib\sock_client.py", line 152, in _send_message
+    self._sendall_with_error_handle(header + data)
+  File "d:\py\Lib\site-packages\wandb\sdk\lib\sock_client.py", line 130, in _sendall_with_error_handle
+    sent = self._sock.send(data)
+           ^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。

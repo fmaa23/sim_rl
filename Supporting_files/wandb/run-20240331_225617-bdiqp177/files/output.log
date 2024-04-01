@@ -1,0 +1,4 @@
+Create sweep with ID: q2dal7n8
+Sweep URL: https://wandb.ai/datasparq/datasparq/sweeps/q2dal7n8
+Backend QtAgg is interactive backend. Turning interactive mode on.
+[34m[1mwandb[39m[22m: [33mWARNING[39m Calling wandb.login() after wandb.init() has no effect.

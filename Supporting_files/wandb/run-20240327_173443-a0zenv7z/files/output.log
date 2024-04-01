@@ -1,0 +1,3 @@
+Create sweep with ID: m4k64ytc
+Sweep URL: https://wandb.ai/datasparq/datasparq/sweeps/m4k64ytc
+[34m[1mwandb[39m[22m: [33mWARNING[39m Calling wandb.login() after wandb.init() has no effect.
