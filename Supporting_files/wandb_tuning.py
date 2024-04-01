@@ -4,14 +4,43 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 
-from .ddpg import DDPGAgent
-from .RL_Environment import RLEnv
+from ddpg import DDPGAgent
+from RL_Environment import RLEnv
 import torch
 import numpy as np
 import wandb
 import yaml
 import os
-from .base_functions import *
+from base_functions import *
+
+
+def load_hyperparams(eval_param_filepath):
+    """
+    Load hyperparameters from a YAML file.
+
+    Parameters:
+    - param_filepath (str): The file path to the hyperparameters YAML file.
+
+    Returns:
+    - tuple: A tuple containing two dictionaries, `params` for hyperparameters and `hidden` for hidden layer configurations.
+    """
+
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Go up one directory to the MScDataSparqProject directory
+    project_dir = os.path.dirname(script_dir)
+
+    # Build the path to the configuration file
+    abs_file_path = os.path.join(project_dir, eval_param_filepath)
+    
+    with open(abs_file_path, 'r') as env_param_file:
+        parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
+    params = parameter_dictionary['params']
+    hidden = parameter_dictionary['hidden']
+
+    return params, hidden
+
 
 def load_tuning_config(tune_param_filepath):
 
@@ -43,13 +72,59 @@ def load_tuning_config(tune_param_filepath):
             },
             'batch_size': {
                 'values': tune_params['batch_size']
+            },
+            'tau': {
+                'min': tune_params['tau_min'],
+                'max': tune_params['tau_max']
+            },
+            'discount':{
+                'min':tune_params['discount_min'],
+                'max':tune_params['discount_max']
+            },
+            'epsilon':{
+                'min': tune_params['epsilon_min'],
+                'max': tune_params['epsilon_max']
+            },
+            'planning_steps': {
+                'values': tune_params['planning_steps']
+            },
+            'num_sample': {
+                'values': tune_params['num_sample']
+            },
+            'w1': {
+                'values': tune_params['w1']
+            },
+            'w2': {
+                'values': tune_params['w2']
+            },
+            'epsilon_state_exploration':{
+                'values': tune_params['epsilon_state_exploration']
+            },
+            'num_episodes':{
+                'values': tune_params['num_episodes']
+            },
+            'target_update_frequency':{
+                'values':tune_params['target_update_frequency']
+            },
+            'time_steps':{
+                'values':tune_params['time_steps']
             }
         }
     }
 
     return config
 
-def init_wandb(project_name, tune_param_filepath, config_param_filepath, opt_target = 'reward', num_runs = 100):
+def get_agent_parameters(config):
+    params = {}
+    params['tau'] = config['tau']
+    params['learning_rate'] = config['learning_rate']
+    params['discount'] = config['discount']
+    params['epsilon'] = config['epsilon']
+    params['planning_steps'] = config['planning_steps']
+
+    return params
+
+def init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, opt_target = 'reward', num_runs = 100):
     # initialize W&B
     wandb.login()
 
@@ -59,6 +134,7 @@ def init_wandb(project_name, tune_param_filepath, config_param_filepath, opt_tar
     # read hyperparameter files
     tuning_config = load_tuning_config(tune_param_filepath)
     env_config = load_config(config_param_filepath)
+    _, hidden = load_hyperparams(eval_param_filepath)
     sweep_id = wandb.sweep(tuning_config, project=project_name)
 
 
@@ -68,23 +144,25 @@ def init_wandb(project_name, tune_param_filepath, config_param_filepath, opt_tar
             env = create_RL_env(queue_env, env_config)
 
             config = run.config
-            num_sample = config['num_sample']
+            num_sample = config.num_sample  # Access 'num_sample' directly
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            w1 = config['w1']
-            w2 = config['w2']
-            epsilon_state_exploration = config['epsilon_state_exploration']
-            num_episodes = config['num_episodes']
-            batch_size = config['batch_size']
-            num_epochs = config['epochs_list']
-            time_steps = config['time_steps']
-            target_update_frequency = config['target_update_frequency']
+            w1 = config.w1  # Access 'w1' directly
+            w2 = config.w2  # Access 'w2' directly
+            epsilon_state_exploration = config.epsilon_state_exploration  # Direct access
+            num_episodes = config.num_episodes  # Direct access
+            batch_size = config.batch_size  # Direct access
+            num_epochs = config.epochs  # Access 'epochs' directly
+            time_steps = config.time_steps  # Direct access
+            target_update_frequency = config.target_update_frequency  # Direct access
 
             reward_list = []
             action_dict = {}
 
             n_states = len(env.get_state())
-            n_actions = len(env.get_state()) - 2
-            agent = DDPGAgent(n_states, n_actions, config.parameters)
+            n_actions = len(env.get_state()) - 2 # need to modify
+
+            agent_parameters = get_agent_parameters(config)
+            agent = DDPGAgent(n_states, n_actions, hidden = hidden, params = agent_parameters)
 
             agent.train()
             for episode in range(num_episodes):

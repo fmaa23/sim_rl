@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 
-def plot_gradient(layer_name = 'layers.0.weight'):
 
-    filename = 'gradient_dict.json'
+def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'):
+
+    plt.figure()
+    filename = data_filepath + '/gradient_dict.json'
 
     with open(filename, 'r') as f:
         gradient_dict_loaded = json.load(f)
@@ -25,31 +27,51 @@ def plot_gradient(layer_name = 'layers.0.weight'):
     plt.xlabel('List Index')
     plt.ylabel('Value')
 
-    plt.savefig(f'Gradient_{layer_name}.png')
+    import os
+    save_path = os.path.join(images_filepath, 'Gradient.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot_actor():
-    actor_loss = pd.read_csv('actor_loss_new.csv', index_col=0)
+def plot_actor(data_filepath, images_filepath):
+    actor_loss = pd.read_csv(data_filepath + '/actor_loss.csv', index_col=0)
+
+    plt.figure()
     plt.plot(actor_loss)
     plt.title("Actor Loss")
 
-    plt.savefig('Actor_Loss.png')
+    import os
+    save_path = os.path.join(images_filepath, '/Acotor_loss.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot_critic():
-    critic_loss = pd.read_csv('critic_loss_new.csv', index_col=0)
+def plot_critic(data_filepath, images_filepath):
+    critic_loss = pd.read_csv(data_filepath + '/critic_loss.csv', index_col=0)
+
+    plt.figure()
     plt.plot(critic_loss)
     plt.title('Critic Loss')
 
-    plt.savefig('Critic_Loss.png')
+    import os
+    save_path = os.path.join(images_filepath, 'Critic_loss.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot_reward():
-    reward = pd.read_csv('reward.csv', index_col=0)
-    plt.plot(reward.rolling(window=5).mean())
+def plot_reward(data_filepath, images_filepath):
+    reward = pd.read_csv(data_filepath + '/reward.csv', index_col=0)
+    
+    plt.figure()
+    plt.plot(reward)
     plt.title("Reward")
+    
+    import os
+    save_path = os.path.join(images_filepath, 'Reward.png')
+    plt.savefig(save_path)
+    plt.close()
 
-    plt.savefig('Reward.png')
+def plot_actor_vector(data_filepath, images_filepath):
+    plt.figure()
 
-def plot_actor_vector():
-    action_vector = pd.read_csv("action_dict.csv", index_col=0)
+    action_vector = pd.read_csv(data_filepath + "/action_dict.csv", index_col=0)
     for column in action_vector.columns:
         plt.plot(action_vector.index, action_vector[column], label=column)
 
@@ -57,10 +79,14 @@ def plot_actor_vector():
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Coordinates for the legend box
     plt.show()
 
-    plt.savefig('Actor_Vector.png')
+    import os
+    save_path = os.path.join(images_filepath, 'Actor_space.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot_transition_proba():
-    transition_proba = pd.read_csv("transition_proba.csv", index_col=0)[["2", "3", "4"]]
+def plot_transition_proba(data_filepath, images_filepath):
+
+    transition_proba = pd.read_csv(data_filepath + "/transition_proba.csv", index_col=0)[["2", "3", "4"]]
     for column in transition_proba.columns:
         plt.plot(transition_proba.index, transition_proba[column], label=column)
 
@@ -68,28 +94,47 @@ def plot_transition_proba():
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Coordinates for the legend box
     plt.show()
 
-    plt.savefig('Transition_Proba.png')
+    import os
+    save_path = os.path.join(images_filepath, 'Transition_proba.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot_reward_model_loss():
-    reward_model_loss_new = pd.read_csv('reward_model_loss_new.csv', index_col=0)
+def plot_reward_model_loss(data_filepath, images_filepath):
+    reward_model_loss_new = pd.read_csv(data_filepath + '/reward_model_loss.csv', index_col=0)
+    
+    plt.figure()
     plt.plot(reward_model_loss_new.rolling(window=12).mean())
     plt.title("reward_model_loss_new")
 
-    plt.savefig('Reward_Model_Loss.png')
+    import os
+    save_path = os.path.join(images_filepath, 'Reward_model_loss.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot_next_state_model_loss():
-    next_state_model = pd.read_csv('next_state_model_loss.csv', index_col=0)
+def plot_next_state_model_loss(data_filepath, images_filepath):
+    next_state_model = pd.read_csv(data_filepath + '/next_state_model_loss.csv', index_col=0)
+    
+    plt.figure()
     plt.plot(next_state_model)
     plt.title("next_state_model_loss")
 
-    plt.savefig('Next_State_Model_Loss.png')
+    import os
+    save_path = os.path.join(images_filepath, 'Next_model_loss.png')
+    plt.savefig(save_path)
+    plt.close()
 
-def plot():
-    plot_reward()
-    plot_actor()
-    plot_critic()
-    plot_actor_vector()
-    plot_gradient()
-    plot_transition_proba()
-    plot_reward_model_loss()
-    plot_next_state_model_loss()
+def plot(data_filepath, images_filepath):
+    import os
+    filepath = os.getcwd() + '/images'
+
+    # Create the directory if it doesn't exist
+    os.makedirs(filepath, exist_ok=True)
+
+    plot_reward(data_filepath, images_filepath)
+    plot_actor(data_filepath, images_filepath)
+    plot_critic(data_filepath, images_filepath)
+    plot_actor_vector(data_filepath, images_filepath)
+    plot_gradient(data_filepath, images_filepath)
+    plot_transition_proba(data_filepath, images_filepath)
+    plot_reward_model_loss(data_filepath, images_filepath)
+    plot_next_state_model_loss(data_filepath, images_filepath)

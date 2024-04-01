@@ -2,7 +2,7 @@
 params:
   num_episodes: 10
   
-  threshold: 64
+  threshold: 10
 
   num_epochs: 10
   
@@ -16,7 +16,7 @@ params:
   
   tau: 0.001
   
-  lr: 0.1
+  learning_rate: 0.1
   
   discount: 0.2
   

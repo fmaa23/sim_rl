@@ -1,10 +1,10 @@
 # from tensorflow import random
 import numpy as np
-from .ddpg import DDPGAgent
+from ddpg import DDPGAgent
 import torch
-from .queueing_network import Queue_network
+from queueing_network import Queue_network
 
-def explore_state(DDPG_agent, queue_model, num_sample, device, visit_counts, w1 = 0.5, w2 = 0.5, epsilon = 1):
+def explore_state(DDPG_agent, qn_model, qn_env, num_sample, device, visit_counts, w1 = 0.5, w2 = 0.5, epsilon = 1):
     """
     This function is used for state exploration for real word environment
     It helps the agent decide which state to explore next based on factors, including Q-values and visit counts. 
@@ -22,13 +22,23 @@ def explore_state(DDPG_agent, queue_model, num_sample, device, visit_counts, w1 
     Returns:
     - chosen_state: The selected state for exploration.
     """
-    max_buffer_size = [20] * 12
-    
-    if False:
-        for q_buffer in queue_model.q_args.keys():
-            if q_buffer != 1 and q_buffer != 0:
-                max_buffer = queue_model.q_args[q_buffer]['qbuffer']
-                max_buffer_size.append(max_buffer)
+
+    num_edges = qn_model.num_edges - 1
+    max_buffer_size = []
+    for start_node in qn_env.adja_list.keys():
+        for end_node in qn_env.adja_list[start_node]:
+            
+            edge_index = qn_env.edge_list[start_node][end_node]
+
+            if edge_index == 0:
+                continue
+
+            if 'qbuffer' not in list(qn_env.q_args[edge_index].keys()):
+                print(f"start node: {start_node}, end node: {end_node}, and edge index: {edge_index} ----- qbuffer not found")
+                print(f"q_args: {qn_env.q_args}")
+
+            max_buffer = qn_env.q_args[edge_index]['qbuffer']
+            max_buffer_size.append(max_buffer)
     
     sample_states = []
     for _ in range(num_sample):
@@ -60,7 +70,8 @@ def explore_state(DDPG_agent, queue_model, num_sample, device, visit_counts, w1 
         chosen_state = sorted_states[0][0]
     else:
         # explore: randomly choose any state
-        chosen_state = np.random.choice(list(weighted_averages.keys()))
+        index = np.random.randint(len(weighted_averages))
+        chosen_state = list(weighted_averages.keys())[index]
 
     return torch.tensor(chosen_state).to(device)
 

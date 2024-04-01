@@ -1,6 +1,6 @@
 import numpy as np
-from .State_Exploration import *
-from .queueing_network import *
+from State_Exploration import *
+from queueing_network import *
 transition_proba = {}
 
 class RLEnv: 
@@ -48,7 +48,7 @@ class RLEnv:
         return self.transition_proba
 
     def explore_state(self, agent, env, num_sample, device, w1 = 0.5, w2 = 0.5, epsilon = 1):
-        return explore_state(agent, queue_model = env.qn_net, 
+        return explore_state(agent, qn_model = env.net, qn_env = env.qn_net,
                             num_sample = num_sample, device = device, visit_counts = agent.visited_count,
                             w1 = w1, w2 = w2, epsilon = epsilon)
 

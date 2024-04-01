@@ -6,13 +6,13 @@ import queueing_tool as qt
 import numpy as np
 import os
 
-from .RL_Environment import RLEnv
+from RL_Environment import RLEnv
 
-from .ddpg import DDPGAgent
-from .State_Exploration import *
-from .queueing_network import *
-from .wandb_tuning import *
-from .plot_datasparq import *
+from ddpg import DDPGAgent
+from State_Exploration import *
+from queueing_network import *
+from wandb_tuning import *
+from plot_datasparq import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -66,36 +66,6 @@ def load_hyperparams(eval_param_filepath):
     params = parameter_dictionary['params']
     hidden = parameter_dictionary['hidden']
 
-    # since we do not have the above now, we will hard-code for now
-    if False:
-        params = {
-            'num_episodes': 10,
-            'threshold': 64,
-            'num_epochs':10,
-            'time_steps':10,
-            'target_update_frequency':100,
-            'batch_size': 64,
-            'num_sim': 5000,
-            'tau': 0.001,
-            'lr': 0.1,
-            'discount': 0.2,
-            'planning_steps': 10,
-            'epsilon': 0.2,
-            'epsilon_f': 0.1,
-            "actor_lr":0.1,
-            'num_sample': 50,
-            'w1':0.5,
-            'w2':0.5,
-            'epsilon_state_exploration':1
-            }
-    
-        hidden = {
-            'actor': [32, 32],
-            'critic': [64, 64],
-            'reward_model': [64, 64],
-            'next_state_model': [64, 64]
-        }
-
     return params, hidden
 
 def create_queueing_env(config_file):
@@ -133,7 +103,7 @@ def create_params(config_file):
         services_f = []
         for miu in miu_list:
             def ser_f(t):
-                return t + np.exp(1.2)
+                return t + np.exp(miu)
             services_f.append(ser_f)
         return services_f
     
@@ -177,7 +147,9 @@ def create_q_args(config_params, buffer_size_for_each_queue, services_f, num_que
     q_args[1] = {
         'arrival_f': arr,
         'service_f': ser_f,
+        'qbuffer': buffer_size_for_each_queue[0]
         }
+    
 
     for i in range(num_queues - 1):
         q_args[i+2] = {
@@ -185,28 +157,6 @@ def create_q_args(config_params, buffer_size_for_each_queue, services_f, num_que
         'qbuffer':buffer_size_for_each_queue[i],
         }
 
-    if False:
-        q_args = {1: {
-            'arrival_f': arr,
-            'service_f': ser_f,
-        },
-        2:{
-            'service_f': services_f[0],
-            'qbuffer':20,
-        },
-        3:{
-            'service_f': services_f[1],
-            'qbuffer':20,
-        },
-        4:{
-            'service_f': services_f[2],
-            'qbuffer':20
-        },
-        5:{
-            'service_f': services_f[3],
-            'qbuffer':20
-        }}
-    
     return q_args
 
 def init_env(config_params, buffer_size_for_each_queue, services_f, num_queues):
@@ -214,7 +164,7 @@ def init_env(config_params, buffer_size_for_each_queue, services_f, num_queues):
     q_classes = create_q_classes(num_queues)
     q_args = create_q_args(config_params, buffer_size_for_each_queue, services_f, num_queues)
 
-    edge_list = {0:{1:1}, 1: {k: 1 for k in range(2, 5)}, 2:{5:2}, 3:{6:3, 7:4},4:{8:5}, 5:{9:2}, 6:{9:4}, 7:{9:3}, 8:{9:5}, 9:{10:0}}
+    edge_list = {0:{1:1}, 1: {k: 2 for k in range(2, 5)}, 2:{5:2}, 3:{6:3, 7:4},4:{8:5}, 5:{9:2}, 6:{9:4}, 7:{9:3}, 8:{9:5}, 9:{10:0}}
     return q_classes, q_args, edge_list 
 
 def create_RL_env(q_net, params):
@@ -286,7 +236,7 @@ def get_params_for_train(params):
 
     return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold
 
-def train(params, agent, env):
+def train(params, agent, env, best_params = None):
     """
     Conduct training sessions for a given agent and environment.
 
@@ -298,6 +248,14 @@ def train(params, agent, env):
     Returns:
     - Multiple values including lists that track various metrics through training.
     """
+
+    if best_params is not None:
+        for key in params.keys():
+            if key not in best_params.keys():
+                best_params[key] = params[key]
+    
+        params = best_params
+
     next_state_list_all = []
     rewards_list_all = [] 
     critic_loss_list_all = []
@@ -305,6 +263,8 @@ def train(params, agent, env):
     reward_list = []
     actor_gradient_list_all = []
     action_dict = {}
+    gradient_dict = {}
+    transition_probas = {}
 
     num_sample, device, w1, w2, epsilon_state_exploration = get_param_for_state_exploration(params)
     num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
@@ -315,6 +275,10 @@ def train(params, agent, env):
         env.reset()
         state = env.explore_state(agent, env, num_sample, device, w1, w2, epsilon_state_exploration)
         t = 0
+
+        actor_loss_list= []
+        critic_loss_list = []
+        actor_gradient_list = []
         while t < time_steps:
             
             if type(state) == np.ndarray:
@@ -334,10 +298,7 @@ def train(params, agent, env):
             reward_list.append(reward)                               
             experience = (state, action, reward, next_state)        
             agent.store_experience(experience)                             
-           
-            actor_loss_list= []
-            critic_loss_list = []
-            actor_gradient_list = []
+        
 
             if agent.buffer.current_size > threshold:
 
@@ -352,16 +313,16 @@ def train(params, agent, env):
                 critic_loss_list.append(critic_loss)
                 agent.plan(batch)
 
-            actor_loss_list_all += actor_loss_list
-            critic_loss_list_all += critic_loss_list
-            actor_gradient_list_all += actor_gradient_list
-        
             t += 1
             state = next_state
 
             if t%target_update_frequency == 0:
                 agent.soft_update(network="critic")
                 agent.soft_update(network="actor")
+
+        actor_loss_list_all += actor_loss_list
+        critic_loss_list_all += critic_loss_list
+        actor_gradient_list_all += actor_gradient_list
     
     return rewards_list_all, next_state_list_all, critic_loss_list_all,\
           actor_loss_list_all, reward_list, action_dict, gradient_dict, transition_probas
@@ -386,7 +347,7 @@ def create_ddpg_agent(environment, params, hidden):
 def save_all(rewards_list_all, next_state_list_all, \
         critic_loss_list_all, actor_loss_list_all, \
         reward_list, action_dict, gradient_dict, \
-        transition_probas):
+        transition_probas, base_path = None):
     """
     Save all relevant data from the training process.
 
@@ -402,23 +363,27 @@ def save_all(rewards_list_all, next_state_list_all, \
 
     This function also saves data to various files for further analysis.
     """
-    pd.DataFrame(reward_list).to_csv('reward_new.csv')
-    pd.DataFrame(actor_loss_list_all).to_csv("actor_loss_new.csv")
-    pd.DataFrame(critic_loss_list_all).to_csv("critic_loss_new.csv")
-    pd.DataFrame(next_state_list_all).to_csv("next_state_model_loss_new.csv")
-    pd.DataFrame(rewards_list_all).to_csv("reward_model_loss_new.csv")
-    pd.DataFrame(action_dict).to_csv("action_dict.csv")
-    pd.DataFrame(transition_probas).to_csv("transition_proba.csv")
+
+    # Create the directory if it doesn't exist
+    os.makedirs(base_path, exist_ok=True)
+
+    pd.DataFrame(reward_list).to_csv(base_path + '/reward.csv')
+    pd.DataFrame(actor_loss_list_all).to_csv(base_path + '/actor_loss.csv')
+    pd.DataFrame(critic_loss_list_all).to_csv(base_path + '/critic_loss.csv')
+    pd.DataFrame(next_state_list_all).to_csv(base_path + '/next_state_model_loss.csv')
+    pd.DataFrame(rewards_list_all).to_csv(base_path + '/reward_model_loss.csv')
+    pd.DataFrame(action_dict).to_csv(base_path + '/action_dict.csv')
+    pd.DataFrame(transition_probas).to_csv(base_path + '/transition_proba.csv')
 
     import json
     # Specify the filename
-    filename = 'gradient_dict.json'
+    filename = base_path + '/gradient_dict.json'
 
     # Write the dictionary to a file as JSON
     with open(filename, 'w') as f:
         json.dump(gradient_dict, f)
 
-def start_train(config_file, param_file, save_file = True):
+def start_train(config_file, param_file, save_file = True, data_filename = 'data', image_filename = 'images'):
     """
     Start the training process for a reinforcement learning environment and agent.
 
@@ -440,37 +405,77 @@ def start_train(config_file, param_file, save_file = True):
     reward_list, action_dict, gradient_dict, \
     transition_probas = train(params, agent, sim_environment)
 
+    csv_filepath = os.getcwd() + '\\' + data_filename
+    image_filepath = os.getcwd() + '\\' + image_filename
     if save_file:
+
         save_all(rewards_list_all, next_state_list_all, \
         critic_loss_list_all, actor_loss_list_all, \
         reward_list, action_dict, gradient_dict, \
-        transition_probas)
-
-def plot_best():
-    plot()
-
-def start_tuning(project_name, num_runs, tune_param_filepath, plot_best_param = True, config_param_filepath = ''):
-
-    init_wandb(project_name, tune_param_filepath, config_param_filepath, num_runs = num_runs, opt_target = 'reward')
+        transition_probas, base_path=csv_filepath)
     
-    best_param = get_best_param(project_name, opt_target = 'reward')
+    if plot:
+
+        plot(csv_filepath, image_filepath)
+
+
+def plot_best(data_filepath, images_filepath):
+    plot(data_filepath, images_filepath)
+
+def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, 
+                 plot_best_param = True, 
+                 data_filename = 'data',
+                 image_filename = 'images'):
+
+    if False:
+        init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, num_runs = num_runs, opt_target = 'reward')
 
     if plot_best_param:
-        params_file = (open(config_param_filepath, 'r'))
-        parameter_dictionary = yaml.load(params_file, Loader=yaml.FullLoader)
-        hidden = parameter_dictionary['hidden']
+        api = wandb.Api(api_key = '02bb2e4979e9df3d890f94a917a95344aae652b9') # replace your api key
+        runs = api.runs("yolanda_wang_bu/datasparq")
+        best_run = None
+        best_metric = None # Assuming higher is better; initialize appropriately based on your metric
 
-        sim_environment = create_simulation_env(params, hidden, config_param_filepath)
+        for run in runs:
+            # Make sure the metric is reported for the run
+            if "reward" in run.summary:
+                metric_value = run.summary["reward"]
+                
+                if best_run is None or metric_value > best_metric:
+                    best_metric = metric_value
+                    best_run = run
+
+        if best_run:
+            print(f"Best run ID: {best_run.id}")
+            print(f"Best {best_metric} = {best_metric}")
+            print("Best parameters:")
+            for key, value in best_run.config.items():
+                print(f"{key}: {value}")
+        else:
+            print("No runs found or metric not reported.")
+
+        best_params = best_run.config
+
+        params, hidden = load_hyperparams(eval_param_filepath)
+        sim_environment = create_simulation_env(params, config_param_filepath)
         agent = create_ddpg_agent(sim_environment, params, hidden)
+        
+        csv_filepath = os.getcwd() + '\\' + data_filename
+        image_filepath = os.getcwd() + '\\' + image_filename
+
+        plot_best(csv_filepath, image_filepath)
 
         rewards_list_all, next_state_list_all, \
             critic_loss_list_all, actor_loss_list_all, \
             reward_list, action_dict, gradient_dict, \
-            transition_probas = train(best_param, agent, sim_environment)
+            transition_probas = train(params, agent, sim_environment, best_params = best_params)
+
+        
 
         save_all(rewards_list_all, next_state_list_all, \
                  critic_loss_list_all, actor_loss_list_all, \
                  reward_list, action_dict, gradient_dict, \
-                 transition_probas)
+                 transition_probas, base_path=csv_filepath)
 
-        plot_best()
+        image_filepath = os.getcwd() + '\\' + image_filename
+        plot_best(image_filepath)

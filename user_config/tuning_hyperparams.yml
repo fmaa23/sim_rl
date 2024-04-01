@@ -12,10 +12,35 @@ batch_size:
   - 32
   - 64
 
-num_sample: 50
-w1: 0.5
-w2: 0.5
-epsilon_state_exploration: 0.8
-num_episodes: 5
-time_steps: 10
-target_update_frequency: 2
+tau_min: 0.0001
+tau_max: 0.0002
+
+discount_min: 0.1
+discount_max: 0.2
+
+epsilon_min: 0.1
+epsilon_max: 0.2
+
+planning_steps: 
+  - 10
+
+num_sample: 
+  - 50
+
+w1: 
+  - 0.5
+
+w2: 
+  - 0.5
+
+epsilon_state_exploration: 
+  - 0.8
+
+num_episodes: 
+  - 5
+
+time_steps: 
+  - 10
+  
+target_update_frequency: 
+  - 2

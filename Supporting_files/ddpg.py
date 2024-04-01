@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-from .model import Actor, Critic, RewardModel, NextStateModel, check_validity
-from .buffer import ReplayBuffer
+from model import Actor, Critic, RewardModel, NextStateModel, check_validity
+from buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
 
 
@@ -45,8 +45,8 @@ class DDPGAgent():
 
         # hyperparameters
         self.tau = params['tau']
-        self.lr = params['lr']
-        self.actor_lr = params["actor_lr"]
+        self.lr = params['learning_rate']
+        self.actor_lr = params["learning_rate"]
         self.discount= params['discount']
         self.epsilon = params['epsilon']
         self.planning_steps = params['planning_steps']
