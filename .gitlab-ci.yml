@@ -15,7 +15,7 @@ test:
     - echo "Starting CI/CD Pipeline"
     - echo "Running tests"
     #- apt-get update
-    #- apt-get install -y python3 python3-pip
+    - apt-get install -y python3 python3-pip
     - pip3 install pytest
     - pytest tests
   only:
