@@ -1,4 +1,3 @@
-
 import torch
 import numpy as np 
 import pandas as pd
@@ -6,13 +5,13 @@ import queueing_tool as qt
 import numpy as np
 import os
 
-from RL_Environment import RLEnv
+from environments.RL_Environment import RLEnv
 
-from ddpg import DDPGAgent
-from State_Exploration import *
-from queueing_network import *
-from wandb_tuning import *
-from plot_datasparq import *
+from agents.ddpg import DDPGAgent
+from supporting_files.State_Exploration import *
+from supporting_files.queueing_network import *
+from supporting_files.wandb_tuning import *
+from supporting_files.plot_datasparq import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -155,7 +154,6 @@ def get_connection_info(adjacent_list):
     
     return connection_info
 
-
 def make_unique_edge_type(adjacent_list, edge_list):
     """
     Assigns a unique edge type to connections between nodes based on the adjacency and edge lists.
@@ -178,7 +176,6 @@ def make_unique_edge_type(adjacent_list, edge_list):
         edge_type_info[end_node] = edge_type_list
     
     return edge_type_info
-
 
 def create_params(config_file):
     """
@@ -503,7 +500,8 @@ def save_all(rewards_list_all, next_state_list_all, \
     with open(filename, 'w') as f:
         json.dump(gradient_dict, f)
 
-def start_train(config_file, param_file, save_file = True, data_filename = 'data', image_filename = 'images'):
+def start_train(config_file, param_file, save_file = True, 
+                data_filename = 'data', image_filename = 'images'):
     """
     Start the training process for a reinforcement learning environment and agent.
 
@@ -527,6 +525,7 @@ def start_train(config_file, param_file, save_file = True, data_filename = 'data
 
     csv_filepath = os.getcwd() + '\\' + data_filename
     image_filepath = os.getcwd() + '\\' + image_filename
+    
     if save_file:
 
         save_all(rewards_list_all, next_state_list_all, \

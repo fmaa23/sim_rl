@@ -4,11 +4,11 @@ import pandas as pd
 import queueing_tool as qt 
 import numpy as np
 import os
-from RL_Environment import RLEnv
-from ddpg import DDPGAgent
-from State_Exploration import *
-from queueing_network import *
-from plot_datasparq import *
+from environments.RL_Environment import RLEnv
+from agents.ddpg import DDPGAgent
+from supporting_files.State_Exploration import *
+from supporting_files.queueing_network import *
+from supporting_files.plot_datasparq import *
 
 def load_config(env_param_filepath):
     """

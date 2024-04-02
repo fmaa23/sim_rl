@@ -1,6 +1,6 @@
 import numpy as np
-from State_Exploration import *
-from queueing_network import *
+from supporting_files.State_Exploration import *
+from supporting_files.queueing_network import *
 transition_proba = {}
 
 class RLEnv: 
