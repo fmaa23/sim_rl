@@ -21,6 +21,25 @@ class RLEnv:
         self.net.simulate(n=num_sim)
 
         self.initialize_params_for_visualization()
+
+        self.num_nullnodes = self.get_nullnodes()
+        self.num_entrynodes = self.get_entrynodes()
+        self.departure_nodes =  self.num_nullnodes
+    
+    def get_entrynodes(self):
+        return len(self.adja_list[0])
+
+    def get_nullnodes(self):
+        num_nullnodes = 0
+        edge_list = self.qn_net.edge_list
+        for start_node in edge_list.keys():
+            connection = edge_list[start_node]
+            edge_types = list(connection.values())
+            for edge_type in edge_types:
+                if edge_type == 0:
+                    num_nullnodes += 1
+        
+        return num_nullnodes
     
     def initialize_params_for_visualization(self):
 
@@ -32,8 +51,6 @@ class RLEnv:
         self.adja_list= self.qn_net.adja_list
         self.sim_n = num_sim # Take next step (num_events)
         self.iter = 0
-
-        self.departure_nodes = 1 # For now set to 0, should be changed to be got from the net structure 
 
         self.current_queue_id = 0 # Edge Index, assuming we always starting as the 
         self.current_source_vertex = self.net.edge2queue[self.current_queue_id].edge[0] # Source Queue Vertex, the source node 
@@ -56,7 +73,7 @@ class RLEnv:
 
         for edge in range((self.net.num_edges-1)):
             
-            edge_data = self.net.get_queue_data(queues=edge)
+            edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
             if len(edge_data) > 0:
                 self._state[edge]=edge_data[-1][4]
             else:
@@ -86,7 +103,7 @@ class RLEnv:
         return current_state, transition_proba
     
     def test_actions_equal_nodes(self, action):
-        if len(action) != self.net.num_nodes - 1:
+        if len(action) != self.net.num_nodes -  self.num_nullnodes:
             raise ValueError('The action space is incomatible with the dimensions')
     
     def test_nan(self, element):

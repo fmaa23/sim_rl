@@ -1,4 +1,4 @@
-import argparse
+
 from supporting_functions import *
 
 # start train

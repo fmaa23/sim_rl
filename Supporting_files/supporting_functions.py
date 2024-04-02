@@ -87,6 +87,63 @@ def create_queueing_env(config_file):
     q_net.create_env()
     return q_net
 
+def get_num_connections(adjacent_list):
+    # did not account for Nullqueue
+    num_connection = 0
+    exit_nodes = []
+    for start_node in adjacent_list.keys():
+        end_node_list = adjacent_list[start_node]
+        for end_node in end_node_list:
+            if end_node not in list(adjacent_list.keys()):
+                exit_nodes.append(end_node)
+            num_connection += 1
+    
+    return num_connection, exit_nodes
+
+def make_edge_list(adjacent_list, exit_nodes):
+    edge_list = {}
+    edge_type = 1
+    for start_node in adjacent_list.keys():
+        end_node_list = adjacent_list[start_node]
+        
+        connection_dict = {}
+        for end_node in end_node_list:
+            if end_node not in exit_nodes:
+                connection_dict[end_node] = edge_type
+                edge_type += 1
+            else:
+                connection_dict[end_node] = 0
+        
+        edge_list[start_node] = connection_dict
+    
+    return edge_list
+
+def get_connection_info(adjacent_list):
+    connection_info = {}
+    for start_node in adjacent_list.keys():
+        for end_node in adjacent_list[start_node]:
+            connect_start_node_list = connection_info.setdefault(end_node, [])
+            connect_start_node_list.append(start_node)
+            connection_info[end_node] = connect_start_node_list
+    
+    return connection_info
+
+
+def make_unique_edge_type(adjacent_list, edge_list):
+    # dictionary where keys are node, values are the edge type
+    connection_info = get_connection_info(adjacent_list)
+    edge_type_info = {}
+    for end_node in connection_info.keys():
+        start_node_list = connection_info[end_node]
+        edge_type_list = []
+        for start_node in start_node_list:
+            edge_type = edge_list[start_node][end_node]
+            edge_type_list.append(edge_type)
+        edge_type_info[end_node] = edge_type_list
+    
+    return edge_type_info
+
+
 def create_params(config_file):
     """
     Generate parameters for the queueing environment based on a configuration file.
@@ -97,75 +154,82 @@ def create_params(config_file):
     Returns:
     - Multiple return values including lists and dictionaries essential for creating the queueing environment.
     """
-
-    def get_service_time(miu_list):
-        # compute the time of an agent’s service time from service rate
-        services_f = []
-        for miu in miu_list:
-            def ser_f(t):
-                return t + np.exp(miu)
-            services_f.append(ser_f)
-        return services_f
     
     config_params = load_config(config_file)
 
-    num_queues = config_params['num_queues']
-    arrival_rate = config_params['arrival_rate']
-    miu_list = config_params['miu_list']
-    active_cap = config_params['active_cap']
-    deactive_t = config_params['deactive_cap']
+    miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
-    buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
-    transition_proba_all = config_params['transition_proba_all']
-    services_f = get_service_time(miu_list)
+    num_connections, exit_nodes = get_num_connections(adjacent_list)
+    q_classes = create_q_classes(num_connections)
+    edge_list = make_edge_list(adjacent_list, exit_nodes) 
+    edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
 
-    q_classes, q_args, edge_list = init_env(config_params, buffer_size_for_each_queue, services_f, num_queues)
-    return arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
+    buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
+    q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes)
+
+    arrival_rate = config_params['arrival_rate']
+    
+    transition_proba_all = config_params['transition_proba_all']
+
+    # active_cap = config_params['active_cap']
+    # deactive_t = config_params['deactive_cap']
+
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
 
 def create_q_classes(num_queues):
 
     q_classes = {}
     q_classes[0] = qt.NullQueue
-    for i in range(num_queues):
-        q_classes[i+1] = qt.LossQueue
-    # q_classes = {0: qt.NullQueue, 1: qt.LossQueue, 2: qt.LossQueue, 3:qt.LossQueue, 4:qt.LossQueue, 5:qt.LossQueue}
+    for i in range(1, num_queues + 1):
+        q_classes[i] = qt.LossQueue
     return q_classes
 
-def create_q_args(config_params, buffer_size_for_each_queue, services_f, num_queues):
-    # feel free to add other properties
-    def ser_f(t):
-        return t + np.exp(config_params['sef_rate_first_node'])
+def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
 
     def rate(t):
-
         return 25 + 350 * np.sin(np.pi * t / 2)**2
 
     def arr(t):
         return qt.poisson_random_measure(t, rate, config_params['arrival_rate'])
+
+    def get_service_time(edge_type_info, miu_dict, exit_nodes):
+        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
+        # the convert into each edge correponds to a distinctive service rate
+        # save for buffer size
+        services_f = {}
+        for end_node in edge_type_info.keys():
+            if end_node not in exit_nodes:
+                service_rate = miu_dict[end_node]
+
+                for edge_type in edge_type_info[end_node]:
+                    def ser_f(t):
+                        return t + np.exp(service_rate)
+                    
+                    services_f[edge_type] = ser_f
+
+        return services_f
+
+    services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
     
     q_args = {}
-    q_args[1] = {
-        'arrival_f': arr,
-        'service_f': ser_f,
-        'qbuffer': buffer_size_for_each_queue[0]
-        }
+    for end_node in edge_type_info.keys():
+        corresponding_edge_types = edge_type_info[end_node]
+        for edge_type in corresponding_edge_types:
+
+            if edge_type != 0:
+                if edge_type == 1:
+                    q_args[edge_type] = {
+                    'arrival_f': arr,
+                    'service_f': services_f[edge_type],
+                    'qbuffer': buffer_size_for_each_queue[edge_type]
+                    }
+                else:
+                    q_args[edge_type] = {
+                    'service_f': services_f[edge_type],
+                    'qbuffer':buffer_size_for_each_queue[edge_type],
+                    }
     
-
-    for i in range(num_queues - 1):
-        q_args[i+2] = {
-        'service_f': services_f[i],
-        'qbuffer':buffer_size_for_each_queue[i],
-        }
-
     return q_args
-
-def init_env(config_params, buffer_size_for_each_queue, services_f, num_queues):
-
-    q_classes = create_q_classes(num_queues)
-    q_args = create_q_args(config_params, buffer_size_for_each_queue, services_f, num_queues)
-
-    edge_list = {0:{1:1}, 1: {k: 2 for k in range(2, 5)}, 2:{5:2}, 3:{6:3, 7:4},4:{8:5}, 5:{9:2}, 6:{9:4}, 7:{9:3}, 8:{9:5}, 9:{10:0}}
-    return q_classes, q_args, edge_list 
 
 def create_RL_env(q_net, params):
     """
@@ -339,8 +403,8 @@ def create_ddpg_agent(environment, params, hidden):
     Returns:
     - DDPGAgent: An instance of the DDPG agent.
     """
-    n_states = environment.net.num_edges - 1
-    n_actions = len(environment.get_state())-2
+    n_states = environment.net.num_edges - environment.num_nullnodes
+    n_actions = len(environment.get_state()) - environment.num_entrynodes
     agent = DDPGAgent(n_states, n_actions, hidden, params)
     return agent
 
@@ -418,7 +482,6 @@ def start_train(config_file, param_file, save_file = True, data_filename = 'data
 
         plot(csv_filepath, image_filepath)
 
-
 def plot_best(data_filepath, images_filepath):
     plot(data_filepath, images_filepath)
 
@@ -427,8 +490,7 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
                  data_filename = 'data',
                  image_filename = 'images'):
 
-    if False:
-        init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, num_runs = num_runs, opt_target = 'reward')
+    init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, num_runs = num_runs, opt_target = 'reward')
 
     if plot_best_param:
         api = wandb.Api(api_key = '02bb2e4979e9df3d890f94a917a95344aae652b9') # replace your api key
