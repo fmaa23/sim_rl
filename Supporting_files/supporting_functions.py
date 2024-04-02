@@ -88,7 +88,15 @@ def create_queueing_env(config_file):
     return q_net
 
 def get_num_connections(adjacent_list):
-    # did not account for Nullqueue
+    """
+    Calculates the total number of connections and identifies exit nodes within the adjacency list of a network.
+
+    Parameters:
+    - adjacent_list (dict): A dictionary where keys are start nodes and values are lists of end nodes they connect to.
+
+    Returns:
+    - tuple: A tuple containing the total number of connections (int) and a list of exit nodes ([]).
+    """
     num_connection = 0
     exit_nodes = []
     for start_node in adjacent_list.keys():
@@ -101,6 +109,16 @@ def get_num_connections(adjacent_list):
     return num_connection, exit_nodes
 
 def make_edge_list(adjacent_list, exit_nodes):
+    """
+    Creates an edge list with types for each connection based on the adjacency list and identified exit nodes.
+
+    Parameters:
+    - adjacent_list (dict): A dictionary representing the network's adjacency list.
+    - exit_nodes (list): A list of nodes identified as exit points in the network.
+
+    Returns:
+    - dict: A dictionary representing the edge list, where keys are start nodes, and values are dictionaries of end nodes with their edge types.
+    """
     edge_list = {}
     edge_type = 1
     for start_node in adjacent_list.keys():
@@ -119,6 +137,15 @@ def make_edge_list(adjacent_list, exit_nodes):
     return edge_list
 
 def get_connection_info(adjacent_list):
+    """
+    Generates a dictionary mapping each node to a list of nodes that connect to it.
+
+    Parameters:
+    - adjacent_list (dict): A dictionary representing the network's adjacency list.
+
+    Returns:
+    - dict: A dictionary where keys are end nodes, and values are lists of start nodes that connect to these end nodes.
+    """
     connection_info = {}
     for start_node in adjacent_list.keys():
         for end_node in adjacent_list[start_node]:
@@ -130,7 +157,16 @@ def get_connection_info(adjacent_list):
 
 
 def make_unique_edge_type(adjacent_list, edge_list):
-    # dictionary where keys are node, values are the edge type
+    """
+    Assigns a unique edge type to connections between nodes based on the adjacency and edge lists.
+
+    Parameters:
+    - adjacent_list (dict): A dictionary representing the network's adjacency list.
+    - edge_list (dict): A dictionary representing the network's edge list, indicating connections between nodes.
+
+    Returns:
+    - dict: A dictionary where keys are node identifiers, and values are lists of unique edge types for edges ending at that node.
+    """
     connection_info = get_connection_info(adjacent_list)
     edge_type_info = {}
     for end_node in connection_info.keys():
@@ -177,7 +213,15 @@ def create_params(config_file):
     return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
 
 def create_q_classes(num_queues):
+    """
+    Creates a dictionary mapping queue identifiers to their corresponding queue class.
 
+    Parameters:
+    - num_queues (int): The number of queues to create classes for, excluding the null queue.
+
+    Returns:
+    - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
+    """
     q_classes = {}
     q_classes[0] = qt.NullQueue
     for i in range(1, num_queues + 1):
@@ -185,7 +229,19 @@ def create_q_classes(num_queues):
     return q_classes
 
 def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
+    """
+    Constructs arguments for queue initialization based on the network configuration.
 
+    Parameters:
+    - edge_type_info (dict): Information about edge types for each node.
+    - config_params (dict): Configuration parameters including service rates and buffer sizes.
+    - miu_dict (dict): A dictionary mapping nodes to their service rates.
+    - buffer_size_for_each_queue (dict): A dictionary mapping queue identifiers to their buffer sizes.
+    - exit_nodes (list): A list of nodes identified as exit points in the network.
+
+    Returns:
+    - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
+    """
     def rate(t):
         return 25 + 350 * np.sin(np.pi * t / 2)**2
 
@@ -489,7 +545,26 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
                  plot_best_param = True, 
                  data_filename = 'data',
                  image_filename = 'images'):
+    """
+    Initiates the hyperparameter tuning process for a reinforcement learning project, optionally plots the best parameters,
+    and starts a training session with those parameters.
 
+    Parameters:
+    - project_name (str): The name of the project in Wandb where the tuning results will be tracked.
+    - num_runs (int): The number of tuning runs to perform.
+    - tune_param_filepath (str): The file path to the YAML file containing the parameters to be tuned.
+    - config_param_filepath (str): The file path to the YAML file containing the configuration parameters for the queueing environment.
+    - eval_param_filepath (str): The file path to the YAML file containing the evaluation parameters for the model.
+    - plot_best_param (bool, optional): A flag to indicate whether to plot the best parameters after tuning. Defaults to True.
+    - data_filename (str, optional): The base name for data files where training results will be saved. Defaults to 'data'.
+    - image_filename (str, optional): The base name for image files where plots will be saved. Defaults to 'images'.
+
+    This function utilizes Wandb for hyperparameter tuning, tracking, and selecting the best parameters based on a specified metric.
+    It then loads the best parameters, if found, and proceeds to create a simulation environment and an agent. Training is then
+    conducted using these parameters, and results are optionally saved and plotted.
+
+    Note: The function assumes access to Wandb and requires an API key for Wandb to be set up in advance.
+    """
     init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, num_runs = num_runs, opt_target = 'reward')
 
     if plot_best_param:
