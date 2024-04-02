@@ -1,0 +1,37 @@
+stages:
+  - prepare
+  - test
+
+variables:
+  GIT_STRATEGY: fetch
+
+before_script:
+  - apt-get update
+  - apt-get install -y python3 python3-pip
+  - pip3 install --cache-dir .cache/pip torch numpy pytest
+
+sync_files:
+  stage: prepare
+  image: ubuntu:20.04
+  script:
+    - echo "Syncing files from Supporting_files to tests..."
+    - cp -r Supporting_files/* tests/
+    - echo "Listing files in tests/ for verification:"
+    - ls -lah tests/
+  artifacts:
+    paths:
+      - tests/
+  only:
+    - debug_branch
+
+test:
+  stage: test
+  image: ubuntu:20.04
+  script:
+    - echo "Running tests..."
+    - pytest tests
+  dependencies:
+    - sync_files
+  only:
+    - debug_branch
+    - develop_branch
