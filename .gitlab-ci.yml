@@ -21,17 +21,19 @@ sync_files:
   artifacts:
     paths:
       - tests/
-  only:
-    - debug_branch
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "debug_branch"'
 
 test:
   stage: test
-  image: ubuntu:20.04
+  image: python:3.8 # ask the team what version of python they are using
+  before_script:
+    - apt-get update -qq  # -qq for less output
+    - apt-get install -y make  # Install make
+    - pip3 install --cache-dir .cache/pip -r requirements.txt  # Use the requirements file for dependencies
   script:
     - echo "Running tests..."
-    - pytest tests
-  dependencies:
-    - sync_files
-  only:
-    - debug_branch
-    - develop_branch
+    - make test
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+
