@@ -5,6 +5,7 @@ root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
 
+
 # Now you can do an absolute import
 from agents.ddpg import DDPGAgent
 import unittest
@@ -14,7 +15,7 @@ import torch
 class TestDDPG(unittest.TestCase):
     """
     Unit tests for the DDPGAgent class to ensure correctness of initialization,
-    model fitting, action selection, and Q-value updates.
+    model fitting, action selection, and Q-value updates.S
 
     Attributes:
         n_states (int): The number of states in the environment.

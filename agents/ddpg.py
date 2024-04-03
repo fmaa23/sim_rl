@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-from supporting_files.model import Actor, Critic, RewardModel, NextStateModel, check_validity
-from supporting_files.buffer import ReplayBuffer
+from Supporting_files.model import Actor, Critic, RewardModel, NextStateModel, check_validity
+from Supporting_files.buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
 
 gradient_dict = {} 
