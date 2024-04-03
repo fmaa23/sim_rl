@@ -411,7 +411,7 @@ def train(params, agent, env, best_params = None):
     num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
 
     agent.train()
-    for episode in range(num_episodes):
+    for episode in range(3): # remember
         print(f"-----------------episode {episode}------------------------")
         env.reset()
         state = env.explore_state(agent, env, num_sample, device, w1, w2, epsilon_state_exploration)
@@ -488,6 +488,16 @@ def create_ddpg_agent(environment, params, hidden):
     agent = DDPGAgent(n_states, n_actions, hidden, params)
     return agent
 
+def get_transition_proba_df(transition_probas):
+    flatten_dict = {}
+    for start_node in transition_probas.keys():
+        end_nodes = list(transition_probas[start_node].keys())
+        for end_node in end_nodes:
+            flatten_dict[end_node] = transition_probas[start_node][end_node]
+
+    df_transition_proba = pd.DataFrame(flatten_dict)
+    return df_transition_proba
+
 def save_all(rewards_list_all, next_state_list_all, \
         critic_loss_list_all, actor_loss_list_all, \
         reward_list, action_dict, gradient_dict, \
@@ -509,6 +519,9 @@ def save_all(rewards_list_all, next_state_list_all, \
     """
 
     # Create the directory if it doesn't exist
+    
+    base_path = os.getcwd()
+    base_path += "\\supporting_files\\data"
     os.makedirs(base_path, exist_ok=True)
 
     pd.DataFrame(reward_list).to_csv(base_path + '/reward.csv')
@@ -517,7 +530,9 @@ def save_all(rewards_list_all, next_state_list_all, \
     pd.DataFrame(next_state_list_all).to_csv(base_path + '/next_state_model_loss.csv')
     pd.DataFrame(rewards_list_all).to_csv(base_path + '/reward_model_loss.csv')
     pd.DataFrame(action_dict).to_csv(base_path + '/action_dict.csv')
-    pd.DataFrame(transition_probas).to_csv(base_path + '/transition_proba.csv')
+    
+    df_transition_proba = get_transition_proba_df(transition_probas)
+    df_transition_proba.to_csv(base_path + '/transition_proba.csv')
 
     import json
     # Specify the filename
@@ -539,6 +554,9 @@ def start_train(config_file, param_file, save_file = True,
 
     This function orchestrates the loading of configurations, creation of environments and agents, and the training process.
     """
+    csv_filepath = os.getcwd() + '\\supporting_files\\' + data_filename
+    image_filepath = os.getcwd() + '\\supporting_files\\' + image_filename
+    plot(csv_filepath, image_filepath)
 
     params, hidden = load_hyperparams(param_file)
 

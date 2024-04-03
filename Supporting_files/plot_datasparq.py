@@ -86,7 +86,7 @@ def plot_actor_vector(data_filepath, images_filepath):
 
 def plot_transition_proba(data_filepath, images_filepath):
 
-    transition_proba = pd.read_csv(data_filepath + "/transition_proba.csv", index_col=0)[["2", "3", "4"]]
+    transition_proba = pd.read_csv(data_filepath + "/transition_proba.csv", index_col=0)
     for column in transition_proba.columns:
         plt.plot(transition_proba.index, transition_proba[column], label=column)
 
@@ -125,7 +125,7 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
 
 def plot(data_filepath, images_filepath):
     import os
-    filepath = os.getcwd() + '/images'
+    filepath = os.getcwd() + '\\supporting_files\\' + '\\images'
 
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)
