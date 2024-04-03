@@ -9,7 +9,6 @@ torch.autograd.set_detect_anomaly(True)
 
 gradient_dict = {} 
 
-
 class DDPGAgent():
     def __init__(self, n_states, n_actions, hidden, params):
         """
@@ -137,7 +136,7 @@ class DDPGAgent():
             
             actual_q = self.critic([state, action])
             q_loss = nn.MSELoss()(actual_q.to(torch.float32), target_q.to(torch.float32))
-        # q_loss.backward(retain_graph=True) # needed cause called multiple times in the same update in plan
+            # q_loss.backward(retain_graph=True) # needed cause called multiple times in the same update in plan
             total_critic_loss = total_critic_loss + q_loss
         
         mean_critic_loss = total_critic_loss / len(batch)
