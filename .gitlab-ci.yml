@@ -21,8 +21,8 @@ sync_files:
   artifacts:
     paths:
       - tests/
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "debug_branch"'
+  only:
+    - debug_branch
 
 test:
   stage: test
