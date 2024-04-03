@@ -125,15 +125,13 @@ class RLEnv:
         Returns:
             The current state of the environment, represented as an array or a suitable data structure.
         """
-        for edge in range((self.net.num_edges-1)):
+        for edge in range((self.net.num_edges-self.num_nullnodes)):
             
             edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
             if len(edge_data) > 0:
                 self._state[edge]=edge_data[-1][4]
             else:
                 self._state[edge]=0
-        
-        self.record_num_exit_nodes.append(len(self.net.get_queue_data(queues=12)))
 
         return self._state
 
@@ -162,7 +160,7 @@ class RLEnv:
                     self.transition_proba[node][next_node]=action_probs[j]
         
         current_state = self.simulate()
-        return current_state, transition_proba
+        return current_state
     
     def test_actions_equal_nodes(self, action):
         """

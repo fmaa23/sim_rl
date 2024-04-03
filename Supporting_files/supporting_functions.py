@@ -353,6 +353,30 @@ def get_params_for_train(params):
 
     return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold
 
+def init_transition_proba(env):
+    transition_proba = {}
+    adjacent_lists = env.qn_net.adja_list # check
+    for start_node in adjacent_lists.keys():
+        if len(adjacent_lists[start_node]) > 1:
+            transition_proba[start_node] = {}
+
+    return transition_proba
+
+def update_transition_probas(transition_probas, env):
+    for start_node in transition_probas.keys():
+        next_nodes = env.transition_proba[start_node].keys()
+        next_proba_dict = transition_probas[start_node]
+        for next_node in next_nodes:
+            proba_list = next_proba_dict.setdefault(next_node, []) # check
+            if len(proba_list) == 0:
+                proba_list.append(env.qn_net.transition_proba[start_node][next_node])
+            proba_list.append(env.transition_proba[start_node][next_node])
+            next_proba_dict[next_node] = proba_list
+        transition_probas[start_node] = next_proba_dict
+    
+    return transition_probas
+
+
 def train(params, agent, env, best_params = None):
     """
     Conduct training sessions for a given agent and environment.
@@ -381,7 +405,7 @@ def train(params, agent, env, best_params = None):
     actor_gradient_list_all = []
     action_dict = {}
     gradient_dict = {}
-    transition_probas = {}
+    transition_probas = init_transition_proba(env)
 
     num_sample, device, w1, w2, epsilon_state_exploration = get_param_for_state_exploration(params)
     num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
@@ -408,7 +432,7 @@ def train(params, agent, env, best_params = None):
                  node_list.append(value)
                  action_dict[index] = node_list
                              
-            next_state, transition_probas = env.get_next_state(action)    
+            next_state = env.get_next_state(action)    
             next_state = torch.tensor(next_state).float().to(device)
             reward = env.get_reward()
      
@@ -416,16 +440,19 @@ def train(params, agent, env, best_params = None):
             experience = (state, action, reward, next_state)        
             agent.store_experience(experience)                             
         
-
             if agent.buffer.current_size > threshold:
 
                 reward_loss_list, next_state_loss_list = agent.fit_model(batch_size=threshold, threshold=threshold, epochs=num_epochs)
                 next_state_list_all += next_state_loss_list
                 rewards_list_all += reward_loss_list
+
+                transition_probas = update_transition_probas(transition_probas, env)
+                print("test transition probas:",transition_probas[1][2])
                 
                 batch = agent.buffer.sample(batch_size=threshold)
                 critic_loss = agent.update_critic_network(batch)                   
-                actor_loss, gradient_dict = agent.update_actor_network(batch)              
+                actor_loss, gradient_dict = agent.update_actor_network(batch)    
+
                 actor_loss_list.append(actor_loss)
                 critic_loss_list.append(critic_loss)
                 agent.plan(batch)
@@ -501,7 +528,7 @@ def save_all(rewards_list_all, next_state_list_all, \
         json.dump(gradient_dict, f)
 
 def start_train(config_file, param_file, save_file = True, 
-                data_filename = 'data', image_filename = 'images'):
+                data_filename = 'data', image_filename = 'images', plot_curves = True):
     """
     Start the training process for a reinforcement learning environment and agent.
 
@@ -533,7 +560,7 @@ def start_train(config_file, param_file, save_file = True,
         reward_list, action_dict, gradient_dict, \
         transition_probas, base_path=csv_filepath)
     
-    if plot:
+    if plot_curves:
 
         plot(csv_filepath, image_filepath)
 
