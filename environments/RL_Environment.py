@@ -1,6 +1,7 @@
 import numpy as np
 from Supporting_files.State_Exploration import *
 from Supporting_files.queueing_network import *
+
 transition_proba = {}
 
 class RLEnv: 
@@ -93,7 +94,7 @@ class RLEnv:
 
     def test_state_is_valid(self, start_state):
         if start_state is None: 
-            self._state = np.zeros(self.net.num_edges-1)
+            self._state = np.zeros(self.net.num_edges-self.num_nullnodes)
 
     def get_net_connections(self):
         return self.transition_proba
@@ -273,3 +274,45 @@ class RLEnv:
     def reset(self): 
         self.net.clear_data()
         self.__init__(self.qn_net)
+    
+    def return_queue(self,queue_index, metric):
+        """
+        Returns a specific metric for a given queue in the environment.
+
+        Parameters:
+        - queue_index: int
+            The index of the queue to retrieve the metric for.
+        - metric: str
+            The metric to retrieve, either "waiting_time" or "throughput".
+
+        Returns:
+        float
+            The value of the specified metric for the given queue.
+        """
+        if metric != "waiting_time" and metric != "throughput": 
+            raise ValueError('Invalid metric...Try "waiting_time" or "throughput":') 
+        queue_data = self.net.get_queue_data(queues=queue_index)
+        ind_serviced = np.where(queue_data[:,2]!=0)[0]
+        if len(ind_serviced)>0:
+            throughput = len(ind_serviced)
+            delay= np.sum((queue_data[ind_serviced,2]-queue_data[ind_serviced,0]))/len(queue_data)
+        if metric == "waiting_time": 
+            try:
+                return delay 
+            except UnboundLocalError: 
+                return 0    
+        if metric =="throughput": 
+            try:
+                return throughput
+            except UnboundLocalError: 
+                return 0
+if __name__=="__main__": 
+    import sys
+    from pathlib import Path
+    # Get the absolute path of the parent directory (i.e., the root of your project)
+    root_dir = Path('/vol/bitbucket/fma23/MScProject/MScDataSparqProject').resolve().parent.parent
+    # Add the parent directory to sys.path
+    sys.path.append(str(root_dir))
+    breakpoint() 
+
+
