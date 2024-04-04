@@ -411,7 +411,7 @@ def train(params, agent, env, best_params = None):
     num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
 
     agent.train()
-    for episode in range(3): # remember
+    for episode in range(num_episodes): # remember
         print(f"-----------------episode {episode}------------------------")
         env.reset()
         state = env.explore_state(agent, env, num_sample, device, w1, w2, epsilon_state_exploration)
