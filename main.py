@@ -1,12 +1,10 @@
-
 def add_path_to_system():
     """
     Adds the root directory of the current script to the system path.
 
     This is particularly useful in situations where the script needs to import
-    modules from parent directories not originally in the Python system path,
-    facilitating a more flexible project structure without relying on the user
-    to modify their environment variables or system path manually.
+    modules from parent directories not originally in the Python system path, and 
+    a more flexible project structure without relying on the user to modify their system path manually.
     """
     import sys
     from pathlib import Path

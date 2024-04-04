@@ -411,7 +411,7 @@ def train(params, agent, env, best_params = None):
     num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
 
     agent.train()
-    for episode in range(3): # remember
+    for episode in range(num_episodes): # remember
         print(f"-----------------episode {episode}------------------------")
         env.reset()
         state = env.explore_state(agent, env, num_sample, device, w1, w2, epsilon_state_exploration)
@@ -518,9 +518,6 @@ def save_all(rewards_list_all, next_state_list_all, \
     """
 
     # Create the directory if it doesn't exist
-    
-    base_path = os.getcwd()
-    base_path += "\\supporting_files\\data"
     os.makedirs(base_path, exist_ok=True)
 
     pd.DataFrame(reward_list).to_csv(base_path + '/reward.csv')
@@ -563,8 +560,8 @@ def start_train(config_file, param_file, save_file = True,
     reward_list, action_dict, gradient_dict, \
     transition_probas = train(params, agent, sim_environment)
 
-    csv_filepath = os.getcwd() + '\\' + data_filename
-    image_filepath = os.getcwd() + '\\' + image_filename
+    csv_filepath = os.getcwd() + '\\supporting_files\\' + data_filename
+    image_filepath = os.getcwd() + '\\supporting_files\\' + image_filename
     
     if save_file:
 
