@@ -8,10 +8,10 @@ import os
 from environments.RL_Environment import RLEnv
 
 from agents.ddpg import DDPGAgent
-from supporting_files.State_Exploration import *
-from supporting_files.queueing_network import *
-from supporting_files.wandb_tuning import *
-from supporting_files.plot_datasparq import *
+from Supporting_files.State_Exploration import *
+from Supporting_files.queueing_network import *
+from Supporting_files.wandb_tuning import *
+from Supporting_files.plot_datasparq import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -447,7 +447,6 @@ def train(params, agent, env, best_params = None):
                 rewards_list_all += reward_loss_list
 
                 transition_probas = update_transition_probas(transition_probas, env)
-                print("test transition probas:",transition_probas[1][2])
                 
                 batch = agent.buffer.sample(batch_size=threshold)
                 critic_loss = agent.update_critic_network(batch)                   
@@ -554,10 +553,6 @@ def start_train(config_file, param_file, save_file = True,
 
     This function orchestrates the loading of configurations, creation of environments and agents, and the training process.
     """
-    csv_filepath = os.getcwd() + '\\supporting_files\\' + data_filename
-    image_filepath = os.getcwd() + '\\supporting_files\\' + image_filename
-    plot(csv_filepath, image_filepath)
-
     params, hidden = load_hyperparams(param_file)
 
     sim_environment = create_simulation_env(params, config_file)

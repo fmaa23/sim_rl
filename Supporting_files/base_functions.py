@@ -6,9 +6,9 @@ import numpy as np
 import os
 from environments.RL_Environment import RLEnv
 from agents.ddpg import DDPGAgent
-from supporting_files.State_Exploration import *
-from supporting_files.queueing_network import *
-from supporting_files.plot_datasparq import *
+from Supporting_files.State_Exploration import *
+from Supporting_files.queueing_network import *
+from Supporting_files.plot_datasparq import *
 
 def load_config(env_param_filepath):
     """

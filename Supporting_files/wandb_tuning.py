@@ -11,7 +11,7 @@ import numpy as np
 import wandb
 import yaml
 import os
-from supporting_files.base_functions import *
+from Supporting_files.base_functions import *
 
 
 def load_hyperparams(eval_param_filepath):

@@ -1,3 +1,0 @@
-Create sweep with ID: 7o1ivb5h
-Sweep URL: https://wandb.ai/datasparq/datasparq/sweeps/7o1ivb5h
-[34m[1mwandb[39m[22m: [33mWARNING[39m Changes to your `wandb` environment variables will be ignored because your `wandb` session has already started. For more information on how to modify your settings with `wandb.init()` arguments, please refer to [34m[4mhttps://wandb.me/wandb-init[39m[24m.

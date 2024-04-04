@@ -2,7 +2,7 @@
 import numpy as np
 from agents.ddpg import DDPGAgent
 import torch
-from supporting_files.queueing_network import Queue_network
+from Supporting_files.queueing_network import Queue_network
 
 def explore_state(DDPG_agent, qn_model, qn_env, num_sample, device, visit_counts, w1 = 0.5, w2 = 0.5, epsilon = 1):
     """

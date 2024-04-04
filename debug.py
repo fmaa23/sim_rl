@@ -1,4 +1,4 @@
-from supporting_files.supporting_functions import start_train
+from Supporting_files.supporting_functions import start_train
 
 config_param_filepath = 'user_config/configuration.yml'
 eval_param_filepath = 'user_config/eval_hyperparams.yml'
