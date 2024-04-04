@@ -73,17 +73,6 @@ class TestRLEnv:
         actual_states_length = len(setup_rlenv.get_state())
         assert (actual_states_length == expected) and (not np.isnan(actual_states_length))
     
-    @pytest.mark.parametrize('setup_rlenv, expected', 
-                             [('user_config/configuration.yml', 12), 
-                              ('user_config/configuration2.yml', 4), 
-                              ('user_config/configuration3.yml', 6)], 
-                              indirect=['setup_rlenv'])
-    def test_get_state(self, setup_rlenv, expected):
-        """
-        Tests that the states length is equal to all edges except the null nodes
-        """
-        actual_states_length = len(setup_rlenv.get_state())
-        assert (actual_states_length == expected) and (not np.isnan(actual_states_length))
     
     @pytest.mark.parametrize('setup_rlenv, actions', 
                              [('user_config/configuration.yml',[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]), 
@@ -94,11 +83,13 @@ class TestRLEnv:
         """
         Tests that masking of the action is corretly performed
         """
+        
         setup_rlenv.get_next_state(actions)
         for node in setup_rlenv.transition_proba.keys(): 
+            actions_node_proba = []
             for next_node in setup_rlenv.transition_proba[node]: 
-                actions_node_proba= np.array(setup_rlenv.transition_proba[node][next_node])
-            assert  np.sum(actions_node_proba)==1
+                actions_node_proba.append(setup_rlenv.transition_proba[node][next_node])
+            assert  np.sum(np.array(actions_node_proba))==1
     @pytest.mark.parametrize('setup_rlenv, expected_reward', 
                              [('user_config/configuration.yml',-150), 
                               ('user_config/configuration2.yml',-70), 
