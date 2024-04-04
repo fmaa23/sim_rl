@@ -23,4 +23,4 @@ if __name__ == "__main__":
     add_path_to_system()
     from Supporting_files.supporting_functions import start_train
 
-    start_train(config_param_filepath, eval_param_filepath, data_filename, image_filename)
+    start_train(config_param_filepath, eval_param_filepath,save_file = True, data_filename = 'data', image_filename = 'images' )

@@ -520,7 +520,7 @@ def save_all(rewards_list_all, next_state_list_all, \
     # Create the directory if it doesn't exist
     
     base_path = os.getcwd()
-    base_path += "\\supporting_files\\data"
+    base_path += "/Supporting_files/data"
     os.makedirs(base_path, exist_ok=True)
 
     pd.DataFrame(reward_list).to_csv(base_path + '/reward.csv')
@@ -563,9 +563,8 @@ def start_train(config_file, param_file, save_file = True,
     reward_list, action_dict, gradient_dict, \
     transition_probas = train(params, agent, sim_environment)
 
-    csv_filepath = os.getcwd() + '\\' + data_filename
-    image_filepath = os.getcwd() + '\\' + image_filename
-    
+    csv_filepath = os.getcwd() + '/Supporting_files/' + data_filename
+    image_filepath = os.getcwd() + '/Supporting_files/' + image_filename
     if save_file:
 
         save_all(rewards_list_all, next_state_list_all, \

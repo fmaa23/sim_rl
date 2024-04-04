@@ -40,7 +40,7 @@ def plot_actor(data_filepath, images_filepath):
     plt.title("Actor Loss")
 
     import os
-    save_path = os.path.join(images_filepath, '/Acotor_loss.png')
+    save_path = os.path.join(images_filepath, 'Acotor_loss.png')
     plt.savefig(save_path)
     plt.close()
 
@@ -125,11 +125,10 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
 
 def plot(data_filepath, images_filepath):
     import os
-    filepath = os.getcwd() + '\\supporting_files\\' + '\\images'
+    filepath = os.getcwd() + '/Supporting_files' + '/images'
 
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)
-
     plot_reward(data_filepath, images_filepath)
     plot_actor(data_filepath, images_filepath)
     plot_critic(data_filepath, images_filepath)

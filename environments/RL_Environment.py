@@ -223,6 +223,18 @@ class RLEnv:
         self.net.simulate(n = self.sim_n) 
         
         return self.get_state()
+        
+    def inverted_adjacency(self,adjacency):
+        inverted_dict = {}
+
+        for key, values in adjacency.items():
+            for value in values:
+                if value in inverted_dict:
+                    inverted_dict[value].append(key)
+                else:
+                    inverted_dict[value] = [key]
+
+        return inverted_dict
 
     def get_reward(self):
         """
@@ -233,16 +245,30 @@ class RLEnv:
         Returns:
             float: The calculated reward.
         """
-        reward = 0
-        for i in range(self.net.num_edges): 
-            queue_data=self.net.get_queue_data(queues=i)
-            ind_serviced = np.where(queue_data[:,2]!=0)[0]
-            if len(ind_serviced)>0:
-                throughput = len(ind_serviced)
-                EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-                tot_EtE_delay = EtE_delay.sum()
-                reward += (throughput-tot_EtE_delay)
+        inverted_adj_list=self.inverted_adjacency(self.adja_list)
+        queues_along_edges=self.get_state()
+        reward=0
+        for key in inverted_adj_list.keys():
+            if key == list(inverted_adj_list.keys())[-1]:
+                continue
+            num_edges_at_node=len(inverted_adj_list[key])
+            wait_time=sum(queues_along_edges[:num_edges_at_node])*np.exp(self.qn_net.miu[key])
+            queues_along_edges= queues_along_edges[num_edges_at_node:]
+            reward+=wait_time
+         
+        
         return reward
+
+        # reward = 0
+        # for i in range(self.net.num_edges): 
+        #     queue_data=self.net.get_queue_data(queues=i)
+        #     ind_serviced = np.where(queue_data[:,2]!=0)[0]
+        #     if len(ind_serviced)>0:
+        #         throughput = len(ind_serviced)
+        #         EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+        #         tot_EtE_delay = EtE_delay.sum()
+        #         reward += (throughput-tot_EtE_delay)
+        # return reward
                 
     def reset(self): 
         self.net.clear_data()
