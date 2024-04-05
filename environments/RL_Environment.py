@@ -19,6 +19,7 @@ class RLEnv:
 
         self.qn_net = qn_net
         self.net = qn_net.queueing_network
+        self.num_nullnodes = self.get_nullnodes()
 
         self.test_state_is_valid(start_state)
 
@@ -33,7 +34,6 @@ class RLEnv:
 
         self.initialize_params_for_visualization()
 
-        self.num_nullnodes = self.get_nullnodes()
         self.num_entrynodes = self.get_entrynodes()
         self.departure_nodes =  self.num_nullnodes
     
