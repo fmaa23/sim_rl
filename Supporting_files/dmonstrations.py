@@ -12,22 +12,6 @@ from queueing_network import *
 import numpy as np
 
 # This file contains all the demonstration classes for agent learning 
-
-class config():
-    # Creates the configuration object for the demonstrations 
-    def __init__(self, environment, agent): 
-        self.environment = environment 
-        self.agent = agent 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.queue_index = 0
-        self.queue_metrics = [] 
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
-        self.ax.set(xlabel='Time Steps', ylabel = self.metric, title= self.metric + f' vs Time Steps for Queue {str(self.queue_index)}')
-        
-    def retrieve_components(self):
-        # Getter function allowing other classes to access the environment and agent objects 
-        return self.environment , self.agent
                     
 class Network_Control():
     """
