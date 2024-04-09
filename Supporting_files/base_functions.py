@@ -130,14 +130,14 @@ def create_q_args(config_params, buffer_size_for_each_queue, services_f, num_que
     q_args[1] = {
         'arrival_f': arr,
         'service_f': ser_f,
-        'qbuffer': buffer_size_for_each_queue[0]
+        'qbuffer': buffer_size_for_each_queue[1]
         }
     
 
     for i in range(num_queues - 1):
         q_args[i+2] = {
         'service_f': services_f[i],
-        'qbuffer':buffer_size_for_each_queue[i],
+        'qbuffer':buffer_size_for_each_queue[i+2],
         }
 
     return q_args

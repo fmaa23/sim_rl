@@ -146,7 +146,7 @@ class DDPGAgent():
         return mean_critic_loss.item()
 
 
-    def fit_model(self, batch_size, threshold, epochs=5):
+    def fit_model(self, batch_size, epochs=5):
         """
         Fits the agent's model of the environment M with all the data in the buffer B. This involves training
         two separate neural networks for the number of epochs specified:
@@ -165,7 +165,7 @@ class DDPGAgent():
         # here we just take Model(s,a) from the previous iteration but re-train it
         reward_loss_list = []
         next_state_list = []
-        if self.buffer.current_size < threshold:
+        if self.buffer.current_size < batch_size:
             raise Exception('Number of transitions in buffer fewer than chosen threshold value')
         
         data = self.buffer.get_items()
@@ -193,7 +193,6 @@ class DDPGAgent():
                     for name, param in self.reward_model.named_parameters():
                         print(f"{name}: {param.data}")
                     # print(f"gradient: {param.grad}")
-
 
                 # update network for Model(s,a) = s'
                 self.next_state_model_optim.zero_grad()
@@ -316,6 +315,11 @@ class DDPGAgent():
             target_param.data.copy_(source_param.data)
 
 
+    def convert_state(self, state_tensor):
+        state_list = state_tensor.tolist()
+        state_tuple = tuple([int(x) for x in state_list])
+        return state_tuple
+
     def select_action(self, state):
   
         self.s_t = state
@@ -325,6 +329,7 @@ class DDPGAgent():
             print("wrong")
 
         # record visited states
+        state = self.convert_state(state)
         self.visited_count[state] = self.visited_count.setdefault(state,0) + 1 
         return self.a_t
 

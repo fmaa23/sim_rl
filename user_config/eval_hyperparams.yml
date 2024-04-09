@@ -10,7 +10,7 @@ params:
   
   target_update_frequency: 100
   
-  batch_size: 64
+  batch_size: 10
   
   num_sim: 5000
   
@@ -35,6 +35,20 @@ params:
   w2: 0.5
   
   epsilon_state_exploration: 1
+
+  reset: False
+
+  reset_frequency: 2
+
+  num_output: 5
+
+  moa_window: 5
+
+  output_json: True
+
+  output_histogram: True
+
+  output_coverage_metric: True
 
   miu_list:
     - 0.1

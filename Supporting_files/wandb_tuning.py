@@ -1,5 +1,5 @@
 import os
-
+from tqdm import tqdm
 # Set the environment variable
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
@@ -165,9 +165,9 @@ def init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_pa
             agent = DDPGAgent(n_states, n_actions, hidden = hidden, params = agent_parameters)
 
             agent.train()
-            for episode in range(num_episodes):
+            for episode in tqdm(range(num_episodes), desc="Training Progress"):
                 env.reset()
-                state = env.explore_state(agent, env, num_sample, device, w1, w2, epsilon_state_exploration)
+                state = env.explore_state(agent, env.qn_net, episode)
                 t = 0
                 while t < time_steps:
 
@@ -181,7 +181,7 @@ def init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_pa
                         node_list.append(value)
                         action_dict[index] = node_list
 
-                    next_state, _ = env.get_next_state(action)
+                    next_state = env.get_next_state(action)
                     next_state = torch.tensor(next_state).float().to(device)
                     reward = env.get_reward()
 
@@ -190,7 +190,9 @@ def init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_pa
                     agent.store_experience(experience)
 
                     if agent.buffer.current_size > batch_size:
-                        agent.fit_model(batch_size=batch_size, threshold=batch_size, epochs=num_epochs)
+
+                        agent.fit_model(batch_size=batch_size, epochs=num_epochs)
+                        
                         batch = agent.buffer.sample(batch_size=batch_size)
                         agent.update_critic_network(batch)
                         agent.update_actor_network(batch)

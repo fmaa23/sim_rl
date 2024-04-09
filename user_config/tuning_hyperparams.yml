@@ -37,7 +37,7 @@ epsilon_state_exploration:
   - 0.8
 
 num_episodes: 
-  - 5
+  - 20
 
 time_steps: 
   - 10

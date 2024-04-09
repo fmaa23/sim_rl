@@ -12,6 +12,7 @@ from Supporting_files.State_Exploration import *
 from Supporting_files.queueing_network import *
 from Supporting_files.wandb_tuning import *
 from Supporting_files.plot_datasparq import *
+from tqdm import tqdm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -331,8 +332,13 @@ def get_param_for_state_exploration(params):
     w1 = params['w1']
     w2 = params['w2']
     epsilon = params['epsilon_state_exploration']
+    reset = params['reset']
+    if reset == False:
+        reset_frequency = None
+    else:
+        reset_frequency = params['reset_frequency']
 
-    return num_sample, device_here, w1, w2, epsilon
+    return num_sample, device_here, w1, w2, epsilon, reset, reset_frequency
 
 def get_params_for_train(params):
     """
@@ -349,9 +355,8 @@ def get_params_for_train(params):
     num_epochs = params['num_epochs']
     time_steps = params['time_steps']
     target_update_frequency = params['target_update_frequency']
-    threshold = params['threshold']
 
-    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold
+    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency
 
 def init_transition_proba(env):
     transition_proba = {}
@@ -375,7 +380,6 @@ def update_transition_probas(transition_probas, env):
         transition_probas[start_node] = next_proba_dict
     
     return transition_probas
-
 
 def train(params, agent, env, best_params = None):
     """
@@ -407,14 +411,13 @@ def train(params, agent, env, best_params = None):
     gradient_dict = {}
     transition_probas = init_transition_proba(env)
 
-    num_sample, device, w1, w2, epsilon_state_exploration = get_param_for_state_exploration(params)
-    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, threshold = get_params_for_train(params)
+    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
 
     agent.train()
-    for episode in range(num_episodes): # remember
-        print(f"-----------------episode {episode}------------------------")
+    for episode in tqdm(range(num_episodes), desc="Training Progress"): 
+
         env.reset()
-        state = env.explore_state(agent, env, num_sample, device, w1, w2, epsilon_state_exploration)
+        state = env.explore_state(agent, env.qn_net, episode)
         t = 0
 
         actor_loss_list= []
@@ -440,15 +443,15 @@ def train(params, agent, env, best_params = None):
             experience = (state, action, reward, next_state)        
             agent.store_experience(experience)                             
         
-            if agent.buffer.current_size > threshold:
+            if agent.buffer.current_size > batch_size:
 
-                reward_loss_list, next_state_loss_list = agent.fit_model(batch_size=threshold, threshold=threshold, epochs=num_epochs)
+                reward_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
                 next_state_list_all += next_state_loss_list
                 rewards_list_all += reward_loss_list
 
                 transition_probas = update_transition_probas(transition_probas, env)
                 
-                batch = agent.buffer.sample(batch_size=threshold)
+                batch = agent.buffer.sample(batch_size=batch_size)
                 critic_loss = agent.update_critic_network(batch)                   
                 actor_loss, gradient_dict = agent.update_actor_network(batch)    
 
@@ -644,8 +647,6 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
             critic_loss_list_all, actor_loss_list_all, \
             reward_list, action_dict, gradient_dict, \
             transition_probas = train(params, agent, sim_environment, best_params = best_params)
-
-        
 
         save_all(rewards_list_all, next_state_list_all, \
                  critic_loss_list_all, actor_loss_list_all, \

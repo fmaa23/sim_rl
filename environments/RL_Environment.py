@@ -36,6 +36,8 @@ class RLEnv:
 
         self.num_entrynodes = self.get_entrynodes()
         self.departure_nodes =  self.num_nullnodes
+
+        self.ExploreStateEngine = ExploreStateEngine()
     
     def get_entrynodes(self):
         """
@@ -99,7 +101,7 @@ class RLEnv:
     def get_net_connections(self):
         return self.transition_proba
 
-    def explore_state(self, agent, env, num_sample, device, w1 = 0.5, w2 = 0.5, epsilon = 1):
+    def explore_state(self, agent, env, episode):
         """
         Explores the state of the environment using the provided agent.
 
@@ -115,9 +117,7 @@ class RLEnv:
         Returns:
             The result of exploring the state.
         """
-        return explore_state(agent, qn_model = env.net, qn_env = env.qn_net,
-                            num_sample = num_sample, device = device, visit_counts = agent.visited_count,
-                            w1 = w1, w2 = w2, epsilon = epsilon)
+        return self.ExploreStateEngine.explore_state(agent, env, episode)
 
     def get_state(self):
         """
@@ -257,7 +257,6 @@ class RLEnv:
             queues_along_edges= queues_along_edges[num_edges_at_node:]
             reward+=wait_time
          
-        
         return reward
 
         # reward = 0
