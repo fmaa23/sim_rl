@@ -304,14 +304,6 @@ class RLEnv:
             try:
                 return throughput
             except UnboundLocalError: 
-                return 0
-if __name__=="__main__": 
-    import sys
-    from pathlib import Path
-    # Get the absolute path of the parent directory (i.e., the root of your project)
-    root_dir = Path('/vol/bitbucket/fma23/MScProject/MScDataSparqProject').resolve().parent.parent
-    # Add the parent directory to sys.path
-    sys.path.append(str(root_dir))
-    breakpoint() 
+                return 0 
 
 
