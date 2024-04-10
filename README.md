@@ -183,7 +183,6 @@ state_exploration_param:
 
   epsilon_state_exploration: 1
 
-
   reset_frequency: 2
 
   num_output: 5
