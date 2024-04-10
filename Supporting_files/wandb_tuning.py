@@ -36,8 +36,8 @@ def load_hyperparams(eval_param_filepath):
     
     with open(abs_file_path, 'r') as env_param_file:
         parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
-    params = parameter_dictionary['params']
-    hidden = parameter_dictionary['hidden']
+    params = parameter_dictionary['rl_params']
+    hidden = parameter_dictionary['network_params']
 
     return params, hidden
 
