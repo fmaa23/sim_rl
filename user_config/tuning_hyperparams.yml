@@ -4,8 +4,8 @@ learning_rate_min: 0.001
 
 epochs_list:
   - 10
-  - 20
-  - 30
+  - 10
+  - 10
 
 batch_size:
   - 16
@@ -37,7 +37,7 @@ epsilon_state_exploration:
   - 0.8
 
 num_episodes: 
-  - 20
+  - 5
 
 time_steps: 
   - 10
