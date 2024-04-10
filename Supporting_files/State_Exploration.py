@@ -202,7 +202,13 @@ class ExploreStateEngine():
         """
         Generate the file paths for storing states information.
         """
-        base_path = os.getcwd()
+        #base_path = os.getcwd()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Go up one directory to the MScDataSparqProject directory
+        project_dir = os.path.dirname(script_dir)
+        base_path = project_dir
+
         base_path_key = base_path + "/features/feature_4_state_exploration/key_states/"
         base_path_peripheral = base_path + "/features/feature_4_state_exploration/peripheral_states/"
 
@@ -306,7 +312,12 @@ class ExploreStateEngine():
         - folder_name (str): The name of the folder.
         - file_name (str): The name of the file.
         """
-        base_path = os.getcwd()
+        #base_path = os.getcwd()
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Go up one directory to the MScDataSparqProject directory
+        project_dir = os.path.dirname(script_dir)
+        base_path = project_dir
         base_path = base_path + f"/features/feature_4_state_exploration/{folder_name}/"
 
         os.makedirs(base_path, exist_ok=True)
@@ -454,10 +465,10 @@ class ExploreStateEngine():
             chosen_state = list(weighted_averages.keys())[index]
 
         base_path_key, base_path_peripheral, key_states_filename, peripheral_states_filename = self.generate_path()
+        self.output_json(reward_rankings, visit_rankings, key_states_filename, peripheral_states_filename)
         q_values_list, visits_list = self.calculate_q_values(agent, key_states_filename, peripheral_states_filename, agent.visited_count)
         
-        if self.output_json_files:
-            self.output_json(reward_rankings, visit_rankings, key_states_filename, peripheral_states_filename)
+    
 
         if self.output_histogram:
             self.plot_hist(q_values_list, base_path_key, title = "Q Values for Key States")
