@@ -3,7 +3,45 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class ResidualBlock(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ResidualBlock, self).__init__()
+        self.linear = nn.Linear(in_features, out_features)
+        self.norm = nn.LayerNorm(out_features)
+        self.activation = nn.LeakyReLU(0.2)
+        
+    def forward(self, x):
+        identity = x
+        out = self.linear(x)
+        out = self.norm(out)
+        out = self.activation(out)
+        if x.size(-1) != out.size(-1):
+            # Adapt identity if needed (e.g., during dimension change)
+            identity = nn.Linear(x.size(-1), out.size(-1))(identity)
+        out += identity  # Skip connection
+        return out
+
 class Actor(nn.Module):
+    def __init__(self, n_states, n_actions, hidden):
+        super(Actor, self).__init__()
+        check_validity(hidden)
+        
+        layers = [nn.Linear(n_states, hidden[0]), nn.LayerNorm(hidden[0]), nn.LeakyReLU(0.2)]
+        
+        for i in range(1, len(hidden)):
+            layers.append(ResidualBlock(hidden[i-1], hidden[i]))
+        
+        layers.append(nn.Linear(hidden[-1], n_actions))
+        layers.append(nn.Sigmoid())  # Ensure output is between 0 and 1
+        
+        self.layers = nn.Sequential(*layers)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    def forward(self, state):
+        action = self.layers(state.float())
+        return action
+
+class Actor_Old(nn.Module):
     def __init__(self, n_states, n_actions, hidden=[3,3]):
         """
         Neural network representing the actor (denoted \mu in literature). Given

@@ -12,14 +12,14 @@ batch_size:
   - 32
   - 64
 
-tau_min: 0.0001
-tau_max: 0.0002
+tau_min: 0.0005
+tau_max: 0.002
 
 discount_min: 0.1
-discount_max: 0.2
+discount_max: 0.3
 
 epsilon_min: 0.1
-epsilon_max: 0.2
+epsilon_max: 0.3
 
 planning_steps: 
   - 10

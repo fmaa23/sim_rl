@@ -1,6 +1,6 @@
 ---
 rl_params:
-  num_episodes: 10
+  num_episodes: 5
   
   threshold: 10
 
@@ -10,7 +10,7 @@ rl_params:
   
   target_update_frequency: 100
   
-  batch_size: 10
+  batch_size: 16
   
   num_sim: 5000
   
@@ -67,5 +67,3 @@ network_params:
   next_state_model:
     - 64
     - 64
-
-  threshold: 10

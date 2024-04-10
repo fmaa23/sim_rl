@@ -145,7 +145,6 @@ class DDPGAgent():
         mean_critic_loss = mean_critic_loss.detach()
         return mean_critic_loss.item()
 
-
     def fit_model(self, batch_size, epochs=5):
         """
         Fits the agent's model of the environment M with all the data in the buffer B. This involves training
