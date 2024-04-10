@@ -38,7 +38,7 @@ class Actor(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     def forward(self, state):
-        action = self.layers(state.float())
+        action = self.layers(state.float().to(self.device))
         return action
 
 class Actor_Old(nn.Module):
