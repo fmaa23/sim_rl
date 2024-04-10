@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 
 class ExploreStateEngine():
     def __init__(self):
+        """
+        Initialize the ExploreStateEngine with default parameters and configurations.
+        """
         self.eval_param_filepath = 'user_config/eval_hyperparams.yml'
 
         self.activate_features()
@@ -19,8 +22,10 @@ class ExploreStateEngine():
         self.init_device()
 
     def activate_features(self):
-
-        params, _ = self.load_hyperparams()
+        """
+        Activate features based on loaded hyperparameters.
+        """
+        params = self.load_hyperparams()
 
         self.output_json_files = params['output_json']
         self.reset = params['reset'] 
@@ -28,6 +33,9 @@ class ExploreStateEngine():
         self.output_coverage_metric = params['output_coverage_metric']
     
     def init_device(self):
+        """
+        Initialize the computation device (CPU or CUDA) for PyTorch operations.
+        """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def load_hyperparams(self):
@@ -52,10 +60,9 @@ class ExploreStateEngine():
         
         with open(abs_file_path, 'r') as env_param_file:
             parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
-        params = parameter_dictionary['params']
-        hidden = parameter_dictionary['hidden']
+        params = parameter_dictionary['state_exploration_params']
 
-        return params, hidden
+        return params
     
 
     def get_param_for_state_exploration(self, params):
@@ -80,13 +87,25 @@ class ExploreStateEngine():
         self.moa_coef = params['moa_window']
     
     def load_params(self):
-        params, _ = self.load_hyperparams()
+        """
+        Load parameters for state exploration from the hyperparameters file.
+        """
+        params = self.load_hyperparams()
         self.get_param_for_state_exploration(params)
     
     def init_track_reward(self):
+        """
+        Initialize a dictionary to keep track of rewards information.
+        """
         self.reward_info = {}
     
     def get_top_key_states(self, reward_rankings):
+        """
+        Get the top and least rewarding states based on their rankings.
+
+        Parameters:
+        - reward_rankings (dict): A dictionary with states as keys and their rewards as values.
+        """
         top_states = sorted(reward_rankings.items(), key=lambda item: item[1], reverse=True)[:self.num_output]
         top_states = [state[0] for state in top_states]
         least_states = sorted(reward_rankings.items(), key=lambda item: item[1], reverse=False)[:self.num_output]
@@ -95,6 +114,12 @@ class ExploreStateEngine():
         return top_states, least_states
 
     def get_top_peripheral_states(self, visit_rankings):
+        """
+        Get the most and least visited states based on their rankings.
+
+        Parameters:
+        - visit_rankings (dict): A dictionary with states as keys and their visit counts as values.
+        """
         top_states = sorted(visit_rankings.items(), key=lambda item: item[1], reverse=True)[:self.num_output]
         top_states = [state[0] for state in top_states]
         least_states = sorted(visit_rankings.items(), key=lambda item: item[1], reverse=False)[:self.num_output]
@@ -103,6 +128,13 @@ class ExploreStateEngine():
         return top_states, least_states
     
     def load_states(self, reward_rankings, visit_rankings):
+        """
+        Load states based on their reward and visit rankings.
+
+        Parameters:
+        - reward_rankings (dict): Reward rankings of the states.
+        - visit_rankings (dict): Visit rankings of the states.
+        """
         top_rewards_states, least_reward_states = self.get_top_key_states(reward_rankings)
         top_visit_states, least_visit_states = self.get_top_peripheral_states(visit_rankings)
 
@@ -117,7 +149,15 @@ class ExploreStateEngine():
         return self.convert_format(keystates_dict), self.convert_format(peripheralstates_dict)
 
     def output_json(self, reward_rankings, visit_rankings, key_states_filename, peripheral_states_filename):
-        
+        """
+        Output the rankings information to JSON files.
+
+        Parameters:
+        - reward_rankings (dict): Reward rankings of the states.
+        - visit_rankings (dict): Visit rankings of the states.
+        - key_states_filename (str): Filename for outputting key states.
+        - peripheral_states_filename (str): Filename for outputting peripheral states.
+        """
         keystates_dict, peripheralstates_dict = self.load_states(reward_rankings, visit_rankings)
 
         # Write the dictionary to a file as JSON
@@ -128,6 +168,12 @@ class ExploreStateEngine():
             json.dump(peripheralstates_dict, json_file)
     
     def convert_format(self, states_dict):
+        """
+        Convert state format in the provided dictionary.
+
+        Parameters:
+        - states_dict (dict): A dictionary containing states information.
+        """
         keys = list(states_dict.keys())
         for key in keys:
             for index, state in enumerate(states_dict[key]):
@@ -138,6 +184,12 @@ class ExploreStateEngine():
         return states_dict
     
     def get_keystates(self, reward_rankings):
+        """
+        Get key states based on reward rankings.
+
+        Parameters:
+        - reward_rankings (dict): Reward rankings of the states.
+        """
         top_rewards_states, least_reward_states = self.get_top_key_states(reward_rankings)
 
         keystates_dict = {}
@@ -147,6 +199,9 @@ class ExploreStateEngine():
         return self.convert_format(keystates_dict)
 
     def generate_path(self):
+        """
+        Generate the file paths for storing states information.
+        """
         base_path = os.getcwd()
         base_path_key = base_path + "/features/feature_4_state_exploration/key_states/"
         base_path_peripheral = base_path + "/features/feature_4_state_exploration/peripheral_states/"
@@ -161,7 +216,15 @@ class ExploreStateEngine():
         return base_path_key, base_path_peripheral, key_states_filename, peripheral_states_filename
 
     def calculate_q_values(self, DDPG_agent, key_states_filename, peripheral_states_filename, visit_counts):
+        """
+        Calculate Q-values for the key and peripheral states.
 
+        Parameters:
+        - DDPG_agent: The DDPG agent instance.
+        - key_states_filename (str): The filename for key states information.
+        - peripheral_states_filename (str): The filename for peripheral states information.
+        - visit_counts (dict): A dictionary of visit counts for the states.
+        """
         with open(key_states_filename, 'r') as json_file:
             key_states = json.load(json_file)
         key_states = self.convert_format(key_states)
@@ -191,6 +254,13 @@ class ExploreStateEngine():
         return q_value_list, visits_list
 
     def update_reward_info(self, agent, keystates_dict):
+        """
+        Update reward information for the states.
+
+        Parameters:
+        - agent: The agent instance.
+        - keystates_dict (dict): A dictionary containing key states information.
+        """
         for key in keystates_dict.keys():
             for state in keystates_dict[key]:
                 q_values_list = self.reward_info.setdefault(state, [])
@@ -203,10 +273,24 @@ class ExploreStateEngine():
                 self.reward_info[state] = q_values_list
     
     def track_reward(self, agent, reward_rankings, visit_rankings):
+        """
+        Track and update reward information based on current rankings.
+
+        Parameters:
+        - agent: The agent instance.
+        - reward_rankings (dict): Reward rankings of the states.
+        - visit_rankings (dict): Visit rankings of the states.
+        """
         keystates_dict, _ = self.load_states(reward_rankings, visit_rankings)
         self.update_reward_info(agent, keystates_dict)
 
     def get_moving_average(self, reward_list):
+        """
+        Calculate the moving average of rewards.
+
+        Parameters:
+        - reward_list (list): A list of reward values.
+        """
         if len(reward_list) < self.moa_coef:
             moving_average = np.mean(reward_list)
         latest_moa = reward_list[-self.moa_coef:] 
@@ -215,6 +299,13 @@ class ExploreStateEngine():
         return moving_average
     
     def get_path(self, folder_name, file_name):
+        """
+        Get the path for a given folder and file name.
+
+        Parameters:
+        - folder_name (str): The name of the folder.
+        - file_name (str): The name of the file.
+        """
         base_path = os.getcwd()
         base_path = base_path + f"/features/feature_4_state_exploration/{folder_name}/"
 
@@ -226,6 +317,14 @@ class ExploreStateEngine():
         return base_path, file_path
 
     def plot_coverage(self, metric_list, base_path, title):
+        """
+        Plot and save the coverage metric.
+
+        Parameters:
+        - metric_list (list): A list of metric values.
+        - base_path (str): The base path for saving the plot.
+        - title (str): The title of the plot.
+        """
         if len(metric_list) > self.moa_coef:
             plt.figure()
             plt.plot(metric_list)
@@ -236,6 +335,12 @@ class ExploreStateEngine():
             plt.close()
 
     def output_metric(self, reward_rankings):
+        """
+        Output the metric based on the current reward rankings.
+
+        Parameters:
+        - reward_rankings (dict): Reward rankings of the states.
+        """
         if len(self.reward_info) == 0:
             return None
         
@@ -267,6 +372,13 @@ class ExploreStateEngine():
             json.dump(metric, json_file)
 
     def reset_weights(self, episode, reset_frequency):
+        """
+        Reset the weights based on the episode and frequency.
+
+        Parameters:
+        - episode (int): The current episode number.
+        - reset_frequency (int): The frequency at which weights should be reset.
+        """
         if episode != 0 and episode % reset_frequency == 0:
             print()
             weights = input(f"{episode} episodes have passed. Please reset your weights:")

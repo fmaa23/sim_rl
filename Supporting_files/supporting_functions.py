@@ -63,8 +63,8 @@ def load_hyperparams(eval_param_filepath):
     
     with open(abs_file_path, 'r') as env_param_file:
         parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
-    params = parameter_dictionary['params']
-    hidden = parameter_dictionary['hidden']
+    params = parameter_dictionary['rl_params']
+    hidden = parameter_dictionary['network_params']
 
     return params, hidden
 
@@ -103,8 +103,14 @@ def get_num_connections(adjacent_list):
         end_node_list = adjacent_list[start_node]
         for end_node in end_node_list:
             if end_node not in list(adjacent_list.keys()):
-                exit_nodes.append(end_node)
-            num_connection += 1
+                if end_node not in exit_nodes:
+                    exit_nodes.append(end_node)
+    
+    for start_node in adjacent_list.keys():
+        end_node_list = adjacent_list[start_node]
+        for end_node in end_node_list:
+            if end_node not in exit_nodes:
+                num_connection += 1
     
     return num_connection, exit_nodes
 

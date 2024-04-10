@@ -5,12 +5,14 @@ root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
 
-
 from Supporting_files.buffer import ReplayBuffer
 import pytest
 
-
 def test_replay_buffer_capacity_handling():
+    """
+    Test that the ReplayBuffer correctly handles its capacity.
+    When more transitions are added than the buffer's max size, it should discard the oldest transitions.
+    """
     max_size = 5  # Example max size
     buffer = ReplayBuffer(max_size=max_size)
 
@@ -19,10 +21,13 @@ def test_replay_buffer_capacity_handling():
         transition = (f"state{i}", f"action{i}", f"reward{i}", f"next_state{i}")
         buffer.push(transition)
 
-    # assert len(buffer) == max_size
     assert buffer.buffer[0] == (f"state3", f"action3", f"reward3", f"next_state3"), "Oldest transitions should be discarded"
 
 def test_replay_buffer_sampling():
+    """
+    Test the sampling functionality of the ReplayBuffer.
+    It should return a sample of the requested size, and each item in the sample should be a tuple.
+    """
     buffer = ReplayBuffer(max_size=10)
 
     # Populate buffer
@@ -36,6 +41,10 @@ def test_replay_buffer_sampling():
     assert all(isinstance(item, tuple) for item in sample), "Sampled items should be tuples"
 
 def test_replay_buffer_edge_cases():
+    """
+    Test edge cases for the ReplayBuffer, including sampling from an empty buffer and
+    attempting to sample more items than are available in the buffer.
+    """
     buffer = ReplayBuffer(max_size=10)
 
     # Test sampling from an empty buffer
@@ -49,9 +58,3 @@ def test_replay_buffer_edge_cases():
 
     with pytest.raises(ValueError):
         buffer.sample(4), "Sampling more than available should raise an error"
-
-if __name__=="__main__":
-    test_replay_buffer_capacity_handling()
-    test_replay_buffer_sampling()
-    test_replay_buffer_edge_cases()
-    print("All tests passed")

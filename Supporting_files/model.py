@@ -228,14 +228,3 @@ def check_validity(hidden):
         raise Exception("The argument 'hidden' should be a list of integers.")
     if len(hidden) < 2:
         raise Exception("The list/tuple should have a length >= 2")
-    
-
-
-# if __name__ ==  "__main__":
-#     # for type debugging
-#     n_states, n_actions = 7,7
-#     hidden = [10,10,10,10]
-#     actor = Actor(n_states, n_actions, hidden)
-#     critic = Critic(n_states, n_actions, hidden)
-#     reward_model = RewardModel(n_states, n_actions, hidden)
-#     next_state_model = NextStateModel(n_states, n_actions, hidden)

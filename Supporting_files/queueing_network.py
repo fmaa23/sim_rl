@@ -145,8 +145,9 @@ class Queue_network:
         self.q_args = q_args
     
     def create_env(self):
-        g = qt.adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
-        self.queueing_network = qt.QueueNetwork(g=g, q_classes = self.q_classes, q_args = self.q_args)
+
+        self.g = qt.adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
+        self.queueing_network = qt.QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args)
         self.queueing_network.set_transitions(self.transition_proba)
         self.queueing_network.draw(figsize=(6, 3))
     

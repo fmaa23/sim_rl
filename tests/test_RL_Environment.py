@@ -12,6 +12,8 @@ from Supporting_files.supporting_functions import *
 import pytest
 import numpy as np 
 
+# Dynamically construct the path to the configuration directory
+config_path = Path(__file__).resolve().parent.parent / 'user_config'
 
 @pytest.fixture(scope='module')
 def setup_rlenv(request):
@@ -19,7 +21,7 @@ def setup_rlenv(request):
     Set up the test environment by initializing an environment with a predefined initialization.
     This setup runs before each test within the module that requests it.
     """
-    configuration_file = request.param  # Access the parameter passed indirectly
+    configuration_file = config_path / request.param
     params = {'num_sim': 5000}
     env = create_simulation_env(params, config_file=configuration_file)
     yield env

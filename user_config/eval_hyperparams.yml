@@ -1,5 +1,5 @@
 ---
-params:
+rl_params:
   num_episodes: 10
   
   threshold: 10
@@ -27,7 +27,8 @@ params:
   epsilon_f: 0.1
   
   actor_lr: 0.1
-  
+
+state_exploration_params:
   num_sample: 50
   
   w1: 0.5
@@ -50,22 +51,7 @@ params:
 
   output_coverage_metric: True
 
-  miu_list:
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-    - 0.1
-
-  active_cap: 5
-  deactive_cap: 0.12
-
-hidden:
+network_params:
   actor:
     - 32
     - 32
