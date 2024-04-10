@@ -153,19 +153,19 @@ next_state_model: [64, 64]
 
 Upon initialization, the `ExploreStateEngine` class loads parameters for exploring states from a YAML file and activates the following features based on the instructions entered by users:
 
-#### 1. Output JSON Files (`output_json_files`)
+##### 1. Output JSON Files (`output_json_files`)
 
 When enabled, this feature allows the engine to output the rankings of states to JSON files. These files include information about both key states and peripheral states, categorized based on their reward rankings and visit rankings. The output is useful for tracking the performance and decisions of the exploration engine over time.
 
-#### 2. Reset Mechanism (`reset`)
+##### 2. Reset Mechanism (`reset`)
 
 This feature introduces a reset mechanism that, if activated, allows the exploration engine to reset weights. This can be crucial for long-running exploration tasks, where periodic adjustments to exploration parameters can help in navigating different phases of the learning process more effectively.
 
-#### 3. Output Histograms (`output_histogram`)
+##### 3. Output Histograms (`output_histogram`)
 
 The `output_histogram` feature, when activated, instructs the engine to generate and save histograms of Q-values and visit counts for the top and least states. These visualizations are valuable for analyzing the distribution and trends of Q-values and visit frequencies, providing insights into the exploration process and the state space's dynamics.
 
-#### 4. Output Coverage Metric (`output_coverage_metric`)
+##### 4. Output Coverage Metric (`output_coverage_metric`)
 
 Finally, enabling the `output_coverage_metric` feature allows the engine to calculate and output a coverage metric, which quantifies the diversity and thoroughness of the state space exploration. This metric is derived from the moving average of rewards between the top and least states, offering a measure of how well the exploration strategy covers the potential state space.
 
@@ -183,13 +183,14 @@ state_exploration_param:
 
   epsilon_state_exploration: 1
 
-  reset: True
 
   reset_frequency: 2
 
   num_output: 5
 
   moa_window: 5
+
+  reset: True
 
   output_json: True
 
