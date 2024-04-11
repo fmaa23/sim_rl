@@ -36,7 +36,7 @@ class RLEnv:
 
         # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
         self.net.initialize(queues=0)
-        self.net.simulate(n=num_sim)
+        #self.net.simulate(n=num_sim)
 
         self.initialize_params_for_visualization()
 

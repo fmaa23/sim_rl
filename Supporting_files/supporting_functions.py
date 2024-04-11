@@ -68,26 +68,6 @@ def load_hyperparams(eval_param_filepath):
 
     return params, hidden
 
-def 
-ueueing_env(config_file):
-    """
-    Create and configure a queueing environment based on a given configuration file.
-
-    Parameters:
-    - config_file (str): The file path to the environment configuration file.
-
-    Returns:
-    - Queue_network: An instance of the queueing environment.
-    """
-    arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
-    
-    q_net = Queue_network()
-    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba_all)
-    q_net.create_env()
-    return q_net
-
 def get_num_connections(adjacent_list):
     """
     Calculates the total number of connections and identifies exit nodes within the adjacency list of a network.
@@ -234,6 +214,7 @@ def create_q_classes(num_queues):
     return q_classes
     
 
+
 def get_service_time(edge_type_info, miu_dict, exit_nodes):
         # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
         # the convert into each edge correponds to a distinctive service rate
@@ -271,28 +252,68 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     def arr(t):
         return qt.poisson_random_measure(t, rate, config_params['arrival_rate'])
 
+    def get_service_time(edge_type_info, miu_dict, exit_nodes):
+        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
+        # the convert into each edge correponds to a distinctive service rate
+        # save for buffer size
+        services_f = {}
+        for end_node in edge_type_info.keys():
+            if end_node not in exit_nodes:
+                service_rate = miu_dict[end_node]
+
+                for edge_type in edge_type_info[end_node]:
+                    def ser_f(t):
+                        return t + np.exp(service_rate)
+                    
+                    services_f[edge_type] = ser_f
+
+        return services_f
 
     services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
     
     q_args = {}
     for end_node in edge_type_info.keys():
         corresponding_edge_types = edge_type_info[end_node]
+        print(corresponding_edge_types)
         for edge_type in corresponding_edge_types:
 
             if edge_type != 0:
+                service_rate = miu_dict[end_node]
+                print(service_rate)
                 if edge_type == 1:
                     q_args[edge_type] = {
                     'arrival_f': arr,
-                    'service_f': services_f[edge_type],
-                    'qbuffer': buffer_size_for_each_queue[edge_type]
+                    'service_f': lambda t, en=end_node:t+np.exp(miu_dict[en]),
+                    'qbuffer': buffer_size_for_each_queue[edge_type],
+                    'service_rate': service_rate,
                     }
                 else:
                     q_args[edge_type] = {
-                    'service_f': services_f[edge_type],
+                    'service_f': lambda t, en=end_node:t+np.exp(miu_dict[en]),
                     'qbuffer':buffer_size_for_each_queue[edge_type],
+                    'service_rate': service_rate,
                     }
     
     return q_args
+
+def create_queueing_env(config_file):
+    """
+    Create and configure a queueing environment based on a given configuration file.
+
+    Parameters:
+    - config_file (str): The file path to the environment configuration file.
+
+    Returns:
+    - Queue_network: An instance of the queueing environment.
+    """
+    arrival_rate, miu_list, q_classes, q_args, \
+        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
+    
+    q_net = Queue_network()
+    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
+                        edge_list, transition_proba_all)
+    q_net.create_env()
+    return q_net
 
 def create_RL_env(q_net, params):
     """
