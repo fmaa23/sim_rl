@@ -1,4 +1,3 @@
-import queueing_tool as qt
 import numpy as np
 import tkinter as tk
 import yaml 
@@ -7,6 +6,8 @@ import os
 
 from queueing_tool.network.queue_network import QueueNetwork
 from queueing_tool.graph.graph_wrapper import adjacency2graph
+from queueing_tool.queues.agents import Agent
+from queueing_tool.queues.queue_servers import *
 
 class Queue_network:
     def __init__(self):
@@ -62,7 +63,7 @@ class Queue_network:
         self.q_args = q_args
 
         if transition_proba is None: 
-            self.transition_proba = qt.graph.generate_transition_matrix(self.g)
+            self.transition_proba = generate_transition_matrix(self.g)
         else:
             self.transition_proba = transition_proba
 
@@ -71,7 +72,7 @@ class Queue_network:
         self.arrivals_f = []
         max_rate = 375
         rate = lambda t: 2 + np.sin(2 * np.pi * t)
-        arrival_f = lambda t: qt.poisson_random_measure(t, rate, max_rate)
+        arrival_f = lambda t: poisson_random_measure(t, rate, max_rate)
         self.arrivals_f = arrival_f
         
     def get_service_time(self):
@@ -106,9 +107,9 @@ class Queue_network:
         
         for i in range(len(self.buffer_size_for_each_queue)): 
             if i == 0:
-                LossQueueList.append(qt.QueueServer)
+                LossQueueList.append(QueueServer)
             else:
-                LossQueueList.append(qt.LossQueue)
+                LossQueueList.append(LossQueue)
         
         self.q_classes= {}
         for i,queue_types in enumerate(LossQueueList):
@@ -135,7 +136,7 @@ class Queue_network:
             if q == 1:
                 q_info = {"arrival_f": self.arrivals_f,
                         "service_f": self.services_f[index],
-                        "AgentFactory": qt.Agent, 
+                        "AgentFactory": Agent, 
                         "active_cap": self.active_cap,
                         "deactive_t": self.deactive_cap,
                         # 'qbuffer':self.buffer_size_for_each_queue[index]
@@ -143,7 +144,7 @@ class Queue_network:
             else:
                 q_info = {"service_f": self.services_f[index],
                         "qbuffer":self.buffer_size_for_each_queue[index],
-                        "AgentFactory": qt.Agent
+                        "AgentFactory": Agent
                         }
             q_args[q] = q_info
 

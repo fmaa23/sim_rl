@@ -1,9 +1,9 @@
 import torch
 import numpy as np 
 import pandas as pd
-import queueing_tool as qt 
 import numpy as np
 import os
+import yaml
 
 from environments.RL_Environment import RLEnv
 
@@ -14,6 +14,8 @@ from Supporting_files.wandb_tuning import *
 from Supporting_files.plot_datasparq import *
 from tqdm import tqdm
 import json
+from queueing_tool.network.queue_network import QueueNetwork
+from queueing_tool.queues.queue_servers import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -228,9 +230,9 @@ def create_q_classes(num_queues):
     - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
     """
     q_classes = {}
-    q_classes[0] = qt.NullQueue
+    q_classes[0] = NullQueue
     for i in range(1, num_queues + 1):
-        q_classes[i] = qt.LossQueue
+        q_classes[i] = LossQueue
     return q_classes
 
 def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
@@ -445,7 +447,7 @@ def train(params, agent, env, best_params = None):
         state_list = state.tolist()
         state_int = [int(x) for x in state_list]
         initial_states = convert_format(state_int)
-        env.net.set_initial_states(initial_states)
+        # env.net.set_initial_states(initial_states)
         action = agent.select_action(state).to(device) 
     
         action_list = action.cpu().numpy().tolist()
