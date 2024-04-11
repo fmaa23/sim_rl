@@ -1,35 +1,36 @@
 ---
 rl_params:
-  num_episodes: 5
+  num_episodes: 100
   
   threshold: 10
 
-  num_epochs: 10
+  num_epochs: 100
   
-  time_steps: 10
+  time_steps: 20
   
   target_update_frequency: 100
   
-  batch_size: 16
+  batch_size: 10
   
   num_sim: 5000
   
-  tau: 0.001
+  tau: 0.5
   
-  learning_rate: 0.1
+  critic_lr: 0.01
+
+  actor_lr: 0.001
   
   discount: 0.2
   
-  planning_steps: 10
+  planning_steps: 5
   
   epsilon: 0.2
   
   epsilon_f: 0.1
-  
-  actor_lr: 0.1
 
 state_exploration_params:
-  num_sample: 50
+
+  num_sample: 5000
   
   w1: 0.5
   

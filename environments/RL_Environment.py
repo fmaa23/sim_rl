@@ -29,8 +29,7 @@ class RLEnv:
         self.net.start_collecting_data()
 
         # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
-        self.net.initialize(queues=0)
-        self.net.simulate(n=num_sim)
+        self.net.initialize()
 
         self.initialize_params_for_visualization()
 
@@ -126,13 +125,7 @@ class RLEnv:
         Returns:
             The current state of the environment, represented as an array or a suitable data structure.
         """
-        for edge in range((self.net.num_edges-self.num_nullnodes)):
-            
-            edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
-            if len(edge_data) > 0:
-                self._state[edge]=edge_data[-1][4]
-            else:
-                self._state[edge]=0
+        self._state = self.net.num_agents[:-1]
 
         return self._state
 
@@ -149,20 +142,26 @@ class RLEnv:
         # self.test_action_equal_nodes(action)
         action = self.get_correct_action_format(action)
 
+        def softmax_with_temperature(logits, temperature=0.5):
+            exp_logits = np.exp(logits / temperature)
+            return exp_logits / np.sum(exp_logits)
+
         for i, node in enumerate(self.transition_proba.keys()):
-            next_node_list=list(self.transition_proba[node].keys())
-            
+            next_node_list = list(self.transition_proba[node].keys())
+
             if len(next_node_list) != 0:
                 action_next_node_list = [x - 1 for x in next_node_list] 
-                action_probs= action[action_next_node_list]/sum(action[action_next_node_list])
+                # Apply non-linear transformation here
+                action_probs = softmax_with_temperature(action[action_next_node_list], temperature=0.15)
                 
                 for j, next_node in enumerate(next_node_list): 
                     self.test_nan(action_probs[j])
-                    self.transition_proba[node][next_node]=action_probs[j]
-        
+                    self.transition_proba[node][next_node] = action_probs[j]
+
+        self.net.set_transitions(self.transition_proba)
         current_state = self.simulate()
         return current_state
-    
+
     def test_actions_equal_nodes(self, action):
         """
         Tests if the length of the action array is equal to the expected number of nodes minus null nodes.
@@ -215,8 +214,6 @@ class RLEnv:
         Returns:
             The state of the environment after the simulation.
         """
-        # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
-        self.net.initialize(queues=0)
 
         self.iter +=1
         self.net.clear_data()
@@ -237,7 +234,7 @@ class RLEnv:
 
         return inverted_dict
 
-    def get_reward(self):
+    def get_reward_old(self):
         """
         Calculates and returns the reward based on the current state of the environment.
 
@@ -254,9 +251,33 @@ class RLEnv:
                 continue
             num_edges_at_node=len(inverted_adj_list[key])
             wait_time=sum(queues_along_edges[:num_edges_at_node])*np.exp(self.qn_net.miu[key])
-            queues_along_edges= queues_along_edges[num_edges_at_node:]
+            queues_along_edges = queues_along_edges[num_edges_at_node:]
             reward+=wait_time
          
+        return -reward
+
+    def get_reward(self):
+        """
+        Calculates the reward based on the current state of the environment.
+
+        Returns:
+        float
+            The reward value.
+        """
+        # Loop over nodes: 
+        ## Another Reward Function 
+        reward = 0
+        for i in range(self.net.num_edges): 
+            queue_data=self.net.get_queue_data(queues=i)
+            # Colmun 1 indicates if the job was processed, for null node it is always 0 
+            ind_serviced = np.where(queue_data[:,2]!=0)[0]
+            if len(ind_serviced)>0:
+                throughput = len(ind_serviced)
+                EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+                tot_EtE_delay = EtE_delay.sum()
+                reward += (throughput-tot_EtE_delay)
+        if reward <= 0:
+            print()
         return reward
 
         # reward = 0

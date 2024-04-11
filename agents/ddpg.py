@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
+from tqdm import tqdm
 from Supporting_files.model import Actor, Critic, RewardModel, NextStateModel, check_validity
 from Supporting_files.buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
@@ -43,14 +44,14 @@ class DDPGAgent():
 
         # hyperparameters
         self.tau = params['tau']
-        self.lr = params['learning_rate']
-        self.actor_lr = params["learning_rate"]
+        self.lr = params['critic_lr']
+        self.actor_lr = params["actor_lr"]
         self.discount= params['discount']
         self.epsilon = params['epsilon']
         self.planning_steps = params['planning_steps']
 
         # create buffer to replay experiences
-        self.buffer = ReplayBuffer(max_size=1000)
+        self.buffer = ReplayBuffer(max_size=params['batch_size'])
 
         # actor networks + optimizer
         self.actor = Actor(n_states, n_actions, hidden['actor']).to(self.device)
@@ -88,6 +89,7 @@ class DDPGAgent():
 
         global gradient_dict
 
+        self.num_select_action = 0
 
     def update_actor_network(self, batch):
         total_policy_loss = torch.zeros(1, requires_grad=True).to(self.device)
@@ -187,12 +189,6 @@ class DDPGAgent():
                 loss1.backward()
                 self.reward_model_optim.step()
 
-                if False:
-                    print("reward_model parameters after training:")
-                    for name, param in self.reward_model.named_parameters():
-                        print(f"{name}: {param.data}")
-                    # print(f"gradient: {param.grad}")
-
                 # update network for Model(s,a) = s'
                 self.next_state_model_optim.zero_grad()
                 pred_next_state = self.next_state_model([state.to(torch.float32), action.to(torch.float32)])
@@ -239,8 +235,9 @@ class DDPGAgent():
             None
         
         """
-        
-        for experience in batch:
+
+        for num in tqdm(range(len(batch)), desc="Planning Progress"): 
+            experience = batch[num]
             state, action, reward, next_state = experience
             experiences = []
             for _ in range(self.planning_steps):
@@ -328,8 +325,10 @@ class DDPGAgent():
             print("wrong")
 
         # record visited states
-        state = self.convert_state(state)
-        self.visited_count[state] = self.visited_count.setdefault(state,0) + 1 
+        state_tuple = tuple(state.tolist())
+        state_tuple = tuple(int(x) for x in state_tuple)
+        self.visited_count[state_tuple] = self.visited_count.setdefault(state_tuple,0) + 1 
+        self.num_select_action += 1
         return self.a_t
 
 

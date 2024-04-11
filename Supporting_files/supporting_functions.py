@@ -13,6 +13,7 @@ from Supporting_files.queueing_network import *
 from Supporting_files.wandb_tuning import *
 from Supporting_files.plot_datasparq import *
 from tqdm import tqdm
+import json
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -250,7 +251,8 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
         return 25 + 350 * np.sin(np.pi * t / 2)**2
 
     def arr(t):
-        return qt.poisson_random_measure(t, rate, config_params['arrival_rate'])
+
+        return t + np.random.gamma(4, 0.0025)
 
     def get_service_time(edge_type_info, miu_dict, exit_nodes):
         # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
@@ -263,7 +265,8 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
 
                 for edge_type in edge_type_info[end_node]:
                     def ser_f(t):
-                        return t + np.exp(service_rate)
+
+                        return t + np.random.exponential(0.025)
                     
                     services_f[edge_type] = ser_f
 
@@ -387,6 +390,13 @@ def update_transition_probas(transition_probas, env):
     
     return transition_probas
 
+def convert_format(state):
+    initial_states = {}
+    for index, num in enumerate(state):
+        initial_states[index] = num
+    
+    return initial_states
+
 def train(params, agent, env, best_params = None):
     """
     Conduct training sessions for a given agent and environment.
@@ -407,12 +417,14 @@ def train(params, agent, env, best_params = None):
     
         params = best_params
 
-    next_state_list_all = []
-    rewards_list_all = [] 
-    critic_loss_list_all = []
-    actor_loss_list_all = []
-    reward_list = []
-    actor_gradient_list_all = []
+
+    next_state_model_list_all = []
+    reward_model_list_all =[]
+    critic_loss_list_all = {}
+    actor_loss_list_all = {}
+    reward_list_all = {}
+    actor_gradient_list_all = {}
+    gradient_dict_all = {}
     action_dict = {}
     gradient_dict = {}
     transition_probas = init_transition_proba(env)
@@ -420,64 +432,76 @@ def train(params, agent, env, best_params = None):
     num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
 
     agent.train()
-    for episode in tqdm(range(num_episodes), desc="Training Progress"): 
-
+    actor_loss_list= []
+    critic_loss_list = []
+    actor_gradient_list = []
+    reward_list = []
+    save_state = {'state':[]}
+    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
+            
         env.reset()
-        state = env.explore_state(agent, env.qn_net, episode)
-        t = 0
+        state = env.explore_state(agent, env.qn_net, episode = episode)
 
-        actor_loss_list= []
-        critic_loss_list = []
-        actor_gradient_list = []
-        while t < time_steps:
-            
-            if type(state) == np.ndarray:
-                state = torch.from_numpy(state).to(device)
-            action = agent.select_action(state).to(device) 
-            
-            action_list = action.cpu().numpy().tolist()
-            for index, value in enumerate(action_list):
-                 node_list = action_dict.setdefault(index, [])
-                 node_list.append(value)
-                 action_dict[index] = node_list
-                             
-            next_state = env.get_next_state(action)    
-            next_state = torch.tensor(next_state).float().to(device)
-            reward = env.get_reward()
-     
-            reward_list.append(reward)                               
-            experience = (state, action, reward, next_state)        
-            agent.store_experience(experience)                             
-        
-            if agent.buffer.current_size > batch_size:
-
-                reward_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
-                next_state_list_all += next_state_loss_list
-                rewards_list_all += reward_loss_list
-
-                transition_probas = update_transition_probas(transition_probas, env)
-                
-                batch = agent.buffer.sample(batch_size=batch_size)
-                critic_loss = agent.update_critic_network(batch)                   
-                actor_loss, gradient_dict = agent.update_actor_network(batch)    
-
-                actor_loss_list.append(actor_loss)
-                critic_loss_list.append(critic_loss)
-                agent.plan(batch)
-
-            t += 1
-            state = next_state
-
-            if t%target_update_frequency == 0:
-                agent.soft_update(network="critic")
-                agent.soft_update(network="actor")
-
-        actor_loss_list_all += actor_loss_list
-        critic_loss_list_all += critic_loss_list
-        actor_gradient_list_all += actor_gradient_list
+        state_list = state.tolist()
+        state_int = [int(x) for x in state_list]
+        initial_states = convert_format(state_int)
+        env.net.set_initial_states(initial_states)
+        action = agent.select_action(state).to(device) 
     
-    return rewards_list_all, next_state_list_all, critic_loss_list_all,\
-          actor_loss_list_all, reward_list, action_dict, gradient_dict, transition_probas
+        action_list = action.cpu().numpy().tolist()
+        for index, value in enumerate(action_list):
+            node_list = action_dict.setdefault(index, [])
+            node_list.append(value)
+            action_dict[index] = node_list
+                        
+        next_state = env.get_next_state(action)
+        state_list = save_state['state'] 
+        state_list.append(next_state.tolist())
+        save_state['state'] = state_list
+
+        next_state = torch.tensor(next_state).float().to(device)
+        reward = env.get_reward()
+
+        reward_list.append(reward)                               
+        experience = (state, action, reward, next_state) 
+        
+        agent.store_experience(experience)                             
+    
+        if agent.buffer.current_size > 0 and agent.buffer.current_size % batch_size == 0:
+
+            # Specify the file name
+            file_name = 'states_data.json'
+
+            # Open a file and save the dictionary as JSON
+            with open(file_name, 'w') as json_file:
+                json.dump(save_state, json_file)  
+
+            reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
+            next_state_model_list_all += next_state_loss_list
+            reward_model_list_all += reward_model_loss_list
+
+            transition_probas = update_transition_probas(transition_probas, env)
+            
+            #for _ in tqdm(range(10), desc="Update Actor/Critic Network"):
+            batch = agent.buffer.sample(batch_size)
+            critic_loss = agent.update_critic_network(batch)                   
+            actor_loss, gradient_dict = agent.update_actor_network(batch)    
+
+            actor_loss_list.append(actor_loss)
+            critic_loss_list.append(critic_loss)
+            agent.plan(batch)
+
+            agent.soft_update(network="critic")
+            agent.soft_update(network="actor")
+
+        actor_loss_list_all[episode] = actor_loss_list
+        critic_loss_list_all[episode] = critic_loss_list
+        actor_gradient_list_all[episode] = actor_gradient_list
+        reward_list_all[episode] = reward_list
+        gradient_dict_all[episode] = gradient_dict
+        
+    return reward_model_list_all, next_state_model_list_all, critic_loss_list_all,\
+          actor_loss_list_all, reward_list_all, action_dict, gradient_dict_all, actor_gradient_list_all, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
     """
@@ -567,18 +591,17 @@ def start_train(config_file, param_file, save_file = True,
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
 
-    rewards_list_all, next_state_list_all, \
-    critic_loss_list_all, actor_loss_list_all, \
-    reward_list, action_dict, gradient_dict, \
-    transition_probas = train(params, agent, sim_environment)
+    reward_model_list_all, next_state_model_list_all, critic_loss_list_all,\
+          actor_loss_list_all, reward_list_all, action_dict, gradient_dict_all, \
+            actor_gradient_list_all, transition_probas = train(params, agent, sim_environment)
 
     csv_filepath = os.getcwd() + '/Supporting_files/' + data_filename
     image_filepath = os.getcwd() + '/Supporting_files/' + image_filename
     if save_file:
 
-        save_all(rewards_list_all, next_state_list_all, \
+        save_all(reward_model_list_all, next_state_model_list_all, \
         critic_loss_list_all, actor_loss_list_all, \
-        reward_list, action_dict, gradient_dict, \
+        reward_list_all, action_dict, gradient_dict_all, \
         transition_probas, base_path=csv_filepath)
     
     if plot_curves:

@@ -2,6 +2,11 @@ import queueing_tool as qt
 import numpy as np
 import tkinter as tk
 import yaml 
+import sys
+import os
+
+from queueing_tool.network.queue_network import QueueNetwork
+from queueing_tool.graph.graph_wrapper import adjacency2graph
 
 class Queue_network:
     def __init__(self):
@@ -146,8 +151,8 @@ class Queue_network:
     
     def create_env(self):
 
-        self.g = qt.adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
-        self.queueing_network = qt.QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args)
+        self.g = adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
+        self.queueing_network = QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args)
         self.queueing_network.set_transitions(self.transition_proba)
         self.queueing_network.draw(figsize=(6, 3))
     

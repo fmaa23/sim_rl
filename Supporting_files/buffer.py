@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import TensorDataset
 
 class ReplayBuffer():
-    def __init__(self, max_size):
+    def __init__(self, max_size = 1000):
         """
         Replay buffer initialization.
 
@@ -11,7 +11,7 @@ class ReplayBuffer():
             max_size (int): Maximum number of transitions stored by the replay buffer.
         """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.max_size = max_size
+        self.max_size = 1000
         self.buffer = []
         self.current_size = 0
 
