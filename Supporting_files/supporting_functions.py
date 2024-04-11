@@ -231,6 +231,24 @@ def create_q_classes(num_queues):
     for i in range(1, num_queues + 1):
         q_classes[i] = qt.LossQueue
     return q_classes
+    
+
+def get_service_time(edge_type_info, miu_dict, exit_nodes):
+        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
+        # the convert into each edge correponds to a distinctive service rate
+        # save for buffer size
+        services_f = {}
+        for end_node in edge_type_info.keys():
+            if end_node not in exit_nodes:
+                service_rate = miu_dict[end_node]
+
+                for edge_type in edge_type_info[end_node]:
+                    def ser_f(t):
+                        return t + np.exp(service_rate)
+                    
+                    services_f[edge_type] = ser_f
+
+        return services_f
 
 def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
     """
@@ -252,22 +270,6 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     def arr(t):
         return qt.poisson_random_measure(t, rate, config_params['arrival_rate'])
 
-    def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
-        # the convert into each edge correponds to a distinctive service rate
-        # save for buffer size
-        services_f = {}
-        for end_node in edge_type_info.keys():
-            if end_node not in exit_nodes:
-                service_rate = miu_dict[end_node]
-
-                for edge_type in edge_type_info[end_node]:
-                    def ser_f(t):
-                        return t + np.exp(service_rate)
-                    
-                    services_f[edge_type] = ser_f
-
-        return services_f
 
     services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
     

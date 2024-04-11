@@ -1,6 +1,12 @@
+import sys
+from pathlib import Path
+root_dir = Path(__file__).resolve().parent.parent
+sys.path.append(str(root_dir))
+
 import numpy as np
 from Supporting_files.State_Exploration import *
 from Supporting_files.queueing_network import *
+from Supporting_files.supporting_functions import *
 
 transition_proba = {}
 
@@ -130,7 +136,7 @@ class RLEnv:
             
             edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
             if len(edge_data) > 0:
-                self._state[edge]=edge_data[-1][4]
+                self._state[edge]=edge_data[-1][3]
             else:
                 self._state[edge]=0
 
@@ -215,11 +221,9 @@ class RLEnv:
         Returns:
             The state of the environment after the simulation.
         """
-        # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
-        self.net.initialize(queues=0)
 
         self.iter +=1
-        self.net.clear_data()
+        #self.net.clear_data()
         self.net.start_collecting_data()
         self.net.simulate(n = self.sim_n) 
         
@@ -305,5 +309,12 @@ class RLEnv:
                 return throughput
             except UnboundLocalError: 
                 return 0 
+if __name__=="__main__": 
+    config_param_filepath = 'user_config/configuration.yml'
+    eval_param_filepath = 'user_config/eval_hyperparams.yml'
+    env = create_simulation_env({'num_sim':5000}, config_param_filepath)
+    env.net.initialize(queues=0)
+    breakpoint()
+
 
 

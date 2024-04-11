@@ -61,23 +61,6 @@ class Queue_network:
         else:
             self.transition_proba = transition_proba
 
-    def get_arrival_f(self):
-        # compute the time of next arriva given arrival rate 
-        self.arrivals_f = []
-        max_rate = 375
-        rate = lambda t: 2 + np.sin(2 * np.pi * t)
-        arrival_f = lambda t: qt.poisson_random_measure(t, rate, max_rate)
-        self.arrivals_f = arrival_f
-        
-    def get_service_time(self):
-        # compute the time of an agent’s service time from service rate
-        self.services_f = []
-        for miu in self.miu:
-            def ser_f(t):
-                return t + np.random.exponential(miu)
-            self.services_f.append(ser_f)
-        return self.services_f
-        
     def get_edge_list(self):
         # get self.edge list from self.adj_list
         """
@@ -92,57 +75,6 @@ class Queue_network:
                 edge += 1
             self.edge_list[q] = q_edge_list
             
-    def get_q_classes(self):
-        """
-        example: q_classes = {1: qt.QueueServer, 2: qt.QueueServer}
-        # When we have specific buffer size we have to change it as follows to LossQueue(qbuffer=0) class 
-        """
-        LossQueueList = [] 
-        
-        for i in range(len(self.buffer_size_for_each_queue)): 
-            if i == 0:
-                LossQueueList.append(qt.QueueServer)
-            else:
-                LossQueueList.append(qt.LossQueue)
-        
-        self.q_classes= {}
-        for i,queue_types in enumerate(LossQueueList):
-            if i == 1:
-                print("Loss Queue Object:", queue_types)
-            self.q_classes[i+1]=queue_types
-    
-    def get_q_arg(self):
-        """
-        example: q_args = {
-                        1: {
-                            'arrival_f': arr_f,
-                            'service_f': lambda t: t,
-                            'AgentFactory': qt.GreedyAgent
-                        },
-                        2: {
-                            'num_servers': 1,
-                            'service_f': ser_f
-                        }
-                        }
-        """
-        q_args = {}
-        for index, q in enumerate(list(self.q_classes.keys())):
-            if q == 1:
-                q_info = {"arrival_f": self.arrivals_f,
-                        "service_f": self.services_f[index],
-                        "AgentFactory": qt.Agent, 
-                        "active_cap": self.active_cap,
-                        "deactive_t": self.deactive_cap,
-                        # 'qbuffer':self.buffer_size_for_each_queue[index]
-                        }
-            else:
-                q_info = {"service_f": self.services_f[index],
-                        "qbuffer":self.buffer_size_for_each_queue[index],
-                        "AgentFactory": qt.Agent
-                        }
-            q_args[q] = q_info
-
-        self.q_args = q_args
     
     def create_env(self):
 
