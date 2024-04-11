@@ -68,7 +68,8 @@ def load_hyperparams(eval_param_filepath):
 
     return params, hidden
 
-def create_queueing_env(config_file):
+def 
+ueueing_env(config_file):
     """
     Create and configure a queueing environment based on a given configuration file.
 
