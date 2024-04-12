@@ -5,7 +5,6 @@ import queueing_tool as qt
 import numpy as np
 import os
 
-from environments.RL_Environment import RLEnv
 
 from agents.ddpg import DDPGAgent
 from Supporting_files.State_Exploration import *
@@ -274,12 +273,10 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     q_args = {}
     for end_node in edge_type_info.keys():
         corresponding_edge_types = edge_type_info[end_node]
-        print(corresponding_edge_types)
         for edge_type in corresponding_edge_types:
 
             if edge_type != 0:
                 service_rate = miu_dict[end_node]
-                print(service_rate)
                 if edge_type == 1:
                     q_args[edge_type] = {
                     'arrival_f': arr,
@@ -327,6 +324,7 @@ def create_RL_env(q_net, params):
     Returns:
     - RLEnv: An instance of the RL environment.
     """
+    from environments.RL_Environment import RLEnv
     env = RLEnv(q_net, num_sim = params['num_sim'])
     return env
 
@@ -410,6 +408,25 @@ def update_transition_probas(transition_probas, env):
         transition_probas[start_node] = next_proba_dict
     
     return transition_probas
+
+def save_agent(agent): 
+    """
+    Saves the trained RL agent to a file.
+
+    This function creates a directory named 'Agent' in the current working directory if it doesn't exist,
+    and saves the given agent model to a file named 'tensor.pt' within this directory.
+    """
+    base_path = os.getcwd()
+    agent_dir = os.path.join(base_path, 'Agent')
+
+    # Create the directory if it does not exist
+    if not os.path.exists(agent_dir):
+        os.makedirs(agent_dir)
+        print(f"Directory created at {agent_dir}")
+
+    file_path = os.path.join(agent_dir, 'trained_agent.pt')
+    torch.save(agent, file_path)
+    print(f"Agent saved successfully at {file_path}")
 
 def train(params, agent, env, best_params = None):
     """
@@ -499,6 +516,8 @@ def train(params, agent, env, best_params = None):
         actor_loss_list_all += actor_loss_list
         critic_loss_list_all += critic_loss_list
         actor_gradient_list_all += actor_gradient_list
+    
+    save_agent(agent)
     
     return rewards_list_all, next_state_list_all, critic_loss_list_all,\
           actor_loss_list_all, reward_list, action_dict, gradient_dict, transition_probas

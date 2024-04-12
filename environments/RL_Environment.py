@@ -7,6 +7,7 @@ import numpy as np
 from Supporting_files.State_Exploration import *
 from Supporting_files.queueing_network import *
 from Supporting_files.supporting_functions import *
+import queueing_tool.queues.queue_servers as qs
 
 transition_proba = {}
 
@@ -250,18 +251,18 @@ class RLEnv:
         Returns:
             float: The calculated reward.
         """
-        inverted_adj_list=self.inverted_adjacency(self.adja_list)
-        queues_along_edges=self.get_state()
-        reward=0
-        for key in inverted_adj_list.keys():
-            if key == list(inverted_adj_list.keys())[-1]:
-                continue
-            num_edges_at_node=len(inverted_adj_list[key])
-            wait_time=sum(queues_along_edges[:num_edges_at_node])*np.exp(self.qn_net.miu[key])
-            queues_along_edges= queues_along_edges[num_edges_at_node:]
-            reward+=wait_time
+        # inverted_adj_list=self.inverted_adjacency(self.adja_list)
+        # queues_along_edges=self.get_state()
+        # reward=0
+        # for key in inverted_adj_list.keys():
+        #     if key == list(inverted_adj_list.keys())[-1]:
+        #         continue
+        #     num_edges_at_node=len(inverted_adj_list[key])
+        #     wait_time=sum(queues_along_edges[:num_edges_at_node])*np.exp(self.qn_net.miu[key])
+        #     queues_along_edges= queues_along_edges[num_edges_at_node:]
+        #     reward+=wait_time
          
-        return reward
+        # return reward
 
         # reward = 0
         # for i in range(self.net.num_edges): 
@@ -273,6 +274,31 @@ class RLEnv:
         #         tot_EtE_delay = EtE_delay.sum()
         #         reward += (throughput-tot_EtE_delay)
         # return reward
+        reward = 0
+        for i in range(1,self.net.num_edges): 
+            if isinstance(self.net.edge2queue[i], qs.NullQueue):
+                continue
+            queue_data=self.net.get_queue_data(queues=i)
+            # Colmun 1 indicates if the job was processed, for null node it is always 0 
+            ind_serviced = np.where(queue_data[:,2]!=0)[0]
+            ind_waiting = np.where(queue_data[:,2]==0)[0]
+            if len(ind_serviced)>0 or len(ind_waiting)>0:
+                #throughput = len(ind_serviced)
+                if len(ind_serviced)>0:
+                    serviced_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+                    total_serviced_delay = serviced_delay.sum()
+                else: 
+                    total_serviced_delay=0 
+                
+                if len(ind_waiting)>0:
+                    waiting_delay = self.net.time-queue_data[ind_waiting,0]
+                    total_waiting_delay= waiting_delay.sum()
+                else: 
+                    total_waiting_delay=0
+
+                reward += -(total_waiting_delay+total_serviced_delay)
+        return reward
+
                 
     def reset(self): 
         self.net.clear_data()

@@ -7,9 +7,9 @@ sys.path.append(str(root_dir))
 
 import torch 
 import matplotlib.pyplot as plt
+from supporting_functions import *
 from environments.RL_Environment import *
 from queueing_network import * 
-from supporting_functions import create_simulation_env
 import numpy as np
 import copy
 import os 
