@@ -7,9 +7,9 @@ sys.path.append(str(root_dir))
 
 import torch 
 import matplotlib.pyplot as plt
+from supporting_functions import *
 from environments.RL_Environment import *
 from queueing_network import * 
-from supporting_functions import create_simulation_env
 import numpy as np
 import copy
 import os 
@@ -196,7 +196,7 @@ class Static_Disruption(Network_Control):
         self.plot_queue(normal_metrics, disrupted_metrics, labels=['Normal', 'Disrupted'])
 
 if __name__=="__main__": 
-    agent = torch.load('Supporting_files/Agent/trained_agent.pt')
+    agent = torch.load('Agent/trained_agent.pt')
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
     env = create_simulation_env({'num_sim':5000}, config_param_filepath)
@@ -209,4 +209,4 @@ if __name__=="__main__":
     sd = Static_Disruption(env, agent, 1, 3)
     disrupted_env = sd.disrupted_environment
     queue_metrics_dis = sd.control(environment=disrupted_env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
-    breakpoint()
+    #breakpoint()

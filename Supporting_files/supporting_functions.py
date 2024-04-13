@@ -5,7 +5,6 @@ import numpy as np
 import os
 import yaml
 
-from environments.RL_Environment import RLEnv
 
 from agents.ddpg import DDPGAgent
 from Supporting_files.State_Exploration import *
@@ -70,25 +69,6 @@ def load_hyperparams(eval_param_filepath):
     hidden = parameter_dictionary['network_params']
 
     return params, hidden
-
-def create_queueing_env(config_file):
-    """
-    Create and configure a queueing environment based on a given configuration file.
-
-    Parameters:
-    - config_file (str): The file path to the environment configuration file.
-
-    Returns:
-    - Queue_network: An instance of the queueing environment.
-    """
-    arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
-    
-    q_net = Queue_network()
-    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba_all)
-    q_net.create_env()
-    return q_net
 
 def get_num_connections(adjacent_list):
     """
@@ -235,6 +215,23 @@ def create_q_classes(num_queues):
         q_classes[i] = LossQueue
     return q_classes
 
+def get_service_time(edge_type_info, miu_dict, exit_nodes):
+        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
+        # the convert into each edge correponds to a distinctive service rate
+        # save for buffer size
+        services_f = {}
+        for end_node in edge_type_info.keys():
+            if end_node not in exit_nodes:
+                service_rate = miu_dict[end_node]
+
+                for edge_type in edge_type_info[end_node]:
+                    def ser_f(t):
+                        return t + np.exp(service_rate)
+                    
+                    services_f[edge_type] = ser_f
+
+        return services_f
+
 def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
     """
     Constructs arguments for queue initialization based on the network configuration.
@@ -275,19 +272,41 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
         for edge_type in corresponding_edge_types:
 
             if edge_type != 0:
+                service_rate = miu_dict[end_node]
                 if edge_type == 1:
                     q_args[edge_type] = {
                     'arrival_f': arr,
-                    'service_f': services_f[edge_type],
-                    'qbuffer': buffer_size_for_each_queue[edge_type]
+                    'service_f': lambda t, en=end_node:t+np.exp(miu_dict[en]),
+                    'qbuffer': buffer_size_for_each_queue[edge_type],
+                    'service_rate': service_rate,
                     }
                 else:
                     q_args[edge_type] = {
-                    'service_f': services_f[edge_type],
+                    'service_f': lambda t, en=end_node:t+np.exp(miu_dict[en]),
                     'qbuffer':buffer_size_for_each_queue[edge_type],
+                    'service_rate': service_rate,
                     }
     
     return q_args
+
+def create_queueing_env(config_file):
+    """
+    Create and configure a queueing environment based on a given configuration file.
+
+    Parameters:
+    - config_file (str): The file path to the environment configuration file.
+
+    Returns:
+    - Queue_network: An instance of the queueing environment.
+    """
+    arrival_rate, miu_list, q_classes, q_args, \
+        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
+    
+    q_net = Queue_network()
+    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
+                        edge_list, transition_proba_all)
+    q_net.create_env()
+    return q_net
 
 def create_RL_env(q_net, params):
     """
@@ -391,6 +410,25 @@ def convert_format(state):
         initial_states[index] = num
     
     return initial_states
+
+def save_agent(agent): 
+    """
+    Saves the trained RL agent to a file.
+
+    This function creates a directory named 'Agent' in the current working directory if it doesn't exist,
+    and saves the given agent model to a file named 'tensor.pt' within this directory.
+    """
+    base_path = os.getcwd()
+    agent_dir = os.path.join(base_path, 'Agent')
+
+    # Create the directory if it does not exist
+    if not os.path.exists(agent_dir):
+        os.makedirs(agent_dir)
+        print(f"Directory created at {agent_dir}")
+
+    file_path = os.path.join(agent_dir, 'trained_agent.pt')
+    torch.save(agent, file_path)
+    print(f"Agent saved successfully at {file_path}")
 
 def train(params, agent, env, best_params = None):
     """
@@ -529,8 +567,10 @@ def train(params, agent, env, best_params = None):
     plt.savefig(save_path)
     plt.close()
 
-    return reward_list, actor_loss_list, critic_loss_list, gradient_dict_all, action_dict
-        
+    save_agent(agent)
+    
+    return reward_list, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_list, action_dict, gradient_dict, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
     """

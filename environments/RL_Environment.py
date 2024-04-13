@@ -1,6 +1,13 @@
+import sys
+from pathlib import Path
+root_dir = Path(__file__).resolve().parent.parent
+sys.path.append(str(root_dir))
+
 import numpy as np
 from Supporting_files.State_Exploration import *
 from Supporting_files.queueing_network import *
+from Supporting_files.supporting_functions import *
+import queueing_tool.queues.queue_servers as qs
 
 transition_proba = {}
 
@@ -125,7 +132,16 @@ class RLEnv:
         Returns:
             The current state of the environment, represented as an array or a suitable data structure.
         """
-        self._state = self.net.num_agents[:-1]
+
+        # self._state = self.net.num_agents[:-1]
+
+        for edge in range((self.net.num_edges-self.num_nullnodes)):
+            
+            edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
+            if len(edge_data) > 0:
+                self._state[edge]=edge_data[-1][3]
+            else:
+                self._state[edge]=0
 
         return self._state
 
@@ -217,7 +233,7 @@ class RLEnv:
         self.net.initialize(edge_type=1)
         
         self.iter +=1
-        self.net.clear_data()
+        #self.net.clear_data()
         self.net.start_collecting_data()
         self.net.simulate(n = self.sim_n) 
         
@@ -235,7 +251,7 @@ class RLEnv:
 
         return inverted_dict
 
-    def get_reward_old(self):
+    def get_reward(self):
         """
         Calculates and returns the reward based on the current state of the environment.
 
@@ -244,43 +260,6 @@ class RLEnv:
         Returns:
             float: The calculated reward.
         """
-        inverted_adj_list=self.inverted_adjacency(self.adja_list)
-        queues_along_edges=self.get_state()
-        reward=0
-        for key in inverted_adj_list.keys():
-            if key == list(inverted_adj_list.keys())[-1]:
-                continue
-            num_edges_at_node=len(inverted_adj_list[key])
-            wait_time=sum(queues_along_edges[:num_edges_at_node])*np.exp(self.qn_net.miu[key])
-            queues_along_edges = queues_along_edges[num_edges_at_node:]
-            reward+=wait_time
-         
-        return -reward
-
-    def get_reward(self):
-        """
-        Calculates the reward based on the current state of the environment.
-
-        Returns:
-        float
-            The reward value.
-        """
-        # Loop over nodes: 
-        ## Another Reward Function 
-        reward = 0
-        for i in range(self.net.num_edges): 
-            queue_data=self.net.get_queue_data(queues=i)
-            # Colmun 1 indicates if the job was processed, for null node it is always 0 
-            ind_serviced = np.where(queue_data[:,2]!=0)[0]
-            if len(ind_serviced)>0:
-                throughput = len(ind_serviced)
-                EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-                tot_EtE_delay = EtE_delay.sum()
-                reward += (throughput-tot_EtE_delay)
-        if reward <= 0:
-            print(f"queue:{i}, throughput:{throughput}, EtE: {EtE_delay}")
-            print()
-        return reward
 
         # reward = 0
         # for i in range(self.net.num_edges): 
@@ -292,6 +271,33 @@ class RLEnv:
         #         tot_EtE_delay = EtE_delay.sum()
         #         reward += (throughput-tot_EtE_delay)
         # return reward
+
+        reward = 0
+        for i in range(1,self.net.num_edges): 
+            if isinstance(self.net.edge2queue[i], qs.NullQueue):
+                continue
+            queue_data=self.net.get_queue_data(queues=i)
+            # Colmun 1 indicates if the job was processed, for null node it is always 0 
+            ind_serviced = np.where(queue_data[:,2]!=0)[0]
+            ind_waiting = np.where(queue_data[:,2]==0)[0]
+            if len(ind_serviced)>0 or len(ind_waiting)>0:
+                #throughput = len(ind_serviced)
+                if len(ind_serviced)>0:
+                    serviced_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+                    total_serviced_delay = serviced_delay.sum()
+                else: 
+                    total_serviced_delay=0 
+                
+                if len(ind_waiting)>0:
+                    waiting_delay = self.net.time-queue_data[ind_waiting,0]
+                    total_waiting_delay= waiting_delay.sum()
+                else: 
+                    total_waiting_delay=0
+
+                reward += -(total_waiting_delay+total_serviced_delay)
+
+        return reward
+
                 
     def reset(self): 
         self.net.clear_data()
@@ -328,5 +334,12 @@ class RLEnv:
                 return throughput
             except UnboundLocalError: 
                 return 0 
+if __name__=="__main__": 
+    config_param_filepath = 'user_config/configuration.yml'
+    eval_param_filepath = 'user_config/eval_hyperparams.yml'
+    env = create_simulation_env({'num_sim':5000}, config_param_filepath)
+    env.net.initialize(queues=0)
+    breakpoint()
+
 
 
