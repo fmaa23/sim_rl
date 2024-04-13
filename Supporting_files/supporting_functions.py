@@ -253,23 +253,16 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
         return 25 + 350 * np.sin(np.pi * t / 2)**2
 
     def arr(t):
-
-        return t + np.random.gamma(4, 0.0025)
-
+        return poisson_random_measure(t, rate, config_params['arrival_rate'])
+    
     def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
-        # the convert into each edge correponds to a distinctive service rate
-        # save for buffer size
         services_f = {}
         for end_node in edge_type_info.keys():
             if end_node not in exit_nodes:
-                service_rate = miu_dict[end_node]
-
                 for edge_type in edge_type_info[end_node]:
-                    def ser_f(t):
-
-                        return t + np.random.exponential(0.025)
-                    
+                    service_rate = miu_dict.get(end_node)
+                    def ser_f(t, rate=service_rate):  
+                        return t + np.random.exponential(rate)  
                     services_f[edge_type] = ser_f
 
         return services_f
@@ -422,32 +415,30 @@ def train(params, agent, env, best_params = None):
 
     next_state_model_list_all = []
     reward_model_list_all =[]
-    critic_loss_list_all = {}
-    actor_loss_list_all = {}
-    reward_list_all = {}
-    actor_gradient_list_all = {}
     gradient_dict_all = {}
     action_dict = {}
-    gradient_dict = {}
+    gradient_dict_all = {}
     transition_probas = init_transition_proba(env)
 
-    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
-
-    agent.train()
     actor_loss_list= []
     critic_loss_list = []
-    actor_gradient_list = []
     reward_list = []
-    save_state = {'state':[]}
-    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
-            
-        env.reset()
-        state = env.explore_state(agent, env.qn_net, episode = episode)
 
+    num_episodes, batch_size, num_epochs, _, _ = get_params_for_train(params)
+
+    agent.train()
+    env.reset()
+    update = 0
+
+    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
+         
+        state = env.explore_state(agent, env.qn_net, episode)
         state_list = state.tolist()
         state_int = [int(x) for x in state_list]
         initial_states = convert_format(state_int)
-        # env.net.set_initial_states(initial_states)
+
+        env.net.set_initial_states(initial_states)
+        state = state / torch.max(state)
         action = agent.select_action(state).to(device) 
     
         action_list = action.cpu().numpy().tolist()
@@ -455,13 +446,10 @@ def train(params, agent, env, best_params = None):
             node_list = action_dict.setdefault(index, [])
             node_list.append(value)
             action_dict[index] = node_list
-                        
         next_state = env.get_next_state(action)
-        state_list = save_state['state'] 
-        state_list.append(next_state.tolist())
-        save_state['state'] = state_list
 
         next_state = torch.tensor(next_state).float().to(device)
+
         reward = env.get_reward()
 
         reward_list.append(reward)                               
@@ -471,12 +459,7 @@ def train(params, agent, env, best_params = None):
     
         if agent.buffer.current_size > 0 and agent.buffer.current_size % batch_size == 0:
 
-            # Specify the file name
-            file_name = 'states_data.json'
-
-            # Open a file and save the dictionary as JSON
-            with open(file_name, 'w') as json_file:
-                json.dump(save_state, json_file)  
+            update += 1
 
             reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
             next_state_model_list_all += next_state_loss_list
@@ -484,26 +467,70 @@ def train(params, agent, env, best_params = None):
 
             transition_probas = update_transition_probas(transition_probas, env)
             
-            #for _ in tqdm(range(10), desc="Update Actor/Critic Network"):
-            batch = agent.buffer.sample(batch_size)
+            batch = agent.buffer.sample(batch_size = batch_size)
             critic_loss = agent.update_critic_network(batch)                   
             actor_loss, gradient_dict = agent.update_actor_network(batch)    
 
             actor_loss_list.append(actor_loss)
             critic_loss_list.append(critic_loss)
+
             agent.plan(batch)
 
             agent.soft_update(network="critic")
             agent.soft_update(network="actor")
 
-        actor_loss_list_all[episode] = actor_loss_list
-        critic_loss_list_all[episode] = critic_loss_list
-        actor_gradient_list_all[episode] = actor_gradient_list
-        reward_list_all[episode] = reward_list
-        gradient_dict_all[episode] = gradient_dict
+            gradient_dict_all[update] = gradient_dict
+    
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.title("reward")
+    plt.plot(reward_list)
+    save_path = os.path.join(os.getcwd(), 'reward')
+    plt.savefig(save_path)
+    plt.close()
+
+    plt.figure()
+    plt.title("actor_loss")
+    plt.plot(actor_loss_list)
+    save_path = os.path.join(os.getcwd(), 'actor_loss')
+    plt.savefig(save_path)
+    plt.close()
+
+    plt.figure()
+    plt.title("critic_loss")
+    plt.plot(critic_loss_list)
+    save_path = os.path.join(os.getcwd(), 'critic_loss')
+    plt.savefig(save_path)
+    plt.close()
+
+    plt.figure()
+    plt.plot(gradient_dict['layers.0.weight'][1])
+    save_path = os.path.join(os.getcwd(), 'gradient')
+    plt.savefig(save_path)
+    plt.close()
+
+    # Assuming you want to plot for key '1'
+    data_to_plot = transition_probas[1]
+
+    # Create a figure
+    plt.figure(figsize=(10, 6))
+
+    # Plot each series in the dictionary on the same graph
+    for key, values in data_to_plot.items():
+        plt.plot(values, label=f'Transitions from 1 to {key}')
+
+    # Add title and labels
+    plt.title('Transition Probabilities from 1')
+    plt.xlabel('Index')
+    plt.ylabel('Probability')
+    plt.legend()  # Add a legend to explain each line
+
+    save_path = os.path.join(os.getcwd(), 'transition probas')
+    plt.savefig(save_path)
+    plt.close()
+
+    return reward_list, actor_loss_list, critic_loss_list, gradient_dict_all, action_dict
         
-    return reward_model_list_all, next_state_model_list_all, critic_loss_list_all,\
-          actor_loss_list_all, reward_list_all, action_dict, gradient_dict_all, actor_gradient_list_all, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
     """

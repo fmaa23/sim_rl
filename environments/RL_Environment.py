@@ -29,7 +29,7 @@ class RLEnv:
         self.net.start_collecting_data()
 
         # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
-        self.net.initialize()
+        self.net.initialize(edge_type=1)
 
         self.initialize_params_for_visualization()
 
@@ -214,7 +214,8 @@ class RLEnv:
         Returns:
             The state of the environment after the simulation.
         """
-
+        self.net.initialize(edge_type=1)
+        
         self.iter +=1
         self.net.clear_data()
         self.net.start_collecting_data()
@@ -277,6 +278,7 @@ class RLEnv:
                 tot_EtE_delay = EtE_delay.sum()
                 reward += (throughput-tot_EtE_delay)
         if reward <= 0:
+            print(f"queue:{i}, throughput:{throughput}, EtE: {EtE_delay}")
             print()
         return reward
 

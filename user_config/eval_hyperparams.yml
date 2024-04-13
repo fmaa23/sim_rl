@@ -30,7 +30,7 @@ rl_params:
 
 state_exploration_params:
 
-  num_sample: 5000
+  num_sample: 100
   
   w1: 0.5
   
@@ -48,7 +48,7 @@ state_exploration_params:
 
   output_json: True
 
-  output_histogram: True
+  output_histogram: False
 
   output_coverage_metric: True
 
