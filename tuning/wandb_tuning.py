@@ -5,13 +5,13 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 
 from agents.ddpg import DDPGAgent
-from environments.RL_Environment import RLEnv
+from rl_env.RL_Environment import RLEnv
 import torch
 import numpy as np
 import wandb
 import yaml
 import os
-from Supporting_files.base_functions import *
+from foundations.base_functions import *
 
 
 def load_hyperparams(eval_param_filepath):

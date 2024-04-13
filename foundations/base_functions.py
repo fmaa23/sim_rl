@@ -4,11 +4,11 @@ import pandas as pd
 import queueing_tool as qt 
 import numpy as np
 import os
-from environments.RL_Environment import RLEnv
+from rl_env.RL_Environment import RLEnv
 from agents.ddpg import DDPGAgent
-from Supporting_files.State_Exploration import *
-from Supporting_files.queueing_network import *
-from Supporting_files.plot_datasparq import *
+from features.state_exploration.state_exploration import *
+from queue_env.queueing_network import *
+from foundations.plot_datasparq import *
 
 def get_num_connections(adjacent_list):
     """

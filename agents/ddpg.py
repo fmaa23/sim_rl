@@ -2,10 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-from Supporting_files.model import Actor, Critic, RewardModel, NextStateModel, check_validity
-from Supporting_files.buffer import ReplayBuffer
+from foundations.model import Actor, Critic, RewardModel, NextStateModel
+from agents.buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
 
 gradient_dict = {} 

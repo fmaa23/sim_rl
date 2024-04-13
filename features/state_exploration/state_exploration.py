@@ -2,7 +2,7 @@
 import numpy as np
 from agents.ddpg import DDPGAgent
 import torch
-from Supporting_files.queueing_network import Queue_network
+from queue_env.queueing_network import Queue_network
 import os
 import json
 import matplotlib.pyplot as plt

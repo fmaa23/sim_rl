@@ -4,9 +4,9 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 import numpy as np
-from Supporting_files.State_Exploration import *
-from Supporting_files.queueing_network import *
-from Supporting_files.supporting_functions import *
+from features.state_exploration.state_exploration import *
+from queue_env.queueing_network import *
+from foundations.supporting_functions import *
 import queueing_tool.queues.queue_servers as qs
 
 transition_proba = {}

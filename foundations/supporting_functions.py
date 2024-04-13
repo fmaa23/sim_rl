@@ -7,10 +7,10 @@ import yaml
 
 
 from agents.ddpg import DDPGAgent
-from Supporting_files.State_Exploration import *
-from Supporting_files.queueing_network import *
-from Supporting_files.wandb_tuning import *
-from Supporting_files.plot_datasparq import *
+from features.state_exploration.state_exploration import *
+from queue_env.queueing_network import *
+from tuning.wandb_tuning import *
+from foundations.plot_datasparq import *
 from tqdm import tqdm
 import json
 from queueing_tool.network.queue_network import QueueNetwork
@@ -519,53 +519,53 @@ def train(params, agent, env, best_params = None):
 
             gradient_dict_all[update] = gradient_dict
     
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.title("reward")
-    plt.plot(reward_list)
-    save_path = os.path.join(os.getcwd(), 'reward')
-    plt.savefig(save_path)
-    plt.close()
+    # import matplotlib.pyplot as plt
+    # plt.figure()
+    # plt.title("reward")
+    # plt.plot(reward_list)
+    # save_path = os.path.join(os.getcwd(), 'reward')
+    # plt.savefig(save_path)
+    # plt.close()
 
-    plt.figure()
-    plt.title("actor_loss")
-    plt.plot(actor_loss_list)
-    save_path = os.path.join(os.getcwd(), 'actor_loss')
-    plt.savefig(save_path)
-    plt.close()
+    # plt.figure()
+    # plt.title("actor_loss")
+    # plt.plot(actor_loss_list)
+    # save_path = os.path.join(os.getcwd(), 'actor_loss')
+    # plt.savefig(save_path)
+    # plt.close()
 
-    plt.figure()
-    plt.title("critic_loss")
-    plt.plot(critic_loss_list)
-    save_path = os.path.join(os.getcwd(), 'critic_loss')
-    plt.savefig(save_path)
-    plt.close()
+    # plt.figure()
+    # plt.title("critic_loss")
+    # plt.plot(critic_loss_list)
+    # save_path = os.path.join(os.getcwd(), 'critic_loss')
+    # plt.savefig(save_path)
+    # plt.close()
 
-    plt.figure()
-    plt.plot(gradient_dict['layers.0.weight'][1])
-    save_path = os.path.join(os.getcwd(), 'gradient')
-    plt.savefig(save_path)
-    plt.close()
+    # plt.figure()
+    # plt.plot(gradient_dict['layers.0.weight'][1])
+    # save_path = os.path.join(os.getcwd(), 'gradient')
+    # plt.savefig(save_path)
+    # plt.close()
 
-    # Assuming you want to plot for key '1'
-    data_to_plot = transition_probas[1]
+    # # Assuming you want to plot for key '1'
+    # data_to_plot = transition_probas[1]
 
-    # Create a figure
-    plt.figure(figsize=(10, 6))
+    # # Create a figure
+    # plt.figure(figsize=(10, 6))
 
-    # Plot each series in the dictionary on the same graph
-    for key, values in data_to_plot.items():
-        plt.plot(values, label=f'Transitions from 1 to {key}')
+    # # Plot each series in the dictionary on the same graph
+    # for key, values in data_to_plot.items():
+    #     plt.plot(values, label=f'Transitions from 1 to {key}')
 
-    # Add title and labels
-    plt.title('Transition Probabilities from 1')
-    plt.xlabel('Index')
-    plt.ylabel('Probability')
-    plt.legend()  # Add a legend to explain each line
+    # # Add title and labels
+    # plt.title('Transition Probabilities from 1')
+    # plt.xlabel('Index')
+    # plt.ylabel('Probability')
+    # plt.legend()  # Add a legend to explain each line
 
-    save_path = os.path.join(os.getcwd(), 'transition probas')
-    plt.savefig(save_path)
-    plt.close()
+    # save_path = os.path.join(os.getcwd(), 'transition probas')
+    # plt.savefig(save_path)
+    # plt.close()
 
     save_agent(agent)
     

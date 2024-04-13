@@ -67,7 +67,6 @@ class Queue_network:
         else:
             self.transition_proba = transition_proba
 
-<<<<<<< HEAD
     def get_arrival_f(self):
         # compute the time of next arriva given arrival rate 
         self.arrivals_f = []
@@ -76,17 +75,6 @@ class Queue_network:
         arrival_f = lambda t: poisson_random_measure(t, rate, max_rate)
         self.arrivals_f = arrival_f
         
-    def get_service_time(self):
-        # compute the time of an agent’s service time from service rate
-        self.services_f = []
-        for miu in self.miu:
-            def ser_f(t):
-                return t + np.random.exponential(miu)
-            self.services_f.append(ser_f)
-        return self.services_f
-        
-=======
->>>>>>> 2d6248f18265baad3e785d42c67d0aa1117f234f
     def get_edge_list(self):
         # get self.edge list from self.adj_list
         """
@@ -101,7 +89,6 @@ class Queue_network:
                 edge += 1
             self.edge_list[q] = q_edge_list
             
-<<<<<<< HEAD
     def get_q_classes(self):
         """
         example: q_classes = {1: qt.QueueServer, 2: qt.QueueServer}
@@ -153,8 +140,6 @@ class Queue_network:
             q_args[q] = q_info
 
         self.q_args = q_args
-=======
->>>>>>> 2d6248f18265baad3e785d42c67d0aa1117f234f
     
     def create_env(self):
 
