@@ -6,15 +6,14 @@
 import sys
 from pathlib import Path
 # Get the absolute path of the parent directory (i.e., the root of your project)
-root_dir = Path(__file__).resolve().parent.parent
+root_dir = Path(__file__).resolve().parent.parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
-
 import torch 
 import matplotlib.pyplot as plt
-from environments.RL_Environment import *
-from queueing_network import * 
-from supporting_functions import *
+from rl_env.RL_Environment import *
+from queue_env.queueing_network import * 
+from foundations.supporting_functions import *
 import numpy as np
 import copy
 import os 
@@ -60,6 +59,7 @@ class Confidence():
         _,batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
 
         agent.train()
+        print(num_episodes)
         for episode in tqdm(range(num_episodes), desc="Training Progress"):  # num_episodes now comes directly as an argument
             env.reset()
             state = env.explore_state(agent, env.qn_net, episode)
@@ -87,7 +87,7 @@ class Confidence():
                 experience = (state, action, reward, next_state)        
                 agent.store_experience(experience)                             
             
-                if agent.buffer.current_size > batch_size:
+                if agent.buffer.get_current_size() > batch_size:
                     reward_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
                     next_state_list_all += next_state_loss_list
                     rewards_list_all += reward_loss_list
@@ -158,10 +158,12 @@ class Confidence():
             
             # Train the agent for the specified number of episodes
             print(f"------ Training the agent for {num_episode} episodes ------") 
+            print(num_episode)
+
             rewards_list_all, next_state_list_all, \
             critic_loss_list_all, actor_loss_list_all, \
             reward_list, action_dict, gradient_dict, \
-            transition_probas = self.train(params, agent, sim_environment, num_episodes)
+            transition_probas = self.train(params, agent, sim_environment, num_episode)
             
             csv_filepath = os.getcwd() + '/Supporting_files/' + data_filename
             image_filepath = os.getcwd() + '/Supporting_files/' + image_filename
