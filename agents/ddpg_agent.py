@@ -252,9 +252,9 @@ class DDPGAgent():
             experiences = []
             for _ in range(self.planning_steps):
                 action_hat = (action + (torch.randn(len(action)) * self.epsilon).to(self.device))
-                action_hat = torch.clamp(action_hat, min=0, max=1)
-                reward_hat = self.reward_model([state, action_hat])
-                next_state_hat = self.next_state_model([state, action_hat])
+                action_hat = torch.clamp(action_hat, min=0, max=1).to(self.device)
+                reward_hat = self.reward_model([state, action_hat]).to(self.device)
+                next_state_hat = self.next_state_model([state.to(self.device), action_hat.to(self.device)]).to(self.device)
                 experience_hat = (state, action_hat, reward_hat, next_state_hat)
                 experiences.append(experience_hat)
 

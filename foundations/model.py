@@ -163,6 +163,7 @@ class RewardModel(nn.Module):
         """
         super().__init__()
         check_validity(hidden)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.layer1 = nn.Sequential(nn.Linear(n_states, hidden[0]), nn.LeakyReLU(0.2))
         self.layer2 = nn.Sequential(nn.Linear(hidden[0]+n_actions, hidden[1]), nn.LeakyReLU(0.2))
@@ -194,11 +195,11 @@ class RewardModel(nn.Module):
             a = torch.tensor(x)
         x = x.float()
 
-        out = self.layer1(x)
+        out = self.layer1(x.to(self.device))
         if len(a.shape) == 1: 
-            out = self.layer2(torch.cat([out,a]))
+            out = self.layer2(torch.cat([out,a]).to(self.device))
         else: 
-            out = self.layer2(torch.cat([out,a],1))
+            out = self.layer2(torch.cat([out,a],1).to(self.device))
         out = self.layer3(out)
         return out
 
@@ -218,6 +219,7 @@ class NextStateModel(nn.Module):
 
         """
         super().__init__()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         check_validity(hidden)
 
         self.layer1 = nn.Sequential(nn.Linear(n_states, hidden[0]), nn.LeakyReLU(0.2))
@@ -244,9 +246,9 @@ class NextStateModel(nn.Module):
         """
         x, a = xa
         if type(x) == np.ndarray: 
-            x = torch.tensor(x)
+            x = torch.tensor(x.to(self.device))
         if type(a) == np.ndarray: 
-            a = torch.tensor(x)
+            a = torch.tensor(x.to(self.device))
         x = x.float()
 
         out = self.layer1(x)
