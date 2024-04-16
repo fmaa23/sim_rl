@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 import json
+import os
 
 
 def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'):
@@ -57,13 +57,13 @@ def plot_critic(data_filepath, images_filepath):
     plt.close()
 
 def plot_reward(data_filepath, images_filepath):
-    reward = pd.read_csv(data_filepath + '/reward.csv', index_col=0)
-    
     plt.figure()
-    plt.plot(reward)
-    plt.title("Reward")
+    filename = data_filepath + '/reward_dict.json'
+
+    with open(filename, 'r') as f:
+        reward_data = json.load(f)
     
-    import os
+    plt.plot(reward_data[list(reward_data.keys())[-1]])
     save_path = os.path.join(images_filepath, 'Reward.png')
     plt.savefig(save_path)
     plt.close()
@@ -84,20 +84,32 @@ def plot_actor_vector(data_filepath, images_filepath):
     plt.savefig(save_path)
     plt.close()
 
-def plot_transition_proba(data_filepath, images_filepath):
+def plot_transition_proba(data_filepath, images_filepath, transition_proba_dict, node = 1):
 
-    transition_proba = pd.read_csv(data_filepath + "/transition_proba.csv", index_col=0)
-    for column in transition_proba.columns:
-        plt.plot(transition_proba.index, transition_proba[column], label=column)
+    df = pd.read_csv(data_filepath + '/transition_proba.csv', index_col = 0)
 
-    plt.title("Transition Proba")
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Coordinates for the legend box
-    plt.show()
+    num_col = [int(index) for index in list(df.columns)]
+    df.columns = num_col
 
-    import os
-    save_path = os.path.join(images_filepath, 'Transition_proba.png')
+    nodes = list(transition_proba_dict[node].keys())
+
+    data_to_plot = df[nodes]
+    plt.figure(figsize=(10, 6))
+    for key, values in data_to_plot.items():
+        plt.plot(values, label=f'Transitions from 1 to {key}')
+
+    plt.title('Transition Probabilities from 1')
+    plt.xlabel('Index')
+    plt.ylabel('Probability')
+    plt.legend()
+
+    save_path = os.path.join(os.getcwd(), 'transition probas.png')
     plt.savefig(save_path)
     plt.close()
+
+    plt.title("Transition Proba")
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1)) 
+    plt.show()
 
 def plot_reward_model_loss(data_filepath, images_filepath):
     reward_model_loss_new = pd.read_csv(data_filepath + '/reward_model_loss.csv', index_col=0)
@@ -123,9 +135,9 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
     plt.savefig(save_path)
     plt.close()
 
-def plot(data_filepath, images_filepath):
+def plot(data_filepath, images_filepath, transition_probas):
     import os
-    filepath = os.getcwd() + '/Supporting_files' + '/images'
+    filepath = os.getcwd() + '/foundations' + '/output_plots'
 
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)
@@ -134,6 +146,6 @@ def plot(data_filepath, images_filepath):
     plot_critic(data_filepath, images_filepath)
     plot_actor_vector(data_filepath, images_filepath)
     plot_gradient(data_filepath, images_filepath)
-    plot_transition_proba(data_filepath, images_filepath)
+    plot_transition_proba(data_filepath, images_filepath, transition_probas, node = 1)
     plot_reward_model_loss(data_filepath, images_filepath)
     plot_next_state_model_loss(data_filepath, images_filepath)

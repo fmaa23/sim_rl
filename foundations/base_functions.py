@@ -144,7 +144,7 @@ def create_params(config_file):
     miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
-    sim_time = config_params['sim_time']
+    n_sim = config_params['n_sim']
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
 
@@ -162,7 +162,7 @@ def create_params(config_file):
     # active_cap = config_params['active_cap']
     # deactive_t = config_params['deactive_cap']
 
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, n_sim
 
 def create_q_classes(edge_list):
     """

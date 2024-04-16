@@ -3,8 +3,8 @@ from foundations.supporting_functions import start_train, start_tuning
 config_param_filepath = 'user_config/configuration.yml'
 eval_param_filepath = 'user_config/eval_hyperparams.yml'
 
-data_filename = 'data'
-image_filename = 'images' 
+data_filename = 'output_csv'
+image_filename = 'output_plots' 
 
 function = 'train'
 

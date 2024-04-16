@@ -176,7 +176,7 @@ def create_params(config_file):
     miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
-    sim_time = config_params['sim_time']
+    n_sim = config_params['n_sim']
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
 
@@ -194,7 +194,7 @@ def create_params(config_file):
     # active_cap = config_params['active_cap']
     # deactive_t = config_params['deactive_cap']
 
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, n_sim
 
 def create_q_classes(edge_list):
     """
@@ -304,11 +304,11 @@ def create_queueing_env(config_file):
     - Queue_network: An instance of the queueing environment.
     """
     arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(config_file)
+        adjacent_list, edge_list, transition_proba_all, max_agents, n_sim = create_params(config_file)
     
     q_net = Queue_network()
     q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba_all, max_agents, sim_time)
+                        edge_list, transition_proba_all, max_agents, n_sim)
     q_net.create_env()
     return q_net
 
@@ -378,12 +378,11 @@ def get_params_for_train(params):
     - tuple: A tuple containing parameters specific to training.
     """
     num_episodes = params['num_episodes']
-    batch_size = params['batch_size']
     num_epochs = params['num_epochs']
     time_steps = params['time_steps']
-    target_update_frequency = params['target_update_frequency']
+    num_train_agent = params['num_train_agent']
 
-    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency
+    return num_episodes, num_epochs, time_steps, num_train_agent
 
 def init_transition_proba(env):
     transition_proba = {}
@@ -466,9 +465,7 @@ def train(params, agent, env, best_params = None):
     reward_list = []
     reward_by_episode = {}
 
-    num_train_AC = 10
-
-    num_episodes, _, num_epochs, time_steps, _ = get_params_for_train(params)
+    num_episodes, num_epochs, time_steps, num_train_agent = get_params_for_train(params)
 
     for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
 
@@ -479,7 +476,7 @@ def train(params, agent, env, best_params = None):
         update = 0
         reward_list = []
 
-        for t in tqdm(range(time_steps), desc="Time Steps Progress"): 
+        for _ in tqdm(range(time_steps), desc="Time Steps Progress"): 
 
             state = env.get_state()
             state_tensor = torch.tensor(state)
@@ -506,7 +503,7 @@ def train(params, agent, env, best_params = None):
 
         transition_probas = update_transition_probas(transition_probas, env)
 
-        for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
+        for _ in tqdm(range(num_train_agent), desc="Train Agent"): 
 
             batch = agent.buffer.sample(batch_size=time_steps)
             critic_loss = agent.update_critic_network(batch)                   
@@ -514,44 +511,21 @@ def train(params, agent, env, best_params = None):
 
             actor_loss_list.append(actor_loss)
             critic_loss_list.append(critic_loss)
+            gradient_dict_all[update] = gradient_dict
 
         agent.plan(batch)
 
         agent.soft_update(network="critic")
         agent.soft_update(network="actor")
 
-        gradient_dict_all[update] = gradient_dict
-
         agent.buffer.clear()
 
         reward_by_episode[episode] = reward_list
 
-
-    # # # Assuming you want to plot for key '1'
-    # data_to_plot = transition_probas[1]
-
-    # # Create a figure
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10, 6))
-
-    # # Plot each series in the dictionary on the same graph
-    # for key, values in data_to_plot.items():
-    #     plt.plot(values, label=f'Transitions from 1 to {key}')
-
-    # # Add title and labels
-    # plt.title('Transition Probabilities from 1')
-    # plt.xlabel('Index')
-    # plt.ylabel('Probability')
-    # plt.legend()  # Add a legend to explain each line
-
-    # save_path = os.path.join(os.getcwd(), 'transition probas')
-    # plt.savefig(save_path)
-    # plt.close()
-
     # save_agent(agent)
     
-    return reward_list, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
+    return reward_by_episode, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, action_dict, gradient_dict, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
     """
@@ -580,8 +554,8 @@ def get_transition_proba_df(transition_probas):
     df_transition_proba = pd.DataFrame(flatten_dict)
     return df_transition_proba
 
-def save_all(reward_list, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, base_path = None):
+def save_all(reward_by_episode, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, action_dict, gradient_dict, transition_probas, base_path = None):
     """
     Save all relevant data from the training process.
 
@@ -601,17 +575,16 @@ def save_all(reward_list, next_state_model_list_all, critic_loss_list,\
     # Create the directory if it doesn't exist
     
     base_path = os.getcwd()
-    base_path += "/Supporting_files/data"
+    base_path += "/foundations/output_csv"
     os.makedirs(base_path, exist_ok=True)
 
-    pd.DataFrame(reward_list).to_csv(base_path + '/reward.csv')
     pd.DataFrame(actor_loss_list).to_csv(base_path + '/actor_loss.csv')
     pd.DataFrame(critic_loss_list).to_csv(base_path + '/critic_loss.csv')
     pd.DataFrame(next_state_model_list_all).to_csv(base_path + '/next_state_model_loss.csv')
     pd.DataFrame(action_dict).to_csv(base_path + '/action_dict.csv')
-    
-    df_transition_proba = get_transition_proba_df(transition_probas)
-    df_transition_proba.to_csv(base_path + '/transition_proba.csv')
+
+    df_transition = get_transition_proba_df(transition_probas)
+    df_transition.to_csv(base_path + '/transition_proba.csv')
 
     import json
     # Specify the filename
@@ -629,7 +602,7 @@ def save_all(reward_list, next_state_model_list_all, critic_loss_list,\
 
 
 def start_train(config_file, param_file, save_file = True, 
-                data_filename = 'data', image_filename = 'images', plot_curves = True):
+                data_filename = 'output_csv', image_filename = 'output_plots', plot_curves = True):
     """
     Start the training process for a reinforcement learning environment and agent.
 
@@ -645,19 +618,19 @@ def start_train(config_file, param_file, save_file = True,
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
 
-    reward_list, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
+    reward_by_episode, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
 
-    csv_filepath = os.getcwd() + '/Supporting_files/' + data_filename
-    image_filepath = os.getcwd() + '/Supporting_files/' + image_filename
+    csv_filepath = os.getcwd() + '/foundations/' + data_filename
+    image_filepath = os.getcwd() + '/foundations/' + image_filename
     if save_file:
 
-        save_all(reward_list, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
+        save_all(reward_by_episode, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, action_dict, gradient_dict, transition_probas)
     
     if plot_curves:
 
-        plot(csv_filepath, image_filepath)
+        plot(csv_filepath, image_filepath, transition_probas)
 
 def plot_best(data_filepath, images_filepath):
     plot(data_filepath, images_filepath)

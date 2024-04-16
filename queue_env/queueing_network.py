@@ -48,7 +48,7 @@ class Queue_network:
         return lambda_list, miu_list, active_cap, deactive_cap, adjacent_list, buffer_size_for_each_queue, transition_proba
     
     def process_input(self, arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba, max_agents, sim_time):
+                        edge_list, transition_proba, max_agents, n_sim):
 
         # param for first server
         self.lamda = arrival_rate
@@ -65,7 +65,7 @@ class Queue_network:
 
         self.max_agents = float(max_agents)
 
-        self.sim_time = sim_time
+        self.n_sim = n_sim
 
         if transition_proba is None: 
             self.transition_proba = generate_transition_matrix(self.g)

@@ -51,7 +51,7 @@ class DDPGAgent():
         self.planning_steps = params['planning_steps']
 
         # create buffer to replay experiences
-        self.buffer = ReplayBuffer(max_size=params['batch_size'])
+        self.buffer = ReplayBuffer(max_size=params['buffer_size'])
 
         # actor networks + optimizer
         self.actor = Actor(n_states, n_actions, hidden['actor']).to(self.device)
@@ -106,8 +106,6 @@ class DDPGAgent():
         mean_policy_loss.backward() # retain_graph=True
 
         self.actor_scheduler.step()
-
-        # Log gradient information
         
         if True:
             

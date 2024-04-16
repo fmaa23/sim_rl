@@ -84,4 +84,4 @@ arrival_rate: 0.3
 
 max_agents: inf
 
-sim_time: 100
+n_sim: 100
