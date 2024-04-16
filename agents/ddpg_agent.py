@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -53,7 +52,7 @@ class DDPGAgent():
         # create buffer to replay experiences
         self.buffer = ReplayBuffer(max_size=params['buffer_size'])
 
-        # actor networks + optimizer
+        # actor networks + optimizer + learning rate scheduler
         self.actor = Actor(n_states, n_actions, hidden['actor']).to(self.device)
         self.actor_target = Actor(n_states, n_actions,hidden['actor']).to(self.device)
         self.actor_optim = torch.optim.Adam(self.actor.parameters(), lr=self.actor_lr)
@@ -64,7 +63,7 @@ class DDPGAgent():
         self.critic_target = Critic(n_states, n_actions, hidden['critic']).to(self.device)
         self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
         
-        # hard update to ensure same weights
+        # hard update to ensure same weights between policy and target networks
         self.hard_update(network="actor")
         self.hard_update(network="critic")
 
@@ -91,14 +90,15 @@ class DDPGAgent():
 
         self.num_select_action = 0
 
+
     def update_actor_network(self, batch):
         total_policy_loss = torch.zeros(1, requires_grad=True).to(self.device)
         self.actor_optim.zero_grad()
 
         for experience in batch:
             state, action, reward, next_state = experience
-            # self.actor.zero_grad()                                                      # TO CHANGE
-            policy_loss = -self.critic([state, self.actor(state)])                      # TO CHANG
+            # self.actor.zero_grad()                                                    # TO CHANGE
+            policy_loss = -self.critic([state, self.actor(state)])                      # TO CHANGE
             policy_loss = policy_loss.mean().to(torch.float32)                          # TO CHANGE
             total_policy_loss = total_policy_loss + policy_loss
         
@@ -125,6 +125,7 @@ class DDPGAgent():
         else:
             return mean_policy_loss.item(), gradient_dict
 
+
     def update_critic_network(self, batch):
         total_critic_loss = torch.zeros(1, requires_grad=True).to(self.device)
         self.critic_optim.zero_grad()
@@ -145,6 +146,7 @@ class DDPGAgent():
         mean_critic_loss = mean_critic_loss.detach()
         return mean_critic_loss.item()
 
+
     def fit_model(self, batch_size, epochs=5):
         """
         Fits the agent's model of the environment M with all the data in the buffer B. This involves training
@@ -164,7 +166,7 @@ class DDPGAgent():
         # here we just take Model(s,a) from the previous iteration but re-train it
         reward_loss_list = []
         next_state_list = []
-        if self.buffer.current_size < batch_size:
+        if self.buffer.get_current_size() < batch_size:
             raise Exception('Number of transitions in buffer fewer than chosen threshold value')
         
         data = self.buffer.get_items()
@@ -187,6 +189,12 @@ class DDPGAgent():
                 loss1.backward()
                 self.reward_model_optim.step()
 
+                if False:
+                    print("reward_model parameters after training:")
+                    for name, param in self.reward_model.named_parameters():
+                        print(f"{name}: {param.data}")
+                    # print(f"gradient: {param.grad}")
+
                 # update network for Model(s,a) = s'
                 self.next_state_model_optim.zero_grad()
                 pred_next_state = self.next_state_model([state.to(torch.float32), action.to(torch.float32)])
@@ -198,6 +206,7 @@ class DDPGAgent():
                 loss2.backward()
                 self.next_state_model_optim.step()
         return reward_loss_list, next_state_list
+
 
     def store_experience(self, experience):
         """
@@ -216,6 +225,7 @@ class DDPGAgent():
             raise Exception("Agent is not in training mode. Use the .train() method to set the agent \
                                 to training mode to push experiences to the buffer.")
 
+
     def plan(self, batch):
         """
         Implementing lines 12 to 16 in Dyna-DDPG.
@@ -233,16 +243,16 @@ class DDPGAgent():
             None
         
         """
-
+        
         for num in tqdm(range(len(batch)), desc="Planning Progress"): 
             experience = batch[num]
             state, action, reward, next_state = experience
             experiences = []
             for _ in range(self.planning_steps):
                 action_hat = (action + (torch.randn(len(action)) * self.epsilon).to(self.device))
-                action_hat = torch.clamp(action_hat, min=0, max=1)
-                reward_hat = self.reward_model([state, action_hat])
-                next_state_hat = self.next_state_model([state, action_hat])
+                action_hat = torch.clamp(action_hat, min=0, max=1).to(self.device)
+                reward_hat = self.reward_model([state, action_hat]).to(self.device)
+                next_state_hat = self.next_state_model([state.to(self.device), action_hat.to(self.device)]).to(self.device)
                 experience_hat = (state, action_hat, reward_hat, next_state_hat)
                 experiences.append(experience_hat)
 
@@ -263,7 +273,6 @@ class DDPGAgent():
 
         Returns:
             None
-
         """
         if network == "actor":
             target = self.actor_target
@@ -302,7 +311,7 @@ class DDPGAgent():
             target = self.critic_target
             source = self.critic
         else:
-            raise Exception("Invalid input. Parameter should be either 'actor' or 'critic', depending \
+            raise ValueError("Invalid input. Parameter should be either 'actor' or 'critic', depending \
                                 on the network to be updated.")
         
         for target_param, source_param in zip(target.parameters(), source.parameters()):
@@ -314,8 +323,8 @@ class DDPGAgent():
         state_tuple = tuple([int(x) for x in state_list])
         return state_tuple
 
+
     def select_action(self, state):
-  
         self.s_t = state
         try:
             self.a_t = self.actor(state.float()).detach() # modify

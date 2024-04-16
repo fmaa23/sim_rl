@@ -5,56 +5,58 @@ root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
 
+
 from Supporting_files.buffer import ReplayBuffer
 import pytest
+import torch
+
 
 def test_replay_buffer_capacity_handling():
-    """
-    Test that the ReplayBuffer correctly handles its capacity.
-    When more transitions are added than the buffer's max size, it should discard the oldest transitions.
-    """
-    max_size = 5  # Example max size
+    max_size = 5
     buffer = ReplayBuffer(max_size=max_size)
 
     # Add more transitions than max_size
     for i in range(max_size + 3):
-        transition = (f"state{i}", f"action{i}", f"reward{i}", f"next_state{i}")
+        transition = tuple([torch.tensor(i) for _ in range(4)])
         buffer.push(transition)
 
-    assert buffer.buffer[0] == (f"state3", f"action3", f"reward3", f"next_state3"), "Oldest transitions should be discarded"
+    assert len(buffer) == max_size
+    assert buffer.buffer[0] == tuple([torch.tensor(3) for _ in range(4)]), "Oldest transitions should be discarded."
+
 
 def test_replay_buffer_sampling():
-    """
-    Test the sampling functionality of the ReplayBuffer.
-    It should return a sample of the requested size, and each item in the sample should be a tuple.
-    """
     buffer = ReplayBuffer(max_size=10)
 
     # Populate buffer
     for i in range(10):
-        transition = (f"state{i}", f"action{i}", f"reward{i}", f"next_state{i}")
+        transition = tuple([torch.tensor(i) for _ in range(4)])
         buffer.push(transition)
 
     sample_size = 4
     sample = buffer.sample(sample_size)
     assert len(sample) == sample_size, "Sample size should match requested"
+    assert isinstance(sample, list), "Sample should be a list"
     assert all(isinstance(item, tuple) for item in sample), "Sampled items should be tuples"
+    assert all(len(item) == 4 for item in sample), "Sampled items should be 4-tuples"
+
 
 def test_replay_buffer_edge_cases():
-    """
-    Test edge cases for the ReplayBuffer, including sampling from an empty buffer and
-    attempting to sample more items than are available in the buffer.
-    """
     buffer = ReplayBuffer(max_size=10)
 
     # Test sampling from an empty buffer
     with pytest.raises(ValueError):
-        buffer.sample(1), "Sampling from an empty buffer should raise an error"
+        buffer.sample(1), "Sampling from an empty buffer should raise a ValueError."
 
-    # Add fewer transitions than a sample size
+    # Add fewer transitions than a sample size and try to sample
     for i in range(3):
-        transition = (f"state{i}", f"action{i}", f"reward{i}", f"next_state{i}")
+        transition = tuple([torch.tensor(i) for _ in range(4)])
         buffer.push(transition)
-
     with pytest.raises(ValueError):
-        buffer.sample(4), "Sampling more than available should raise an error"
+        buffer.sample(4), "Sampling more items than there are in the buffer should raise a ValueError."
+
+
+if __name__=="__main__":
+    test_replay_buffer_capacity_handling()
+    test_replay_buffer_sampling()
+    test_replay_buffer_edge_cases()
+    print("All tests passed")

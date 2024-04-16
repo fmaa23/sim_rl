@@ -4,7 +4,7 @@ from tqdm import tqdm
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 from agents.ddpg_agent import DDPGAgent
-from rl_env.rl_environment import RLEnv
+from rl_env.RL_Environment import RLEnv
 import torch
 import numpy as np
 import wandb

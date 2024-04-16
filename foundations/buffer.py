@@ -1,72 +1,80 @@
+from collections import deque
 import random
 import torch
-from torch.utils.data import TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 
 class ReplayBuffer():
-    def __init__(self, max_size = 1000):
+    def __init__(self, max_size):
         """
-        Replay buffer initialization.
+        Replay buffer initialisation
 
         Args:
-            max_size (int): Maximum number of transitions stored by the replay buffer.
+            max_size (int): maximum numbers of objects stored by replay buffer
         """
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.max_size = 1000
-        self.buffer = []
-        self.current_size = 0
+        
+        self.max_size = max_size
+        self.device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.buffer = deque([], maxlen=max_size)
 
-    def __len__(self):
+    def get_current_size(self):
         return len(self.buffer)
 
     def push(self, transition):
         """
-        Push a transition to the replay buffer. If the buffer exceeds `max_size`, the oldest transition is removed.
+        Push a transition to the buffer. If the buffer is full, the oldest transition will be removed.
 
         Args:
-            transition: Transition to be stored in the replay buffer. Can be of any type.
-        """
-        if len(self.buffer) >= self.max_size:
-            self.buffer.pop(0)  # Remove the oldest transition
-        self.buffer.append(transition)
-        self.current_size += 1
-
-    def sample(self, batch_size = 20):
-        """
-        Get a random sample from the replay buffer.
-
-        Args:
-            batch_size (int): size of sample
+            transition (4-tuple):   object to be stored in replay buffer. Should be a tuple of (state, action, reward, next_state),
+                                    each item in the tuple should be a torch.Tensor.
 
         Raises:
-            ValueError: If the requested batch_size exceeds the current buffer size or the buffer is empty.
+            TypeError: If transition is not a tuple.
+            ValueError: If transition is not a 4-tuple.
+        """
+
+        if not isinstance(transition, tuple):
+            raise TypeError("Transition should be a tuple.")
+        if len(transition) != 4:
+            raise ValueError("Transition should be a 4-tuple.")
+        
+        self.buffer.append(transition)
+
+        
+    def sample(self, batch_size):
+        """
+        Get {batch_size} number of random samples from the replay buffer.
+        
+        Args:
+            batch_size (int): Number of samples to be drawn from the buffer.
 
         Returns:
-            list: A list of randomly sampled transitions.
+            iterable (list): A list of objects sampled from the buffer without replacement.
+
+        Raises:
+            ValueError: If the buffer is empty, or the sample size is greater than the number of items in the buffer.
         """
-        if batch_size > len(self.buffer):
-            raise ValueError("Requested sample size exceeds current buffer size.")
         if len(self.buffer) == 0:
-            raise ValueError("Cannot sample from an empty buffer.")
+            raise ValueError("Cannot sample from an empty buffer!")
+        if len(self.buffer) < batch_size:
+            raise ValueError("Sample size cannot be greater than the number of items contained in the buffer.")
         
-        return self.buffer[:]
+        return random.sample(self.buffer, batch_size)
+    
 
     def get_items(self):
         """
         Returns a 4-tuple containing all items in the buffer (as torch.Tensors).
-
-        Returns:
-            TensorDataset: A dataset containing states, actions, rewards, and next states.
         """
-        states, actions, rewards, next_states = zip(*self.buffer)
-        state = torch.stack(states, dim=0).to(self.device)
-        action = torch.stack(actions, dim=0).to(self.device)
-        reward = torch.stack([torch.tensor(r).view(-1) for r in rewards], dim=0).to(self.device)
-        next_state = torch.stack(next_states, dim=0).to(self.device)
+        state = torch.stack([item[0] for item in self.buffer], dim=0).to(self.device)
+        action = torch.stack([item[1] for item in self.buffer], dim=0).to(self.device)
+        reward = torch.stack([torch.tensor(item[2]).view(-1) for item in self.buffer], dim=0).to(self.device)
+        next_state = torch.stack([item[3] for item in self.buffer], dim=0).to(self.device)
+        
         return TensorDataset(state, action, reward, next_state)
+
 
     def clear(self):
         """
-        Clears all items from the replay buffer.
+        Clear all items from the replay buffer.
         """
-        self.buffer = []
-        self.current_size = 0
+        self.buffer = deque([], maxlen=self.max_size)
