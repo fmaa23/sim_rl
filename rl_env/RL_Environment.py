@@ -44,6 +44,8 @@ class RLEnv:
         self.departure_nodes =  self.num_nullnodes
 
         self.ExploreStateEngine = ExploreStateEngine()
+
+        self.num_entries = []
     
     def get_entrynodes(self):
         """
@@ -132,6 +134,23 @@ class RLEnv:
         Returns:
             The current state of the environment, represented as an array or a suitable data structure.
         """
+        state = []
+        for i in range(self.net.num_edges): 
+            # if isinstance(self.qn_net.q_classes[i], LossQueue):
+            if i != 12:
+                queue_data=self.net.get_queue_data(queues=i)
+                if len(queue_data[queue_data[:, 2] == 0, 2]) > 0:
+                    queue_data[queue_data[:, 2] == 0, 2] = self.net.current_time
+                # ind_serviced = np.where(queue_data[:,2]!=0)[0]
+                if len(queue_data)>0:
+                    throughput = len(queue_data)
+                    EtE_delay= queue_data[:,2]-queue_data[:,0]
+                    tot_EtE_delay = EtE_delay.sum()
+                    state.append(tot_EtE_delay / throughput)
+                else:
+                    state.append(0)
+        return state
+
 
         # for edge in range((self.net.num_edges-self.num_nullnodes)):
             
@@ -141,19 +160,27 @@ class RLEnv:
         #     else:
         #         self._state[edge]=0
 
-        all_queues = self.net.edge2queue
-        self._state = []
-        for index in range(len(all_queues)):
-            if isinstance(all_queues[index], LossQueue):
-                self._state.append(all_queues[index].num_departures)
-        for index in range(len(all_queues)):
-            if isinstance(all_queues[index], LossQueue):
-                self._state.append(len(all_queues[index].queue))
+        # all_queues = self.net.edge2queue
+        # self._state = []
+        # for index in range(len(all_queues)):
+        #     if isinstance(all_queues[index], LossQueue):
+        #         self._state.append(all_queues[index]._num_arrivals)
+        #         self._state.append(all_queues[index].num_departures)
+        #         self._state.append(len(all_queues[index].queue))
+
+        # for index in range(len(all_queues)):
+        #     if isinstance(all_queues[index], LossQueue):
+        #         self._state.append(len(all_queues[index].queue))
         
         # self.record_num_exit_nodes.append(len(self.net.get_queue_data(queues=12)))
         # print(f"processed jobs: {len(self.net.get_queue_data(queues=12))}")
 
         return self._state
+
+    def record_sim_data(self):
+        for num in range(self.net.num_edges):
+            self.num_entries.append(len(self.net.get_queue_data(queues = num)))
+        
 
     def get_next_state(self, action):
         """
@@ -168,7 +195,7 @@ class RLEnv:
         # self.test_action_equal_nodes(action)
         action = self.get_correct_action_format(action)
 
-        def softmax_with_temperature(logits, temperature=0.5):
+        def softmax_with_temperature(logits, temperature):
             exp_logits = np.exp(logits / temperature)
             return exp_logits / np.sum(exp_logits)
 
@@ -178,11 +205,13 @@ class RLEnv:
             if len(next_node_list) != 0:
                 action_next_node_list = [x - 1 for x in next_node_list] 
                 # Apply non-linear transformation here
-                action_probs = softmax_with_temperature(action[action_next_node_list], temperature=0.15)
+                action_probs = softmax_with_temperature(action[action_next_node_list], temperature=0.2)
                 
                 for j, next_node in enumerate(next_node_list): 
                     self.test_nan(action_probs[j])
                     self.transition_proba[node][next_node] = action_probs[j]
+
+        self.record_sim_data()
 
         self.net.set_transitions(self.transition_proba)
         current_state = self.simulate()
@@ -253,7 +282,7 @@ class RLEnv:
         # self.net.clear_data()
         self.net.start_collecting_data()
 
-        self.net.simulate(t = self.qn_net.sim_time) 
+        self.net.simulate(n = self.qn_net.sim_time) 
 
         # while True:
         #     # self.net.set_initial_states(self.convert_format(self.net.num_agents[:-1]))
@@ -290,33 +319,29 @@ class RLEnv:
             float: The calculated reward.
         """
 
-        reward = []
-        for i in range(self.net.num_edges): 
-            queue_data=self.net.get_queue_data(queues=i)
-            ind_serviced = np.where(queue_data[:,2]!=0)[0]
-            if len(ind_serviced)>0:
-                throughput = len(ind_serviced)
-                EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-                tot_EtE_delay = EtE_delay.sum()
-                reward.append(tot_EtE_delay / throughput)
-        return -np.mean(reward)
+        throughput_ratio = len(self.net.get_queue_data(queues=12)) / len(self.net.get_queue_data(queues=0))
+        avg_delay = []
+        for i in range(self.net.num_edges - 1): 
+            # if isinstance(self.qn_net.q_classes[i], LossQueue): modify
+                queue_data=self.net.get_queue_data(queues=i)[self.num_entries[i]:]
+                ind_serviced = np.where(queue_data[:,2]!=0)[0]
+                if len(ind_serviced)>0:
+                    throughput = len(ind_serviced)
+                    EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+                    tot_EtE_delay = EtE_delay.sum()
+                    avg_delay.append(tot_EtE_delay / throughput)
+        return -np.mean(avg_delay) / throughput_ratio
 
         # reward = []
-        # while True:
-        #     for i in range(self.net.num_edges): 
-        #         queue_data=self.net.get_queue_data(queues=i)
-        #         ind_serviced = np.where(queue_data[:,2]!=0)[0]
-        #         if len(ind_serviced)>0:
-        #             throughput = len(ind_serviced)
-        #             EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-        #             tot_EtE_delay = EtE_delay.sum()
-        #             reward.append(tot_EtE_delay / throughput)
-
-        #     is_nan = np.isnan(np.mean(reward))
-        #     if is_nan:
-        #         self.net.simulate(t = self.qn_net.sim_time) 
-        #     else:
-        #         return -np.mean(reward)
+        # for i in range(self.net.num_edges): 
+        #     queue_data=self.net.get_queue_data(queues=i)
+        #     ind_serviced = np.where(queue_data[:,2]!=0)[0]
+        #     if len(ind_serviced)>0:
+        #         throughput = len(ind_serviced)
+        #         EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+        #         tot_EtE_delay = EtE_delay.sum()
+        #         reward.append(tot_EtE_delay / throughput)
+        # return -np.mean(reward)
 
         # reward = 0
         # for i in range(1,self.net.num_edges): 

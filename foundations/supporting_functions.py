@@ -464,25 +464,20 @@ def train(params, agent, env, best_params = None):
     actor_loss_list= []
     critic_loss_list = []
     reward_list = []
+    reward_by_episode = {}
 
     num_train_AC = 10
 
-    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
+    num_episodes, _, num_epochs, time_steps, _ = get_params_for_train(params)
 
-    for _ in tqdm(range(num_episodes), desc="Episode Progress"): 
-         
-        # state = env.explore_state(agent, env.qn_net, episode)
-        # print(f"explore state: {state}")
-        # print()
-        # state_list = state.tolist()
-        # state_int = [int(x) for x in state_list]
-        # initial_states = convert_format(state_int)
-        # env.net.set_initial_states(initial_states)
+    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
 
         agent.train()
         env.reset()
+        env.simulate()
 
         update = 0
+        reward_list = []
 
         for t in tqdm(range(time_steps), desc="Time Steps Progress"): 
 
@@ -495,23 +490,17 @@ def train(params, agent, env, best_params = None):
                 node_list = action_dict.setdefault(index, [])
                 node_list.append(value)
                 action_dict[index] = node_list
-            
-            done = True
-            while done:
-                next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
 
-                reward = env.get_reward()
-                if np.isnan(reward):
-                    nan = False
-                if not np.isnan(reward):
-                    done = False
+            next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
+            
+            reward = env.get_reward()
 
             reward_list.append(reward)                               
             experience = (state_tensor, action, reward, next_state_tensor) 
             
             agent.store_experience(experience)                             
 
-        reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=len(agent.buffer), epochs=num_epochs)
+        reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=time_steps, epochs=num_epochs)
         next_state_model_list_all += next_state_loss_list
         reward_model_list_all += reward_model_loss_list
 
@@ -519,7 +508,7 @@ def train(params, agent, env, best_params = None):
 
         for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
 
-            batch = agent.buffer.sample(batch_size=len(agent.buffer))
+            batch = agent.buffer.sample(batch_size=time_steps)
             critic_loss = agent.update_critic_network(batch)                   
             actor_loss, gradient_dict = agent.update_actor_network(batch)    
 
@@ -534,6 +523,8 @@ def train(params, agent, env, best_params = None):
         gradient_dict_all[update] = gradient_dict
 
         agent.buffer.clear()
+
+        reward_by_episode[episode] = reward_list
 
     # import matplotlib.pyplot as plt
     # plt.figure()
@@ -564,27 +555,27 @@ def train(params, agent, env, best_params = None):
     # plt.close()
 
     # # Assuming you want to plot for key '1'
-    data_to_plot = transition_probas[1]
+    # data_to_plot = transition_probas[1]
 
-    # Create a figure
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(10, 6))
+    # # Create a figure
+    # import matplotlib.pyplot as plt
+    # plt.figure(figsize=(10, 6))
 
-    # Plot each series in the dictionary on the same graph
-    for key, values in data_to_plot.items():
-        plt.plot(values, label=f'Transitions from 1 to {key}')
+    # # Plot each series in the dictionary on the same graph
+    # for key, values in data_to_plot.items():
+    #     plt.plot(values, label=f'Transitions from 1 to {key}')
 
-    # Add title and labels
-    plt.title('Transition Probabilities from 1')
-    plt.xlabel('Index')
-    plt.ylabel('Probability')
-    plt.legend()  # Add a legend to explain each line
+    # # Add title and labels
+    # plt.title('Transition Probabilities from 1')
+    # plt.xlabel('Index')
+    # plt.ylabel('Probability')
+    # plt.legend()  # Add a legend to explain each line
 
     # save_path = os.path.join(os.getcwd(), 'transition probas')
     # plt.savefig(save_path)
     # plt.close()
 
-    #vsave_agent(agent)
+    # save_agent(agent)
     
     return reward_list, next_state_model_list_all, critic_loss_list,\
           actor_loss_list, reward_list, action_dict, gradient_dict, transition_probas
@@ -601,7 +592,7 @@ def create_ddpg_agent(environment, params, hidden):
     Returns:
     - DDPGAgent: An instance of the DDPG agent.
     """
-    n_states = (environment.net.num_edges - environment.num_nullnodes) * 2
+    n_states = (environment.net.num_edges - environment.num_nullnodes)
     n_actions = len(environment.get_state()) - environment.num_entrynodes
     agent = DDPGAgent(n_states, n_actions, hidden, params)
     return agent
