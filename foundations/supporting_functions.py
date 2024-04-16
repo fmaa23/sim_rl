@@ -526,35 +526,8 @@ def train(params, agent, env, best_params = None):
 
         reward_by_episode[episode] = reward_list
 
-    # import matplotlib.pyplot as plt
-    # plt.figure()
-    # plt.title("reward")
-    # plt.plot(reward_list)
-    # save_path = os.path.join(os.getcwd(), 'reward')
-    # plt.savefig(save_path)
-    # plt.close()
 
-    # plt.figure()
-    # plt.title("actor_loss")
-    # plt.plot(actor_loss_list)
-    # save_path = os.path.join(os.getcwd(), 'actor_loss')
-    # plt.savefig(save_path)
-    # plt.close()
-
-    # plt.figure()
-    # plt.title("critic_loss")
-    # plt.plot(critic_loss_list)
-    # save_path = os.path.join(os.getcwd(), 'critic_loss')
-    # plt.savefig(save_path)
-    # plt.close()
-
-    # plt.figure()
-    # plt.plot(gradient_dict['layers.0.weight'][1])
-    # save_path = os.path.join(os.getcwd(), 'gradient')
-    # plt.savefig(save_path)
-    # plt.close()
-
-    # # Assuming you want to plot for key '1'
+    # # # Assuming you want to plot for key '1'
     # data_to_plot = transition_probas[1]
 
     # # Create a figure
@@ -578,7 +551,7 @@ def train(params, agent, env, best_params = None):
     # save_agent(agent)
     
     return reward_list, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, reward_list, action_dict, gradient_dict, transition_probas
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
     """
@@ -607,10 +580,8 @@ def get_transition_proba_df(transition_probas):
     df_transition_proba = pd.DataFrame(flatten_dict)
     return df_transition_proba
 
-def save_all(rewards_list_all, next_state_list_all, \
-        critic_loss_list_all, actor_loss_list_all, \
-        reward_list, action_dict, gradient_dict, \
-        transition_probas, base_path = None):
+def save_all(reward_list, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, base_path = None):
     """
     Save all relevant data from the training process.
 
@@ -634,10 +605,9 @@ def save_all(rewards_list_all, next_state_list_all, \
     os.makedirs(base_path, exist_ok=True)
 
     pd.DataFrame(reward_list).to_csv(base_path + '/reward.csv')
-    pd.DataFrame(actor_loss_list_all).to_csv(base_path + '/actor_loss.csv')
-    pd.DataFrame(critic_loss_list_all).to_csv(base_path + '/critic_loss.csv')
-    pd.DataFrame(next_state_list_all).to_csv(base_path + '/next_state_model_loss.csv')
-    pd.DataFrame(rewards_list_all).to_csv(base_path + '/reward_model_loss.csv')
+    pd.DataFrame(actor_loss_list).to_csv(base_path + '/actor_loss.csv')
+    pd.DataFrame(critic_loss_list).to_csv(base_path + '/critic_loss.csv')
+    pd.DataFrame(next_state_model_list_all).to_csv(base_path + '/next_state_model_loss.csv')
     pd.DataFrame(action_dict).to_csv(base_path + '/action_dict.csv')
     
     df_transition_proba = get_transition_proba_df(transition_probas)
@@ -650,6 +620,13 @@ def save_all(rewards_list_all, next_state_list_all, \
     # Write the dictionary to a file as JSON
     with open(filename, 'w') as f:
         json.dump(gradient_dict, f)
+    
+    filename = base_path + '/reward_dict.json'
+
+    # Write the dictionary to a file as JSON
+    with open(filename, 'w') as f:
+        json.dump(reward_by_episode, f)
+
 
 def start_train(config_file, param_file, save_file = True, 
                 data_filename = 'data', image_filename = 'images', plot_curves = True):
@@ -668,18 +645,15 @@ def start_train(config_file, param_file, save_file = True,
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
 
-    reward_model_list_all, next_state_model_list_all, critic_loss_list_all,\
-          actor_loss_list_all, reward_list_all, action_dict, gradient_dict_all, \
-            actor_gradient_list_all, transition_probas = train(params, agent, sim_environment)
+    reward_list, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
 
     csv_filepath = os.getcwd() + '/Supporting_files/' + data_filename
     image_filepath = os.getcwd() + '/Supporting_files/' + image_filename
     if save_file:
 
-        save_all(reward_model_list_all, next_state_model_list_all, \
-        critic_loss_list_all, actor_loss_list_all, \
-        reward_list_all, action_dict, gradient_dict_all, \
-        transition_probas, base_path=csv_filepath)
+        save_all(reward_list, next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
     
     if plot_curves:
 
