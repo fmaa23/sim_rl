@@ -4,8 +4,8 @@ import pandas as pd
 import queueing_tool as qt 
 import numpy as np
 import os
-from rl_env.RL_Environment import RLEnv
-from agents.ddpg import DDPGAgent
+
+from agents.ddpg_agent import DDPGAgent
 from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
 from foundations.plot_datasparq import *
@@ -20,7 +20,6 @@ def get_num_connections(adjacent_list):
     Returns:
     - tuple: A tuple containing the total number of connections (int) and a list of exit nodes ([]).
     """
-    num_connection = 0
     exit_nodes = []
     for start_node in adjacent_list.keys():
         end_node_list = adjacent_list[start_node]
@@ -29,13 +28,7 @@ def get_num_connections(adjacent_list):
                 if end_node not in exit_nodes:
                     exit_nodes.append(end_node)
     
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
-        for end_node in end_node_list:
-            if end_node not in exit_nodes:
-                num_connection += 1
-    
-    return num_connection, exit_nodes
+    return exit_nodes
 
 def load_config(env_param_filepath):
     """
@@ -62,39 +55,6 @@ def load_config(env_param_filepath):
 
     return config_params
 
-def create_queueing_env(config_file):
-    """
-    Create and configure a queueing environment based on a given configuration file.
-
-    Parameters:
-    - config_file (str): The file path to the environment configuration file.
-
-    Returns:
-    - Queue_network: An instance of the queueing environment.
-    """
-    arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
-    
-    q_net = Queue_network()
-    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba_all)
-    q_net.create_env()
-    return q_net
-
-def create_RL_env(q_net, params):
-    """
-    Create a reinforcement learning environment.
-
-    Parameters:
-    - q_net (Queue_network): The queueing network environment.
-    - params (dict): Parameters for the RL environment.
-    - hidden (dict): Hidden layer configurations.
-
-    Returns:
-    - RLEnv: An instance of the RL environment.
-    """
-    env = RLEnv(q_net, num_sim = params['num_sim'])
-    return env
 
 def make_edge_list(adjacent_list, exit_nodes):
     """
@@ -124,7 +84,6 @@ def make_edge_list(adjacent_list, exit_nodes):
     
     return edge_list
 
-
 def make_unique_edge_type(adjacent_list, edge_list):
     """
     Assigns a unique edge type to connections between nodes based on the adjacency and edge lists.
@@ -146,7 +105,7 @@ def make_unique_edge_type(adjacent_list, edge_list):
             edge_type_list.append(edge_type)
         edge_type_info[end_node] = edge_type_list
     
-    return edge_type_info
+    return edge_type_info # keys are node_id, values are the edge_types
 
 
 def get_connection_info(adjacent_list):
@@ -168,6 +127,7 @@ def get_connection_info(adjacent_list):
     
     return connection_info
 
+
 def create_params(config_file):
     """
     Generate parameters for the queueing environment based on a configuration file.
@@ -183,13 +143,17 @@ def create_params(config_file):
 
     miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
-    num_connections, exit_nodes = get_num_connections(adjacent_list)
-    q_classes = create_q_classes(num_connections)
-    edge_list = make_edge_list(adjacent_list, exit_nodes) 
+    max_agents = config_params['max_agents']
+    sim_time = config_params['sim_time']
+    exit_nodes = get_num_connections(adjacent_list)
+    edge_list = make_edge_list(adjacent_list, exit_nodes)
+
+    q_classes = create_q_classes(edge_list)
+    
     edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
 
     buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
-    q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes)
+    q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes)
 
     arrival_rate = config_params['arrival_rate']
     
@@ -198,18 +162,55 @@ def create_params(config_file):
     # active_cap = config_params['active_cap']
     # deactive_t = config_params['deactive_cap']
 
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time
 
-def create_q_classes(num_queues):
+def create_q_classes(edge_list):
+    """
+    Creates a dictionary mapping queue identifiers to their corresponding queue class.
 
+    Parameters:
+    - num_queues (int): The number of queues to create classes for, excluding the null queue.
+
+    Returns:
+    - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
+    """
     q_classes = {}
-    q_classes[0] = qt.NullQueue
-    for i in range(num_queues):
-        q_classes[i+1] = qt.LossQueue
-    # q_classes = {0: qt.NullQueue, 1: qt.LossQueue, 2: qt.LossQueue, 3:qt.LossQueue, 4:qt.LossQueue, 5:qt.LossQueue}
+    for start_node in edge_list.keys():
+        end_nodes_dict = edge_list[start_node]
+
+        for end_node in end_nodes_dict.keys():
+            edge_index = end_nodes_dict[end_node]
+            if end_node in edge_list.keys():
+                q_classes[edge_index] = LossQueue
+            else:
+                q_classes[edge_index] = NullQueue
+
+
     return q_classes
 
-def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
+def get_service_time(edge_type_info, miu_dict, exit_nodes):
+        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
+        # the convert into each edge correponds to a distinctive service rate
+        # save for buffer size
+        services_f = {}
+        for end_node in edge_type_info.keys():
+            if end_node not in exit_nodes:
+                service_rate = miu_dict[end_node]
+
+                for edge_type in edge_type_info[end_node]:
+                    def ser_f(t):
+                        return t + np.exp(service_rate)
+                    
+                    services_f[edge_type] = ser_f
+
+        return services_f
+
+def get_node_id(edge_type, edge_type_info):
+    for node in edge_type_info.keys():
+        if edge_type in edge_type_info[node]:
+            return node
+
+def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes):
     """
     Constructs arguments for queue initialization based on the network configuration.
 
@@ -227,43 +228,54 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
         return 25 + 350 * np.sin(np.pi * t / 2)**2
 
     def arr(t):
-        return qt.poisson_random_measure(t, rate, config_params['arrival_rate'])
-
-    def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
-        # the convert into each edge correponds to a distinctive service rate
-        # save for buffer size
-        services_f = {}
-        for end_node in edge_type_info.keys():
-            if end_node not in exit_nodes:
-                service_rate = miu_dict[end_node]
-
-                for edge_type in edge_type_info[end_node]:
-                    def ser_f(t):
-                        return t + np.exp(service_rate)
-                    
-                    services_f[edge_type] = ser_f
-
-        return services_f
-
-    services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
+        return poisson_random_measure(t, rate, config_params['arrival_rate'])
     
     q_args = {}
-    for end_node in edge_type_info.keys():
-        corresponding_edge_types = edge_type_info[end_node]
-        for edge_type in corresponding_edge_types:
+    edge_type_lists = []
+    for key in edge_type_info.keys():
+        if key not in exit_nodes:
+            values = edge_type_info[key]
+            edge_type_lists += values
 
-            if edge_type != 0:
-                if edge_type == 1:
-                    q_args[edge_type] = {
-                    'arrival_f': arr,
-                    'service_f': services_f[edge_type],
-                    'qbuffer': buffer_size_for_each_queue[edge_type]
-                    }
-                else:
-                    q_args[edge_type] = {
-                    'service_f': services_f[edge_type],
-                    'qbuffer':buffer_size_for_each_queue[edge_type],
-                    }
-    
+    for edge_type in edge_type_lists:
+        queue_type = q_classes[edge_type]
+        node_id = get_node_id(edge_type, edge_type_info)
+        service_rate = miu_dict[node_id]
+        if queue_type == LossQueue:
+            if edge_type == 1:
+                q_args[edge_type] = {
+                'arrival_f': arr,
+                'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
+                'qbuffer': buffer_size_for_each_queue[edge_type],
+                'service_rate': service_rate,
+                 'active_cap': float('inf'),
+                 'active_status' : True
+                }
+            else:
+                q_args[edge_type] = {
+                'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
+                'qbuffer':buffer_size_for_each_queue[edge_type],
+                'service_rate': service_rate,
+                'active_cap':float('inf'),
+                'active_status' : False
+                }
     return q_args
+
+def create_queueing_env(config_file):
+    """
+    Create and configure a queueing environment based on a given configuration file.
+
+    Parameters:
+    - config_file (str): The file path to the environment configuration file.
+
+    Returns:
+    - Queue_network: An instance of the queueing environment.
+    """
+    arrival_rate, miu_list, q_classes, q_args, \
+        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(config_file)
+    
+    q_net = Queue_network()
+    q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
+                        edge_list, transition_proba_all, max_agents, sim_time)
+    q_net.create_env()
+    return q_net

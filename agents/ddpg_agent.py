@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from foundations.model import Actor, Critic, RewardModel, NextStateModel
-from agents.buffer import ReplayBuffer
+from foundations.buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
 
 gradient_dict = {} 
@@ -171,7 +171,7 @@ class DDPGAgent():
         
         data = self.buffer.get_items()
         #dataset = TensorDataset(data)
-        dataloader = DataLoader(data, batch_size=batch_size, shuffle=True)
+        dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 
         for epoch in range(epochs):
             for batch in dataloader:

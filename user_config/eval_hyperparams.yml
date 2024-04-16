@@ -1,6 +1,6 @@
 ---
 rl_params:
-  num_episodes: 100
+  num_episodes: 5
   
   threshold: 10
 
@@ -10,19 +10,19 @@ rl_params:
   
   target_update_frequency: 100
   
-  batch_size: 10
+  batch_size: 20
   
-  num_sim: 5000
+  num_sim: 10
   
-  tau: 0.5
+  tau: 0.8
   
   critic_lr: 0.01
 
   actor_lr: 0.001
   
-  discount: 0.2
+  discount: 0.8
   
-  planning_steps: 5
+  planning_steps: 10
   
   epsilon: 0.2
   

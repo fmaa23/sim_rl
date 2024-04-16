@@ -30,7 +30,7 @@ class ReplayBuffer():
         self.buffer.append(transition)
         self.current_size += 1
 
-    def sample(self, batch_size):
+    def sample(self, batch_size = 20):
         """
         Get a random sample from the replay buffer.
 
@@ -48,7 +48,7 @@ class ReplayBuffer():
         if len(self.buffer) == 0:
             raise ValueError("Cannot sample from an empty buffer.")
         
-        return random.sample(self.buffer, batch_size)
+        return self.buffer[:]
 
     def get_items(self):
         """
@@ -63,3 +63,10 @@ class ReplayBuffer():
         reward = torch.stack([torch.tensor(r).view(-1) for r in rewards], dim=0).to(self.device)
         next_state = torch.stack(next_states, dim=0).to(self.device)
         return TensorDataset(state, action, reward, next_state)
+
+    def clear(self):
+        """
+        Clears all items from the replay buffer.
+        """
+        self.buffer = []
+        self.current_size = 0

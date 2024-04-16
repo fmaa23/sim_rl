@@ -6,7 +6,7 @@ import os
 import yaml
 
 
-from agents.ddpg import DDPGAgent
+from agents.ddpg_agent import DDPGAgent
 from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
 from tuning.wandb_tuning import *
@@ -80,7 +80,6 @@ def get_num_connections(adjacent_list):
     Returns:
     - tuple: A tuple containing the total number of connections (int) and a list of exit nodes ([]).
     """
-    num_connection = 0
     exit_nodes = []
     for start_node in adjacent_list.keys():
         end_node_list = adjacent_list[start_node]
@@ -89,13 +88,7 @@ def get_num_connections(adjacent_list):
                 if end_node not in exit_nodes:
                     exit_nodes.append(end_node)
     
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
-        for end_node in end_node_list:
-            if end_node not in exit_nodes:
-                num_connection += 1
-    
-    return num_connection, exit_nodes
+    return exit_nodes
 
 def make_edge_list(adjacent_list, exit_nodes):
     """
@@ -165,7 +158,7 @@ def make_unique_edge_type(adjacent_list, edge_list):
             edge_type_list.append(edge_type)
         edge_type_info[end_node] = edge_type_list
     
-    return edge_type_info
+    return edge_type_info # keys are node_id, values are the edge_types
 
 def create_params(config_file):
     """
@@ -182,13 +175,17 @@ def create_params(config_file):
 
     miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
-    num_connections, exit_nodes = get_num_connections(adjacent_list)
-    q_classes = create_q_classes(num_connections)
-    edge_list = make_edge_list(adjacent_list, exit_nodes) 
+    max_agents = config_params['max_agents']
+    sim_time = config_params['sim_time']
+    exit_nodes = get_num_connections(adjacent_list)
+    edge_list = make_edge_list(adjacent_list, exit_nodes)
+
+    q_classes = create_q_classes(edge_list)
+    
     edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
 
     buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
-    q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes)
+    q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes)
 
     arrival_rate = config_params['arrival_rate']
     
@@ -197,9 +194,9 @@ def create_params(config_file):
     # active_cap = config_params['active_cap']
     # deactive_t = config_params['deactive_cap']
 
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time
 
-def create_q_classes(num_queues):
+def create_q_classes(edge_list):
     """
     Creates a dictionary mapping queue identifiers to their corresponding queue class.
 
@@ -210,9 +207,17 @@ def create_q_classes(num_queues):
     - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
     """
     q_classes = {}
-    q_classes[0] = NullQueue
-    for i in range(1, num_queues + 1):
-        q_classes[i] = LossQueue
+    for start_node in edge_list.keys():
+        end_nodes_dict = edge_list[start_node]
+
+        for end_node in end_nodes_dict.keys():
+            edge_index = end_nodes_dict[end_node]
+            if end_node in edge_list.keys():
+                q_classes[edge_index] = LossQueue
+            else:
+                q_classes[edge_index] = NullQueue
+
+
     return q_classes
 
 def get_service_time(edge_type_info, miu_dict, exit_nodes):
@@ -232,7 +237,12 @@ def get_service_time(edge_type_info, miu_dict, exit_nodes):
 
         return services_f
 
-def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
+def get_node_id(edge_type, edge_type_info):
+    for node in edge_type_info.keys():
+        if edge_type in edge_type_info[node]:
+            return node
+
+def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes):
     """
     Constructs arguments for queue initialization based on the network configuration.
 
@@ -252,41 +262,35 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     def arr(t):
         return poisson_random_measure(t, rate, config_params['arrival_rate'])
     
-    def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        services_f = {}
-        for end_node in edge_type_info.keys():
-            if end_node not in exit_nodes:
-                for edge_type in edge_type_info[end_node]:
-                    service_rate = miu_dict.get(end_node)
-                    def ser_f(t, rate=service_rate):  
-                        return t + np.random.exponential(rate)  
-                    services_f[edge_type] = ser_f
-
-        return services_f
-
-    services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
-    
     q_args = {}
-    for end_node in edge_type_info.keys():
-        corresponding_edge_types = edge_type_info[end_node]
-        for edge_type in corresponding_edge_types:
+    edge_type_lists = []
+    for key in edge_type_info.keys():
+        if key not in exit_nodes:
+            values = edge_type_info[key]
+            edge_type_lists += values
 
-            if edge_type != 0:
-                service_rate = miu_dict[end_node]
-                if edge_type == 1:
-                    q_args[edge_type] = {
-                    'arrival_f': arr,
-                    'service_f': lambda t, en=end_node:t+np.exp(miu_dict[en]),
-                    'qbuffer': buffer_size_for_each_queue[edge_type],
-                    'service_rate': service_rate,
-                    }
-                else:
-                    q_args[edge_type] = {
-                    'service_f': lambda t, en=end_node:t+np.exp(miu_dict[en]),
-                    'qbuffer':buffer_size_for_each_queue[edge_type],
-                    'service_rate': service_rate,
-                    }
-    
+    for edge_type in edge_type_lists:
+        queue_type = q_classes[edge_type]
+        node_id = get_node_id(edge_type, edge_type_info)
+        service_rate = miu_dict[node_id]
+        if queue_type == LossQueue:
+            if edge_type == 1:
+                q_args[edge_type] = {
+                'arrival_f': arr,
+                'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
+                'qbuffer': buffer_size_for_each_queue[edge_type],
+                'service_rate': service_rate,
+                 'active_cap': float('inf'),
+                 'active_status' : True
+                }
+            else:
+                q_args[edge_type] = {
+                'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
+                'qbuffer':buffer_size_for_each_queue[edge_type],
+                'service_rate': service_rate,
+                'active_cap':float('inf'),
+                'active_status' : False
+                }
     return q_args
 
 def create_queueing_env(config_file):
@@ -300,11 +304,11 @@ def create_queueing_env(config_file):
     - Queue_network: An instance of the queueing environment.
     """
     arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all = create_params(config_file)
+        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(config_file)
     
     q_net = Queue_network()
     q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba_all)
+                        edge_list, transition_proba_all, max_agents, sim_time)
     q_net.create_env()
     return q_net
 
@@ -450,7 +454,6 @@ def train(params, agent, env, best_params = None):
     
         params = best_params
 
-
     next_state_model_list_all = []
     reward_model_list_all =[]
     gradient_dict_all = {}
@@ -462,63 +465,76 @@ def train(params, agent, env, best_params = None):
     critic_loss_list = []
     reward_list = []
 
-    num_episodes, batch_size, num_epochs, _, _ = get_params_for_train(params)
+    num_train_AC = 10
 
-    agent.train()
-    env.reset()
-    update = 0
+    num_episodes, batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
 
-    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
+    for _ in tqdm(range(num_episodes), desc="Episode Progress"): 
          
-        state = env.explore_state(agent, env.qn_net, episode)
-        state_list = state.tolist()
-        state_int = [int(x) for x in state_list]
-        initial_states = convert_format(state_int)
+        # state = env.explore_state(agent, env.qn_net, episode)
+        # print(f"explore state: {state}")
+        # print()
+        # state_list = state.tolist()
+        # state_int = [int(x) for x in state_list]
+        # initial_states = convert_format(state_int)
+        # env.net.set_initial_states(initial_states)
 
-        env.net.set_initial_states(initial_states)
-        state = state / torch.max(state)
-        action = agent.select_action(state).to(device) 
-    
-        action_list = action.cpu().numpy().tolist()
-        for index, value in enumerate(action_list):
-            node_list = action_dict.setdefault(index, [])
-            node_list.append(value)
-            action_dict[index] = node_list
-        next_state = env.get_next_state(action)
+        agent.train()
+        env.reset()
 
-        next_state = torch.tensor(next_state).float().to(device)
+        update = 0
 
-        reward = env.get_reward()
+        for t in tqdm(range(time_steps), desc="Time Steps Progress"): 
 
-        reward_list.append(reward)                               
-        experience = (state, action, reward, next_state) 
+            state = env.get_state()
+            state_tensor = torch.tensor(state)
+            action = agent.select_action(state_tensor).to(device) 
         
-        agent.store_experience(experience)                             
-    
-        if agent.buffer.current_size > 0 and agent.buffer.current_size % batch_size == 0:
-
-            update += 1
-
-            reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
-            next_state_model_list_all += next_state_loss_list
-            reward_model_list_all += reward_model_loss_list
-
-            transition_probas = update_transition_probas(transition_probas, env)
+            action_list = action.cpu().numpy().tolist()
+            for index, value in enumerate(action_list):
+                node_list = action_dict.setdefault(index, [])
+                node_list.append(value)
+                action_dict[index] = node_list
             
-            batch = agent.buffer.sample(batch_size = batch_size)
+            done = True
+            while done:
+                next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
+
+                reward = env.get_reward()
+                if np.isnan(reward):
+                    nan = False
+                if not np.isnan(reward):
+                    done = False
+
+            reward_list.append(reward)                               
+            experience = (state_tensor, action, reward, next_state_tensor) 
+            
+            agent.store_experience(experience)                             
+
+        reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=len(agent.buffer), epochs=num_epochs)
+        next_state_model_list_all += next_state_loss_list
+        reward_model_list_all += reward_model_loss_list
+
+        transition_probas = update_transition_probas(transition_probas, env)
+
+        for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
+
+            batch = agent.buffer.sample(batch_size=len(agent.buffer))
             critic_loss = agent.update_critic_network(batch)                   
             actor_loss, gradient_dict = agent.update_actor_network(batch)    
 
             actor_loss_list.append(actor_loss)
             critic_loss_list.append(critic_loss)
 
-            agent.plan(batch)
+        agent.plan(batch)
 
-            agent.soft_update(network="critic")
-            agent.soft_update(network="actor")
+        agent.soft_update(network="critic")
+        agent.soft_update(network="actor")
 
-            gradient_dict_all[update] = gradient_dict
-    
+        gradient_dict_all[update] = gradient_dict
+
+        agent.buffer.clear()
+
     # import matplotlib.pyplot as plt
     # plt.figure()
     # plt.title("reward")
@@ -548,26 +564,27 @@ def train(params, agent, env, best_params = None):
     # plt.close()
 
     # # Assuming you want to plot for key '1'
-    # data_to_plot = transition_probas[1]
+    data_to_plot = transition_probas[1]
 
-    # # Create a figure
-    # plt.figure(figsize=(10, 6))
+    # Create a figure
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(10, 6))
 
-    # # Plot each series in the dictionary on the same graph
-    # for key, values in data_to_plot.items():
-    #     plt.plot(values, label=f'Transitions from 1 to {key}')
+    # Plot each series in the dictionary on the same graph
+    for key, values in data_to_plot.items():
+        plt.plot(values, label=f'Transitions from 1 to {key}')
 
-    # # Add title and labels
-    # plt.title('Transition Probabilities from 1')
-    # plt.xlabel('Index')
-    # plt.ylabel('Probability')
-    # plt.legend()  # Add a legend to explain each line
+    # Add title and labels
+    plt.title('Transition Probabilities from 1')
+    plt.xlabel('Index')
+    plt.ylabel('Probability')
+    plt.legend()  # Add a legend to explain each line
 
     # save_path = os.path.join(os.getcwd(), 'transition probas')
     # plt.savefig(save_path)
     # plt.close()
 
-    save_agent(agent)
+    #vsave_agent(agent)
     
     return reward_list, next_state_model_list_all, critic_loss_list,\
           actor_loss_list, reward_list, action_dict, gradient_dict, transition_probas
@@ -584,7 +601,7 @@ def create_ddpg_agent(environment, params, hidden):
     Returns:
     - DDPGAgent: An instance of the DDPG agent.
     """
-    n_states = environment.net.num_edges - environment.num_nullnodes
+    n_states = (environment.net.num_edges - environment.num_nullnodes) * 2
     n_actions = len(environment.get_state()) - environment.num_entrynodes
     agent = DDPGAgent(n_states, n_actions, hidden, params)
     return agent

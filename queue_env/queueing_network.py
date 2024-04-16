@@ -1,8 +1,9 @@
 import numpy as np
-import tkinter as tk
 import yaml 
-import sys
 import os
+import sys
+# Append the path where the queueing_tool package is located
+sys.path.append('D:\\MScDataSparqProject\\queue_env\\queue_foundations')
 
 from queueing_tool.network.queue_network import QueueNetwork
 from queueing_tool.graph.graph_wrapper import adjacency2graph
@@ -47,7 +48,7 @@ class Queue_network:
         return lambda_list, miu_list, active_cap, deactive_cap, adjacent_list, buffer_size_for_each_queue, transition_proba
     
     def process_input(self, arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba):
+                        edge_list, transition_proba, max_agents, sim_time):
 
         # param for first server
         self.lamda = arrival_rate
@@ -61,6 +62,10 @@ class Queue_network:
         self.q_classes = q_classes
         
         self.q_args = q_args
+
+        self.max_agents = float(max_agents)
+
+        self.sim_time = sim_time
 
         if transition_proba is None: 
             self.transition_proba = generate_transition_matrix(self.g)
@@ -144,9 +149,9 @@ class Queue_network:
     def create_env(self):
 
         self.g = adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
-        self.queueing_network = QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args)
+        self.queueing_network = QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args, max_agents = self.max_agents)
         self.queueing_network.set_transitions(self.transition_proba)
-        self.queueing_network.draw(figsize=(6, 3))
+        # self.queueing_network.draw(figsize=(6, 3))
     
     def run_simulation(self, num_events = 50, collect_data = True):
         # specify which edges and queue to activate at the beginning

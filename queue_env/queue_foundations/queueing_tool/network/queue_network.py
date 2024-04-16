@@ -371,6 +371,8 @@ class QueueNetwork(object):
 
             g.freeze()
             self.g = g
+        
+        self.number_sims = 0
 
     def __repr__(self):
         the_string = 'QueueNetwork. # nodes: {0}, edges: {1}, agents: {2}'
@@ -1255,9 +1257,10 @@ class QueueNetwork(object):
         for edge, initial_jobs in initial_states.items():
             queue_index = find_key_by_value(self.g.edge_index, edge) if isinstance(edge, tuple) else edge
             queue = self.edge2queue[queue_index]
-            for _ in range(initial_jobs):
-                queue._add_arrival(None)  # Assuming None can represent a dummy job/agent. Adjust as necessary.
+            # for _ in range(initial_jobs):
+            #     queue._add_arrival(None)  # Assuming None can represent a dummy job/agent. Adjust as necessary.
             self.num_agents[queue_index] = initial_jobs
+            # self.edge2queue[edge]._num_total = initial_jobs
 
     def simulate(self, n=1, t=None):
         """Simulates the network forward.
@@ -1328,11 +1331,14 @@ class QueueNetwork(object):
             return
 
         q1k = self._fancy_heap.pop()
+    
+
         q1t = q1k[0]
         q1 = self.edge2queue[q1k[1]]
         e1 = q1.edge[2]
 
         event = q1.next_event_description()
+
         self._t = q1t
         self._qkey = q1k
         self.num_events += 1
@@ -1367,7 +1373,7 @@ class QueueNetwork(object):
                     q2._active = False
 
                 q2.next_event()
-                self.num_agents[e2] = q2._num_total
+                self.num_agents[e2] += q2._num_total
 
                 if slow:
                     self._update_graph_colors(qedge=q2.edge)
@@ -1391,7 +1397,7 @@ class QueueNetwork(object):
                 q1._active = False
 
             q1.next_event()
-            self.num_agents[e1] = q1._num_total
+            self.num_agents[e1] = q1._num_total 
 
             if slow:
                 self._update_graph_colors(qedge=q1.edge)
@@ -1658,284 +1664,284 @@ def _get_queues(g, queues, edge, edge_type):
 
     return queues
 
-def load_config(env_param_filepath):
-    """
-    Load configuration parameters from a YAML file.
+# def load_config(env_param_filepath):
+#     """
+#     Load configuration parameters from a YAML file.
 
-    Parameters:
-    - config_filepath (str): The file path to the configuration YAML file.
+#     Parameters:
+#     - config_filepath (str): The file path to the configuration YAML file.
 
-    Returns:
-    - dict: A dictionary containing the configuration parameters.
-    """
+#     Returns:
+#     - dict: A dictionary containing the configuration parameters.
+#     """
 
-    # Get the directory of the current script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+#     # Get the directory of the current script
+#     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Go up one directory to the MScDataSparqProject directory
-    project_dir = os.path.dirname(script_dir)
+#     # Go up one directory to the MScDataSparqProject directory
+#     project_dir = os.path.dirname(script_dir)
 
-    # Build the path to the configuration file
-    abs_file_path = os.path.join(project_dir, env_param_filepath)
+#     # Build the path to the configuration file
+#     abs_file_path = os.path.join(project_dir, env_param_filepath)
 
-    with open(abs_file_path, 'r') as env_param_file:
-        config_params = yaml.load(env_param_file, Loader=yaml.FullLoader)
+#     with open(abs_file_path, 'r') as env_param_file:
+#         config_params = yaml.load(env_param_file, Loader=yaml.FullLoader)
 
-    return config_params
+#     return config_params
 
-def create_q_classes(num_queues):
-    """
-    Creates a dictionary mapping queue identifiers to their corresponding queue class.
+# def create_q_classes(num_queues):
+#     """
+#     Creates a dictionary mapping queue identifiers to their corresponding queue class.
 
-    Parameters:
-    - num_queues (int): The number of queues to create classes for, excluding the null queue.
+#     Parameters:
+#     - num_queues (int): The number of queues to create classes for, excluding the null queue.
 
-    Returns:
-    - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
-    """
-    q_classes = {}
-    q_classes[0] = NullQueue
-    for i in range(1, num_queues + 1):
-        q_classes[i] = LossQueue
-    return q_classes
+#     Returns:
+#     - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
+#     """
+#     q_classes = {}
+#     q_classes[0] = NullQueue
+#     for i in range(1, num_queues + 1):
+#         q_classes[i] = LossQueue
+#     return q_classes
 
-def get_num_connections(adjacent_list):
-    """
-    Calculates the total number of connections and identifies exit nodes within the adjacency list of a network.
+# def get_num_connections(adjacent_list):
+#     """
+#     Calculates the total number of connections and identifies exit nodes within the adjacency list of a network.
 
-    Parameters:
-    - adjacent_list (dict): A dictionary where keys are start nodes and values are lists of end nodes they connect to.
+#     Parameters:
+#     - adjacent_list (dict): A dictionary where keys are start nodes and values are lists of end nodes they connect to.
 
-    Returns:
-    - tuple: A tuple containing the total number of connections (int) and a list of exit nodes ([]).
-    """
-    num_connection = 0
-    exit_nodes = []
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
-        for end_node in end_node_list:
-            if end_node not in list(adjacent_list.keys()):
-                if end_node not in exit_nodes:
-                    exit_nodes.append(end_node)
+#     Returns:
+#     - tuple: A tuple containing the total number of connections (int) and a list of exit nodes ([]).
+#     """
+#     num_connection = 0
+#     exit_nodes = []
+#     for start_node in adjacent_list.keys():
+#         end_node_list = adjacent_list[start_node]
+#         for end_node in end_node_list:
+#             if end_node not in list(adjacent_list.keys()):
+#                 if end_node not in exit_nodes:
+#                     exit_nodes.append(end_node)
     
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
-        for end_node in end_node_list:
-            if end_node not in exit_nodes:
-                num_connection += 1
+#     for start_node in adjacent_list.keys():
+#         end_node_list = adjacent_list[start_node]
+#         for end_node in end_node_list:
+#             if end_node not in exit_nodes:
+#                 num_connection += 1
     
-    return num_connection, exit_nodes
+#     return num_connection, exit_nodes
 
-def make_edge_list(adjacent_list, exit_nodes):
-    """
-    Creates an edge list with types for each connection based on the adjacency list and identified exit nodes.
+# def make_edge_list(adjacent_list, exit_nodes):
+#     """
+#     Creates an edge list with types for each connection based on the adjacency list and identified exit nodes.
 
-    Parameters:
-    - adjacent_list (dict): A dictionary representing the network's adjacency list.
-    - exit_nodes (list): A list of nodes identified as exit points in the network.
+#     Parameters:
+#     - adjacent_list (dict): A dictionary representing the network's adjacency list.
+#     - exit_nodes (list): A list of nodes identified as exit points in the network.
 
-    Returns:
-    - dict: A dictionary representing the edge list, where keys are start nodes, and values are dictionaries of end nodes with their edge types.
-    """
-    edge_list = {}
-    edge_type = 1
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
+#     Returns:
+#     - dict: A dictionary representing the edge list, where keys are start nodes, and values are dictionaries of end nodes with their edge types.
+#     """
+#     edge_list = {}
+#     edge_type = 1
+#     for start_node in adjacent_list.keys():
+#         end_node_list = adjacent_list[start_node]
         
-        connection_dict = {}
-        for end_node in end_node_list:
-            if end_node not in exit_nodes:
-                connection_dict[end_node] = edge_type
-                edge_type += 1
-            else:
-                connection_dict[end_node] = 0
+#         connection_dict = {}
+#         for end_node in end_node_list:
+#             if end_node not in exit_nodes:
+#                 connection_dict[end_node] = edge_type
+#                 edge_type += 1
+#             else:
+#                 connection_dict[end_node] = 0
         
-        edge_list[start_node] = connection_dict
+#         edge_list[start_node] = connection_dict
     
-    return edge_list
+#     return edge_list
 
-def get_connection_info(adjacent_list):
-    """
-    Generates a dictionary mapping each node to a list of nodes that connect to it.
+# def get_connection_info(adjacent_list):
+#     """
+#     Generates a dictionary mapping each node to a list of nodes that connect to it.
 
-    Parameters:
-    - adjacent_list (dict): A dictionary representing the network's adjacency list.
+#     Parameters:
+#     - adjacent_list (dict): A dictionary representing the network's adjacency list.
 
-    Returns:
-    - dict: A dictionary where keys are end nodes, and values are lists of start nodes that connect to these end nodes.
-    """
-    connection_info = {}
-    for start_node in adjacent_list.keys():
-        for end_node in adjacent_list[start_node]:
-            connect_start_node_list = connection_info.setdefault(end_node, [])
-            connect_start_node_list.append(start_node)
-            connection_info[end_node] = connect_start_node_list
+#     Returns:
+#     - dict: A dictionary where keys are end nodes, and values are lists of start nodes that connect to these end nodes.
+#     """
+#     connection_info = {}
+#     for start_node in adjacent_list.keys():
+#         for end_node in adjacent_list[start_node]:
+#             connect_start_node_list = connection_info.setdefault(end_node, [])
+#             connect_start_node_list.append(start_node)
+#             connection_info[end_node] = connect_start_node_list
     
-    return connection_info
+#     return connection_info
 
-def make_unique_edge_type(adjacent_list, edge_list):
-    """
-    Assigns a unique edge type to connections between nodes based on the adjacency and edge lists.
+# def make_unique_edge_type(adjacent_list, edge_list):
+#     """
+#     Assigns a unique edge type to connections between nodes based on the adjacency and edge lists.
 
-    Parameters:
-    - adjacent_list (dict): A dictionary representing the network's adjacency list.
-    - edge_list (dict): A dictionary representing the network's edge list, indicating connections between nodes.
+#     Parameters:
+#     - adjacent_list (dict): A dictionary representing the network's adjacency list.
+#     - edge_list (dict): A dictionary representing the network's edge list, indicating connections between nodes.
 
-    Returns:
-    - dict: A dictionary where keys are node identifiers, and values are lists of unique edge types for edges ending at that node.
-    """
-    connection_info = get_connection_info(adjacent_list)
-    edge_type_info = {}
-    for end_node in connection_info.keys():
-        start_node_list = connection_info[end_node]
-        edge_type_list = []
-        for start_node in start_node_list:
-            edge_type = edge_list[start_node][end_node]
-            edge_type_list.append(edge_type)
-        edge_type_info[end_node] = edge_type_list
+#     Returns:
+#     - dict: A dictionary where keys are node identifiers, and values are lists of unique edge types for edges ending at that node.
+#     """
+#     connection_info = get_connection_info(adjacent_list)
+#     edge_type_info = {}
+#     for end_node in connection_info.keys():
+#         start_node_list = connection_info[end_node]
+#         edge_type_list = []
+#         for start_node in start_node_list:
+#             edge_type = edge_list[start_node][end_node]
+#             edge_type_list.append(edge_type)
+#         edge_type_info[end_node] = edge_type_list
     
-    return edge_type_info
+#     return edge_type_info
 
-def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
-    """
-    Constructs arguments for queue initialization based on the network configuration.
+# def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
+#     """
+#     Constructs arguments for queue initialization based on the network configuration.
 
-    Parameters:
-    - edge_type_info (dict): Information about edge types for each node.
-    - config_params (dict): Configuration parameters including service rates and buffer sizes.
-    - miu_dict (dict): A dictionary mapping nodes to their service rates.
-    - buffer_size_for_each_queue (dict): A dictionary mapping queue identifiers to their buffer sizes.
-    - exit_nodes (list): A list of nodes identified as exit points in the network.
+#     Parameters:
+#     - edge_type_info (dict): Information about edge types for each node.
+#     - config_params (dict): Configuration parameters including service rates and buffer sizes.
+#     - miu_dict (dict): A dictionary mapping nodes to their service rates.
+#     - buffer_size_for_each_queue (dict): A dictionary mapping queue identifiers to their buffer sizes.
+#     - exit_nodes (list): A list of nodes identified as exit points in the network.
 
-    Returns:
-    - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
-    """
-    def rate(t):
-        return 25 + 350 * np.sin(np.pi * t / 2)**2
+#     Returns:
+#     - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
+#     """
+#     def rate(t):
+#         return 25 + 350 * np.sin(np.pi * t / 2)**2
 
-    def arr(t):
-        return poisson_random_measure(t, rate, config_params['arrival_rate'])
+#     def arr(t):
+#         return poisson_random_measure(t, rate, config_params['arrival_rate'])
 
-    def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
-        # the convert into each edge correponds to a distinctive service rate
-        # save for buffer size
-        services_f = {}
-        for end_node in edge_type_info.keys():
-            if end_node not in exit_nodes:
-                service_rate = miu_dict[end_node]
+#     def get_service_time(edge_type_info, miu_dict, exit_nodes):
+#         # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
+#         # the convert into each edge correponds to a distinctive service rate
+#         # save for buffer size
+#         services_f = {}
+#         for end_node in edge_type_info.keys():
+#             if end_node not in exit_nodes:
+#                 service_rate = miu_dict[end_node]
 
-                for edge_type in edge_type_info[end_node]:
-                    def ser_f(t):
-                        return t + np.random.exponential(service_rate)
+#                 for edge_type in edge_type_info[end_node]:
+#                     def ser_f(t):
+#                         return t + np.random.exponential(service_rate)
                     
-                    services_f[edge_type] = ser_f
+#                     services_f[edge_type] = ser_f
 
-        return services_f
+#         return services_f
 
-    services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
+#     services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
     
-    q_args = {}
-    for end_node in edge_type_info.keys():
-        corresponding_edge_types = edge_type_info[end_node]
-        for edge_type in corresponding_edge_types:
+#     q_args = {}
+#     for end_node in edge_type_info.keys():
+#         corresponding_edge_types = edge_type_info[end_node]
+#         for edge_type in corresponding_edge_types:
 
-            if edge_type != 0:
-                if edge_type == 1:
-                    q_args[edge_type] = {
-                    'arrival_f': arr,
-                    'service_f': services_f[edge_type],
-                    'qbuffer': buffer_size_for_each_queue[edge_type]
-                    }
-                else:
-                    q_args[edge_type] = {
-                    'service_f': services_f[edge_type],
-                    'qbuffer':buffer_size_for_each_queue[edge_type],
-                    }
+#             if edge_type != 0:
+#                 if edge_type == 1:
+#                     q_args[edge_type] = {
+#                     'arrival_f': arr,
+#                     'service_f': services_f[edge_type],
+#                     'qbuffer': buffer_size_for_each_queue[edge_type]
+#                     }
+#                 else:
+#                     q_args[edge_type] = {
+#                     'service_f': services_f[edge_type],
+#                     'qbuffer':buffer_size_for_each_queue[edge_type],
+#                     }
     
-    return q_args
+#     return q_args
 
-def explore_state(adja_list, q_args, num_sample):
-    """
-    This function is used for state exploration for real word environment
-    It helps the agent decide which state to explore next based on factors, including Q-values and visit counts. 
+# def explore_state(adja_list, q_args, num_sample):
+#     """
+#     This function is used for state exploration for real word environment
+#     It helps the agent decide which state to explore next based on factors, including Q-values and visit counts. 
     
-    Parameters:
-    - DDPG_agent: the class of the DDPGAGent
-    - queue_model: the class of the queue model
-    - num_sample: number of states we sample from to get the lowest reward and times visited
-    - visit_counts: a dictionary that stores the number of times being visited for each state;
-    The key is the tuple of the state and the value is the number of time visited
-    - w1: Weight for the influence of Q-values (default: 0.5)
-    - w2: Weight for the influence of visit counts (default: 0.5)
-    - epsilon: Probability of exploration (default: 1)
+#     Parameters:
+#     - DDPG_agent: the class of the DDPGAGent
+#     - queue_model: the class of the queue model
+#     - num_sample: number of states we sample from to get the lowest reward and times visited
+#     - visit_counts: a dictionary that stores the number of times being visited for each state;
+#     The key is the tuple of the state and the value is the number of time visited
+#     - w1: Weight for the influence of Q-values (default: 0.5)
+#     - w2: Weight for the influence of visit counts (default: 0.5)
+#     - epsilon: Probability of exploration (default: 1)
 
-    Returns:
-    - chosen_state: The selected state for exploration.
-    """
+#     Returns:
+#     - chosen_state: The selected state for exploration.
+#     """
 
-    max_buffer_size = []
-    for start_node in adja_list.keys():
-        for end_node in adja_list[start_node]:
+#     max_buffer_size = []
+#     for start_node in adja_list.keys():
+#         for end_node in adja_list[start_node]:
             
-            edge_index = edge_list[start_node][end_node]
+#             edge_index = edge_list[start_node][end_node]
 
-            if edge_index == 0:
-                continue
+#             if edge_index == 0:
+#                 continue
 
-            if 'qbuffer' not in list(q_args[edge_index].keys()):
-                print(f"start node: {start_node}, end node: {end_node}, and edge index: {edge_index} ----- qbuffer not found")
-                print(f"q_args: {q_args}")
+#             if 'qbuffer' not in list(q_args[edge_index].keys()):
+#                 print(f"start node: {start_node}, end node: {end_node}, and edge index: {edge_index} ----- qbuffer not found")
+#                 print(f"q_args: {q_args}")
 
-            max_buffer = q_args[edge_index]['qbuffer']
-            max_buffer_size.append(max_buffer)
+#             max_buffer = q_args[edge_index]['qbuffer']
+#             max_buffer_size.append(max_buffer)
     
-    sample_states = []
-    for _ in range(num_sample):
-        array = np.array([np.random.randint(0, max_val) for max_val in max_buffer_size])
-        sample_states.append(array)
+#     sample_states = []
+#     for _ in range(num_sample):
+#         array = np.array([np.random.randint(0, max_val) for max_val in max_buffer_size])
+#         sample_states.append(array)
 
-    states_array = np.array(sample_states)
+#     states_array = np.array(sample_states)
 
-    choosen_state = random.choice(states_array.tolist())
-    if choosen_state[0] > 22:
-        print('wrong')
+#     choosen_state = random.choice(states_array.tolist())
+#     if choosen_state[0] > 22:
+#         print('wrong')
 
-    final_state = {}
-    for index, num in enumerate(choosen_state):
-        final_state[index] = num
+#     final_state = {}
+#     for index, num in enumerate(choosen_state):
+#         final_state[index] = num
 
-    return final_state
+#     return final_state
 
 
 
-if __name__ == '__main__':
-    config_file = r"D:\MScDataSparqProject\user_config\configuration.yml"
-    config_params = load_config(config_file)
-    miu_dict = config_params['miu_list']
-    adjacent_list = config_params['adjacent_list']
-    buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
+# if __name__ == '__main__':
+#     config_file = r"D:\MScDataSparqProject\user_config\configuration.yml"
+#     config_params = load_config(config_file)
+#     miu_dict = config_params['miu_list']
+#     adjacent_list = config_params['adjacent_list']
+#     buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
     
-    num_connections, exit_nodes = get_num_connections(adjacent_list)
-    q_classes = create_q_classes(num_connections)
-    edge_list = make_edge_list(adjacent_list, exit_nodes) 
-    edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
-    q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes)
+#     num_connections, exit_nodes = get_num_connections(adjacent_list)
+#     q_classes = create_q_classes(num_connections)
+#     edge_list = make_edge_list(adjacent_list, exit_nodes) 
+#     edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
+#     q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes)
 
-    g = adjacency2graph(adjacency=adjacent_list, edge_type=edge_list, adjust = 2)
-    queueing_network = QueueNetwork(g=g, q_classes = q_classes, q_args = q_args)
+#     g = adjacency2graph(adjacency=adjacent_list, edge_type=edge_list, adjust = 2)
+#     queueing_network = QueueNetwork(g=g, q_classes = q_classes, q_args = q_args)
 
-    initial_state = {0:16, 1:0, 2:6, 3:8, 4:5, 5:7, 6:10, 7:0, 8:17, 9:12, 10:18, 11:2}
-    num_sample = 50
-    queueing_network.initialize()
-    initial_state = explore_state(adjacent_list, q_args, num_sample)
-    while True:
-        queueing_network.set_initial_states(initial_state)
-        print(f"initial state: {queueing_network.num_agents}")
+#     initial_state = {0:16, 1:0, 2:6, 3:8, 4:5, 5:7, 6:10, 7:0, 8:17, 9:12, 10:18, 11:2}
+#     num_sample = 50
+#     queueing_network.initialize()
+#     initial_state = explore_state(adjacent_list, q_args, num_sample)
+#     while True:
+#         queueing_network.set_initial_states(initial_state)
+#         print(f"initial state: {queueing_network.num_agents}")
 
-        if queueing_network.num_agents[0] > 22:
-            print("wrong")
+#         if queueing_network.num_agents[0] > 22:
+#             print("wrong")
 
-        queueing_network.simulate(n = 200)
-        print(f"next state:{queueing_network.num_agents}")
-        print()
+#         queueing_network.simulate(n = 200)
+#         print(f"next state:{queueing_network.num_agents}")
+#         print()

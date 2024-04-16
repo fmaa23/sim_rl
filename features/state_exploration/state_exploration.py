@@ -1,6 +1,6 @@
 # from tensorflow import random
 import numpy as np
-from agents.ddpg import DDPGAgent
+from agents.ddpg_agent import DDPGAgent
 import torch
 from queue_env.queueing_network import Queue_network
 import os
@@ -49,14 +49,11 @@ class ExploreStateEngine():
         - tuple: A tuple containing two dictionaries, `params` for hyperparameters and `hidden` for hidden layer configurations.
         """
 
-        # Get the directory of the current script
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+        # Assuming __file__ is somewhere inside 'D:\\MScDataSparqProject'
+        project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-        # Go up one directory to the MScDataSparqProject directory
-        project_dir = os.path.dirname(script_dir)
-
-        # Build the path to the configuration file
-        abs_file_path = os.path.join(project_dir, self.eval_param_filepath)
+        # Now directly append your target directory to the project base
+        abs_file_path = os.path.join(project_dir, 'user_config', 'eval_hyperparams.yml')
         
         with open(abs_file_path, 'r') as env_param_file:
             parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
@@ -418,18 +415,12 @@ class ExploreStateEngine():
         max_buffer_size = []
         for start_node in env.adja_list.keys():
             for end_node in env.adja_list[start_node]:
+                if end_node in env.adja_list.keys():
                 
-                edge_index = env.edge_list[start_node][end_node]
+                    edge_index = env.edge_list[start_node][end_node]
 
-                if edge_index == 0:
-                    continue
-
-                if 'qbuffer' not in list(env.q_args[edge_index].keys()):
-                    print(f"start node: {start_node}, end node: {end_node}, and edge index: {edge_index} ----- qbuffer not found")
-                    print(f"q_args: {env.q_args}")
-
-                max_buffer = env.q_args[edge_index]['qbuffer']
-                max_buffer_size.append(max_buffer)
+                    max_buffer = env.q_args[edge_index]['qbuffer']
+                    max_buffer_size.append(max_buffer)
         
         sample_states = []
         for _ in range(self.num_sample):

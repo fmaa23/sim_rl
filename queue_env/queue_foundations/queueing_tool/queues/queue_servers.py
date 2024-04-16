@@ -265,7 +265,7 @@ class QueueServer(object):
     .. _the author: http://www.cs.cmu.edu/~harchol/PerformanceModeling/chpt1.pdf
     .. _the publisher: http://assets.cambridge.org/97811070/27503/excerpt/\
                         9781107027503_excerpt.pdf
-    .. _9781107027503: http://www.cambridge.org/us/9781107027503
+    .. _9781107027503: http://www.cambridge.org/us/9781107027503exponential
     """
 
     _default_colors = {
@@ -279,7 +279,7 @@ class QueueServer(object):
                  service_f=None, edge=(0, 0, 0, 1),
                  AgentFactory=Agent, collect_data=False, active_cap=infty,
                  deactive_t=infty, colors=None, seed=None,
-                 coloring_sensitivity=2, **kwargs):
+                 coloring_sensitivity=2, active_status = True,**kwargs):
 
         if not isinstance(num_servers, numbers.Integral) and num_servers is not infty:
             msg = "num_servers must be an integer or infinity."
@@ -316,7 +316,7 @@ class QueueServer(object):
         self._num_arrivals = 0
         self._oArrivals = 0
         self._num_total = 0       # The number of agents scheduled to arrive + num_system
-        self._active = False
+        self._active = active_status
         self._current_t = 0       # The time of the last event.
         self._time = infty   # The time of the next event.
         self._next_ct = 0       # The next time an arrival from outside the network can arrive.
@@ -355,6 +355,11 @@ class QueueServer(object):
                self.num_departures, round(self._time, 3))
         return my_str.format(*arg)
 
+    def set_queue(self, num_jobs):
+        self.queue = collections.deque()
+        for job_id in range(num_jobs):
+            self.queue.append(f"Job_{job_id + 1}")
+
     def _add_arrival(self, agent=None):
         if agent is not None:
             self._num_total += 1
@@ -372,7 +377,8 @@ class QueueServer(object):
                 new_agent._time = self._next_ct
                 heappush(self._arrivals, new_agent)
 
-                self._oArrivals += 1
+                if self.active_cap > 0: # modify
+                    self._oArrivals += 1
 
                 if self._oArrivals >= self.active_cap:
                     self._active = False
@@ -658,8 +664,11 @@ class QueueServer(object):
         """Changes the ``active`` attribute to True. Agents may now
         arrive from outside the network.
         """
-        if not self._active:
-            self._active = True
+        # if not self._active:
+        #     self._active = True
+        #     self._add_arrival()
+
+        if self._active:
             self._add_arrival()
 
     def set_inactive(self):
