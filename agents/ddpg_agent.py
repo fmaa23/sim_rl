@@ -168,7 +168,7 @@ class DDPGAgent():
         # here we just take Model(s,a) from the previous iteration but re-train it
         reward_loss_list = []
         next_state_list = []
-        if self.buffer.current_size < batch_size:
+        if self.buffer.get_current_size() < batch_size:
             raise Exception('Number of transitions in buffer fewer than chosen threshold value')
         
         data = self.buffer.get_items()

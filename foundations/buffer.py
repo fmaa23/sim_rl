@@ -13,14 +13,11 @@ class ReplayBuffer():
         """
         
         self.max_size = max_size
+        self.device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.buffer = deque([], maxlen=max_size)
 
     def get_current_size(self):
         return len(self.buffer)
-
-    def __len__(self):
-        return len(self.buffer)
-
 
     def push(self, transition):
         """
@@ -75,3 +72,9 @@ class ReplayBuffer():
         
         return TensorDataset(state, action, reward, next_state)
 
+
+    def clear(self):
+        """
+        Clear all items from the replay buffer.
+        """
+        self.buffer = deque([], maxlen=self.max_size)
