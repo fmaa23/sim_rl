@@ -462,11 +462,15 @@ def train(params, agent, env, best_params = None):
     reward_by_episode = {}
 
     num_episodes, _, num_epochs, time_steps, _, num_train_AC = get_params_for_train(params)
-
+    latest_transition_proba = None
     for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
 
         agent.train()
         env.reset()
+
+        if latest_transition_proba is not None:
+            env.net.set_transitions(latest_transition_proba)
+
         env.simulate()
 
         update = 0
@@ -518,6 +522,8 @@ def train(params, agent, env, best_params = None):
         agent.buffer.clear()
 
         reward_by_episode[episode] = reward_list
+
+        latest_transition_proba = env.transition_proba
     
     save_agent(agent)
     

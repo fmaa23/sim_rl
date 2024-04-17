@@ -1,16 +1,16 @@
 ---
 rl_params:
-  num_episodes: 10
+  num_episodes: 100
   
   threshold: 10
 
   num_epochs: 100
   
-  time_steps: 100
+  time_steps: 20
   
   target_update_frequency: 100
   
-  batch_size: 100
+  batch_size: 20
   
   num_sim: 10
   
@@ -20,7 +20,7 @@ rl_params:
   
   critic_lr: 0.01
 
-  actor_lr: 0.001
+  actor_lr: 0.0001
   
   discount: 0.2
   
@@ -56,17 +56,25 @@ state_exploration_params:
 
 network_params:
   actor:
+    - 32
     - 64
     - 64
+    - 32
   
   critic:
+    - 32
     - 64
     - 64
+    - 32
   
   reward_model:
+    - 32
     - 64
     - 64
+    - 32
   
   next_state_model:
+    - 32
     - 64
     - 64
+    - 32

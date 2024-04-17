@@ -370,6 +370,7 @@ class RLEnv:
         qn_net = self.create_queueing_env(config_file = 'user_config/configuration.yml')
         self.qn_net = qn_net
         self.net = qn_net.queueing_network
+        self.num_entries = []
 
     def return_queue(self,queue_index, metric):
         """

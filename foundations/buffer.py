@@ -59,7 +59,6 @@ class ReplayBuffer():
             raise ValueError("Sample size cannot be greater than the number of items contained in the buffer.")
         
         return random.sample(self.buffer, batch_size)
-    
 
     def get_items(self):
         """
