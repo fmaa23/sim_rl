@@ -12,30 +12,42 @@ gradient_dict = {}
 class DDPGAgent():
     def __init__(self, n_states, n_actions, hidden, params):
         """
-        Creates a DDPG agent in an environment. This class has six neural networks as attributes:
-
-        Actor Networks (x2):
-            - Policy Network and Target Network: Used for action selection given a state vector as input
-        Critic Networks (x2):
-            - Policy Network and Target Network: Outputs Q-value given a state-action pair as input
-        Reward Network (x1):
-            - Agent's prediction of reward given a state-action pair, based on its internal model of the environment
-        Next State Network (x1):
-            - Agent's prediction of the next state given a state-action pair, based on its internal model of the environment
+        Creates a DynaDDPG agent in an environment. See page 5 of https://arxiv.org/pdf/1905.01072.pdf
+        
+        This class has six neural networks as attributes:
+            - actor networks (x2):  One policy network and one target network. Given a state vector
+                                    as input, these networks output an action vector. Usually denoted
+                                    by mu in literature.
+            - critic networks (x2): One policy network and one target network. Given a state-action
+                                    pair as input, these networks output a Q-value reflecting the 
+                                    expected return (total future discounted rewards) of taking that
+                                    action in that state. Usually denoted by Q in the literature.
+            - reward network (x1):  Given a state-action pair as input, this network outputs the 
+                                    agent's prediction of the reward it will receive.
+            - next state network (x1):  Given a state-action pair as input, this network outputs the
+                                        agent's prediction of the next state it will transition to.     
 
         Parameters:
-            n_states (int): Dimensions of the state vector
-            n_actions (int): Dimensions of the action vector
-            hidden (dict of list): Each value is a list specifying the size of the hidden layers
-                                   in the four unique neural networks that define this class. Example:
-                                   hidden = {
-                                       'actor': [64, 64],
-                                       'critic': [64, 64],
-                                       'reward_model': [10, 10],
-                                       'next_state_model': [10, 10]
-                                   }
-            params (dict of float): Dictionary of hyperparameters
-
+        - n_states (int): Dimensions of the state vector
+        - n_actions (int): Dimensions of the action vector
+        - hidden (dict of list):    Each value is a list specifying the size of the hidden layers
+                                    in the four unique neural networks that define this class. Example:
+                                        hidden = {
+                                        'actor': [64, 64],
+                                        'critic': [64, 64],
+                                        'reward_model': [10, 10],
+                                        'next_state_model': [10, 10]
+                                            }
+        - params (dict of float): Dictionary of hyperparameters which include
+            a) tau (float): Soft update parameter for target networks
+            b) critic_lr (float): Learning rate for critic networks (n.b. this lr is used
+                                  for the reward and next state models as well)
+            c) actor_lr (float): Learning rate for actor networks
+            d) discount (float): Discount factor for future rewards
+            e) epsilon (float): Perturbation value for planning
+            f) planning_steps (int): Number of planning steps to take
+            g) batch_size (int): Size of each batch of data to use during training
+            
         """
         self.state_size = n_states
         self.action_size = n_actions
@@ -91,21 +103,35 @@ class DDPGAgent():
         self.num_select_action = 0
 
     def update_actor_network(self, batch):
+        """
+        Given a batch of experiences as input, update the actor network by performing gradient
+        descent. The loss is accumulated over all the experiences in the batch (total_policy_loss)
+        and the mean loss (mean_policy_loss) is used to update the network.
+
+        Parameters:
+        - batch (list): A list of experiences, where each experience is a tuple of
+                        (state, action, reward, next_state) and each
+                        element is of type torch.Tensor
+
+        Returns:
+        - mean_policy_loss (float): The mean loss over the batch of experiences
+        - gradient_dict (dict): Dictionary of gradients for each parameter in the actor network
+
+        """
         total_policy_loss = torch.zeros(1, requires_grad=True).to(self.device)
         self.actor_optim.zero_grad()
 
         for experience in batch:
             state, action, reward, next_state = experience
-            # self.actor.zero_grad()                                                    # TO CHANGE
-            policy_loss = -self.critic([state, self.actor(state)])                      # TO CHANGE
-            policy_loss = policy_loss.mean().to(torch.float32)                          # TO CHANGE
+            # self.actor.zero_grad()                                            
+            policy_loss = -self.critic([state, self.actor(state)])               
+            policy_loss = policy_loss.mean().to(torch.float32)                   
             total_policy_loss = total_policy_loss + policy_loss
         
         mean_policy_loss = total_policy_loss / len(batch)
         mean_policy_loss.backward() # retain_graph=True
 
         # Log gradient information
-        
         if True:
             
             for name, parameter in self.actor.named_parameters():
@@ -127,6 +153,20 @@ class DDPGAgent():
         self.actor_scheduler.step()
 
     def update_critic_network(self, batch):
+        """
+        Given a batch of experiences as input, update the critic network by performing gradient
+        descent. The loss is accumulated over all the experiences in the batch (total_critic_loss)
+        and the mean loss (mean_critic_loss) is used to update the network. 
+
+        Parameters:
+        - batch (list): A list of experiences, where each experience is a tuple of
+                        (state, action, reward, next_state) and each
+                        element is of type torch.Tensor
+
+        Returns:
+        - mean_critic_loss (float): The mean loss over the batch of experiences
+
+        """
         total_critic_loss = torch.zeros(1, requires_grad=True).to(self.device)
         self.critic_optim.zero_grad()
         
@@ -155,12 +195,13 @@ class DDPGAgent():
             2. M2(s,a) = \hat{s'}   --> predicts the next state for a given (s,a) pair
         
         Parameters:
-            batch_size (int): The size of each batch of data to use during fitting of M.
-            threshold (int): The minimum number of samples needed in the buffer before training.
-            epochs (int): The number of epochs to train the two neural networks. Defaults to 5
+        - batch_size (int): The size of each batch of data to use during fitting of M.
+        - threshold (int): The minimum number of samples needed in the buffer before training.
+        - epochs (int): The number of epochs to train the two neural networks. Defaults to 5
 
         Returns:
-            None            
+        - None  
+
         """
         # not sure if we need to reset Model(s,a) to be a new network
         # here we just take Model(s,a) from the previous iteration but re-train it
@@ -213,11 +254,12 @@ class DDPGAgent():
         Store an experience in the agent's buffer, given that it is in training mode.
 
         Parameters:
-            experience (tuple): tuple of (state, action, reward, next_state) where each element is
-                                of type torch.Tensor
+        - experience (tuple): Tuple of (state, action, reward, next_state) where each element is
+                              of type torch.Tensor
         
         Returns:
-            None
+        - None
+
         """
         if self.training:
             self.buffer.push(experience)
@@ -236,11 +278,11 @@ class DDPGAgent():
         - updating the critic network using this experience (s, \hat{a}, \hat{r}, \hat{s'})
     
         Parameters:
-            experience (tuple): tuple of (state, action, reward, next_state) where each element is
-                                of type torch.Tensor  
+        - experience (tuple): tuple of (state, action, reward, next_state) where each element is
+                              of type torch.Tensor  
 
         Returns:
-            None
+        - None
         
         """
         
@@ -266,13 +308,14 @@ class DDPGAgent():
         the current policy network parameters.
 
         Parameters:
-            network (str): Specifies which network to update. Should be either 'actor' or 'critic'.
+        - network (str): Specifies which network to update. Should be either 'actor' or 'critic'.
 
         Raises:
-            Exception: If the input network parameter is neither 'actor' nor 'critic'.
+        - ValueError: If the input network parameter is neither 'actor' nor 'critic'.
 
         Returns:
-            None
+        - None
+
         """
         if network == "actor":
             target = self.actor_target
@@ -281,7 +324,7 @@ class DDPGAgent():
             target = self.critic_target
             source = self.critic
         else:
-            raise Exception("Invalid input. Parameter should be either 'actor' or 'critic', depending \
+            raise ValueError("Invalid input. Parameter should be either 'actor' or 'critic', depending \
                                 on the network to be updated.")
         
         for target_param, source_param in zip(target.parameters(), source.parameters()):
@@ -296,13 +339,14 @@ class DDPGAgent():
         copies the parameters of the source network to the target network. 
 
         Parameters:
-            network (str): Specifies which network to update. Should be either 'actor' or 'critic'.
+        - network (str): Specifies which network to update. Should be either 'actor' or 'critic'.
 
         Raises:
-            Exception: If the input network parameter is neither 'actor' nor 'critic'.
+        - ValueError: If the input network parameter is neither 'actor' nor 'critic'.
 
         Returns:
-            None
+        - None
+
         """
         if network == "actor":
             target = self.actor_target
@@ -316,6 +360,7 @@ class DDPGAgent():
         
         for target_param, source_param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(source_param.data)
+
 
     def convert_state(self, state_tensor):
         state_list = state_tensor.tolist()
