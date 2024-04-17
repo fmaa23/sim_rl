@@ -38,7 +38,10 @@ class Actor(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     def forward(self, state):
-        state_tensor = torch.tensor(state, dtype=torch.float32, device=self.device)
+        if isinstance(state, torch.Tensor):
+            state_tensor = state.clone().detach().to(self.device).float()
+        else:
+            state_tensor = torch.tensor(state, dtype=torch.float32, device=self.device)
         action = self.layers(state_tensor)
         #action = self.layers(state.float().to(self.device))
         return action

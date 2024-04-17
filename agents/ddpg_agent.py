@@ -104,8 +104,6 @@ class DDPGAgent():
         mean_policy_loss = total_policy_loss / len(batch)
         mean_policy_loss.backward() # retain_graph=True
 
-        self.actor_scheduler.step()
-
         # Log gradient information
         
         if True:
@@ -126,6 +124,7 @@ class DDPGAgent():
         else:
             return mean_policy_loss.item(), gradient_dict
 
+        self.actor_scheduler.step()
 
     def update_critic_network(self, batch):
         total_critic_loss = torch.zeros(1, requires_grad=True).to(self.device)
