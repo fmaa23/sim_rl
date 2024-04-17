@@ -1,10 +1,3 @@
-from collections import OrderedDict
-from unittest.mock import MagicMock, patch
-import pytest
-from Supporting_files.model import Actor, Critic, RewardModel, NextStateModel
-from agents.ddpg import DDPGAgent
-import torch.nn as nn
-import torch
 import sys
 from pathlib import Path
 # Get the absolute path of the parent directory (i.e., the root of your project)
@@ -12,12 +5,20 @@ root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
 
+from collections import OrderedDict
+from unittest.mock import MagicMock, patch
+import pytest
+from foundations.model import Actor, Critic, RewardModel, NextStateModel
+from agents.ddpg_agent import DDPGAgent
+import torch.nn as nn
+import torch
 
 n_states = 10
 n_actions = 2
 hidden = {'actor': [64, 64], 'critic': [64, 64],
           'reward_model': [10, 10], 'next_state_model': [10, 10]}
-params = {'tau': 0.1, 'learning_rate': 0.001,
+params = {'tau': 0.1, 'actor_lr': 0.001,'critic_lr': 0.001,
+          'batch_size': 20,
           'discount': 0.99, 'epsilon': 0.1, 'planning_steps': 5}
 
 
@@ -109,7 +110,7 @@ def test_update_q_values(ddpg_agent):
     assert updated_loss < initial_loss, "Critic network Q-value update did not reduce loss."
 
 
-def test_update_actor_network(ddpg_agent, num_experiences=10):
+def test_update_actor_network(ddpg_agent, num_experiences=100):
     """
     Tests the update_actor_network method in the DDPGAgent class. Steps to achieve this:
         1. Setting the torch seed for reproducibility and then creating fake data.
@@ -121,8 +122,8 @@ def test_update_actor_network(ddpg_agent, num_experiences=10):
     """
     # set torch seed and create fake data
     set_torch_seed(42)
-    batch = [(torch.randn(n_states), torch.randn(n_actions), torch.randn(
-        1), torch.randn(n_states)) for _ in range(num_experiences)]
+    batch = [(torch.randn(n_states), torch.randn(n_actions),
+              torch.randn(1), torch.randn(n_states)) for _ in range(num_experiences)]
 
     # set weights for Actor and Critic in DDPGAgent class
     ddpg_agent.actor.apply(init_weights_constant)
@@ -133,7 +134,7 @@ def test_update_actor_network(ddpg_agent, num_experiences=10):
     # create baseline model for comparison (Actor)
     baseline_actor = Actor(n_states, n_actions, hidden['actor'])
     baseline_optim = torch.optim.Adam(
-        baseline_actor.parameters(), lr=params['learning_rate'])
+        baseline_actor.parameters(), lr=params['actor_lr'])
     baseline_actor.apply(init_weights_constant)
     baseline_scheduler = torch.optim.lr_scheduler.ExponentialLR(baseline_optim, gamma=0.8)
 
@@ -161,8 +162,8 @@ def test_update_actor_network(ddpg_agent, num_experiences=10):
         total_policy_loss = total_policy_loss + policy_loss
     mean_policy_loss = total_policy_loss / len(batch)
     mean_policy_loss.backward()
-    baseline_scheduler.step()
     baseline_optim.step()
+    baseline_scheduler.step()
 
     # compare state dictionaries after updates
     compare_state_dicts(baseline_actor.state_dict(),
@@ -184,8 +185,8 @@ def test_update_critic_network(ddpg_agent, num_experiences=100):
 
     # set torch seed and create fake data
     set_torch_seed(42)
-    batch = [(torch.randn(n_states), torch.randn(n_actions), torch.randn(
-        1), torch.randn(n_states)) for _ in range(num_experiences)]
+    batch = [(torch.randn(n_states), torch.randn(n_actions), 
+              torch.randn(1), torch.randn(n_states)) for _ in range(num_experiences)]
 
     # set weights for Actor and Critic in DDPGAgent class
     ddpg_agent.actor.apply(init_weights_constant)
@@ -201,7 +202,7 @@ def test_update_critic_network(ddpg_agent, num_experiences=100):
     baseline_critic = Critic(n_states, n_actions, hidden['critic'])
     baseline_critic_target = Critic(n_states, n_actions, hidden['critic'])
     baseline_optim = torch.optim.Adam(
-        baseline_critic.parameters(), lr=params['learning_rate'])
+        baseline_critic.parameters(), lr=params['critic_lr'])
     baseline_critic.apply(init_weights_constant)
     baseline_critic_target.apply(init_weights_constant)
 
@@ -233,11 +234,21 @@ def test_update_critic_network(ddpg_agent, num_experiences=100):
                         ddpg_agent.critic.state_dict())
 
 
+
 # baseline_critic_model = Critic(n_states, n_actions, hidden['critic'])
 # baseline_reward_model = RewardModel(n_states, n_actions, hidden['reward_model'])
 # baseline_next_state_model = NextStateModel(n_states, n_actions, hidden['next_state_model'])
 
 if __name__ == "__main__":
     agent = DDPGAgent(n_states, n_actions, hidden, params)
-    test_update_actor_network(agent)
-    # test_update_critic_network(agent)
+    try:
+        test_update_actor_network(agent)
+        print("Test for 'update_actor_network' method passed.")
+    except:
+        print("Test for 'update_actor_network' method failed.")
+
+    try:
+        test_update_critic_network(agent)
+        print("Test for 'update_critic_network' method passed.")
+    except:
+        print("Test for 'update_critic_network' method failed.")

@@ -38,7 +38,7 @@ class DDPGAgent():
                                         'reward_model': [10, 10],
                                         'next_state_model': [10, 10]
                                             }
-        - params (dict of float): Dictionary of hyperparameters which include
+        - params (dict of float): Dictionary of hyperparameters which include (compulsory)
             a) tau (float): Soft update parameter for target networks
             b) critic_lr (float): Learning rate for critic networks (n.b. this lr is used
                                   for the reward and next state models as well)
@@ -56,7 +56,7 @@ class DDPGAgent():
         # hyperparameters
         self.tau = params['tau']
         self.lr = params['critic_lr']
-        self.actor_lr = params["actor_lr"]
+        self.actor_lr = params['actor_lr']
         self.discount= params['discount']
         self.epsilon = params['epsilon']
         self.planning_steps = params['planning_steps']
