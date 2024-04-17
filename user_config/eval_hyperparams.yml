@@ -1,20 +1,22 @@
 ---
 rl_params:
-  num_episodes: 50
+  num_episodes: 10
   
   threshold: 10
 
   num_epochs: 100
   
   time_steps: 100
-
-  num_train_agent: 10
   
-  num_sim: 100
-
-  buffer_size: 100000
+  target_update_frequency: 100
+  
+  batch_size: 100
+  
+  num_sim: 10
   
   tau: 0.5
+
+  num_train_AC: 10
   
   critic_lr: 0.01
 

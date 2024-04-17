@@ -27,7 +27,6 @@ def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'
     plt.xlabel('List Index')
     plt.ylabel('Value')
 
-    import os
     save_path = os.path.join(images_filepath, 'Gradient.png')
     plt.savefig(save_path)
     plt.close()
@@ -39,7 +38,6 @@ def plot_actor(data_filepath, images_filepath):
     plt.plot(actor_loss)
     plt.title("Actor Loss")
 
-    import os
     save_path = os.path.join(images_filepath, 'Acotor_loss.png')
     plt.savefig(save_path)
     plt.close()
@@ -51,7 +49,6 @@ def plot_critic(data_filepath, images_filepath):
     plt.plot(critic_loss)
     plt.title('Critic Loss')
 
-    import os
     save_path = os.path.join(images_filepath, 'Critic_loss.png')
     plt.savefig(save_path)
     plt.close()
@@ -79,7 +76,6 @@ def plot_actor_vector(data_filepath, images_filepath):
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Coordinates for the legend box
     plt.show()
 
-    import os
     save_path = os.path.join(images_filepath, 'Actor_space.png')
     plt.savefig(save_path)
     plt.close()
@@ -103,13 +99,10 @@ def plot_transition_proba(data_filepath, images_filepath, transition_proba_dict,
     plt.ylabel('Probability')
     plt.legend()
 
-    save_path = os.path.join(os.getcwd(), 'transition probas.png')
+    save_path = os.path.join(images_filepath, 'transition probas.png')
     plt.savefig(save_path)
     plt.close()
 
-    plt.title("Transition Proba")
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1)) 
-    plt.show()
 
 def plot_reward_model_loss(data_filepath, images_filepath):
     reward_model_loss_new = pd.read_csv(data_filepath + '/reward_model_loss.csv', index_col=0)
@@ -118,7 +111,6 @@ def plot_reward_model_loss(data_filepath, images_filepath):
     plt.plot(reward_model_loss_new.rolling(window=12).mean())
     plt.title("reward_model_loss_new")
 
-    import os
     save_path = os.path.join(images_filepath, 'Reward_model_loss.png')
     plt.savefig(save_path)
     plt.close()
@@ -130,13 +122,11 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
     plt.plot(next_state_model)
     plt.title("next_state_model_loss")
 
-    import os
     save_path = os.path.join(images_filepath, 'Next_model_loss.png')
     plt.savefig(save_path)
     plt.close()
 
-def plot(data_filepath, images_filepath, transition_probas):
-    import os
+def plot(data_filepath, images_filepath, transition_probas = None):
     filepath = os.getcwd() + '/foundations' + '/output_plots'
 
     # Create the directory if it doesn't exist
@@ -149,3 +139,5 @@ def plot(data_filepath, images_filepath, transition_probas):
     plot_transition_proba(data_filepath, images_filepath, transition_probas, node = 1)
     plot_reward_model_loss(data_filepath, images_filepath)
     plot_next_state_model_loss(data_filepath, images_filepath)
+
+    print(f"plots have been saved at {filepath}")

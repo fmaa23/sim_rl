@@ -12,7 +12,6 @@ from queue_env.queueing_network import *
 from tuning.wandb_tuning import *
 from foundations.plot_datasparq import *
 from tqdm import tqdm
-import json
 from queueing_tool.network.queue_network import QueueNetwork
 from queueing_tool.queues.queue_servers import *
 
@@ -176,7 +175,7 @@ def create_params(config_file):
     miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
-    n_sim = config_params['n_sim']
+    sim_time = config_params['sim_time']
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
 
@@ -191,10 +190,7 @@ def create_params(config_file):
     
     transition_proba_all = config_params['transition_proba_all']
 
-    # active_cap = config_params['active_cap']
-    # deactive_t = config_params['deactive_cap']
-
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, n_sim
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time
 
 def create_q_classes(edge_list):
     """
@@ -221,9 +217,6 @@ def create_q_classes(edge_list):
     return q_classes
 
 def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        # need to make into a user-prompted way to ask for service rate where each end node corresponds to a distinctive service rate
-        # the convert into each edge correponds to a distinctive service rate
-        # save for buffer size
         services_f = {}
         for end_node in edge_type_info.keys():
             if end_node not in exit_nodes:
@@ -280,7 +273,7 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
                 'qbuffer': buffer_size_for_each_queue[edge_type],
                 'service_rate': service_rate,
-                 'active_cap': float('inf'),
+                 'active_cap': float('inf'), 
                  'active_status' : True
                 }
             else:
@@ -291,6 +284,7 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
                 'active_cap':float('inf'),
                 'active_status' : False
                 }
+
     return q_args
 
 def create_queueing_env(config_file):
@@ -304,11 +298,11 @@ def create_queueing_env(config_file):
     - Queue_network: An instance of the queueing environment.
     """
     arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all, max_agents, n_sim = create_params(config_file)
+        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(config_file)
     
     q_net = Queue_network()
     q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
-                        edge_list, transition_proba_all, max_agents, n_sim)
+                        edge_list, transition_proba_all, max_agents, sim_time)
     q_net.create_env()
     return q_net
 
@@ -378,15 +372,17 @@ def get_params_for_train(params):
     - tuple: A tuple containing parameters specific to training.
     """
     num_episodes = params['num_episodes']
+    batch_size = params['batch_size']
     num_epochs = params['num_epochs']
     time_steps = params['time_steps']
-    num_train_agent = params['num_train_agent']
+    target_update_frequency = params['target_update_frequency']
+    num_train_AC = params['num_train_AC']
 
-    return num_episodes, num_epochs, time_steps, num_train_agent
+    return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, num_train_AC
 
 def init_transition_proba(env):
     transition_proba = {}
-    adjacent_lists = env.qn_net.adja_list # check
+    adjacent_lists = env.qn_net.adja_list 
     for start_node in adjacent_lists.keys():
         if len(adjacent_lists[start_node]) > 1:
             transition_proba[start_node] = {}
@@ -398,7 +394,7 @@ def update_transition_probas(transition_probas, env):
         next_nodes = env.transition_proba[start_node].keys()
         next_proba_dict = transition_probas[start_node]
         for next_node in next_nodes:
-            proba_list = next_proba_dict.setdefault(next_node, []) # check
+            proba_list = next_proba_dict.setdefault(next_node, []) 
             if len(proba_list) == 0:
                 proba_list.append(env.qn_net.transition_proba[start_node][next_node])
             proba_list.append(env.transition_proba[start_node][next_node])
@@ -422,7 +418,7 @@ def save_agent(agent):
     and saves the given agent model to a file named 'tensor.pt' within this directory.
     """
     base_path = os.getcwd()
-    agent_dir = os.path.join(base_path, 'Agent')
+    agent_dir = os.path.join(base_path, 'agent')
 
     # Create the directory if it does not exist
     if not os.path.exists(agent_dir):
@@ -465,7 +461,7 @@ def train(params, agent, env, best_params = None):
     reward_list = []
     reward_by_episode = {}
 
-    num_episodes, num_epochs, time_steps, num_train_agent = get_params_for_train(params)
+    num_episodes, _, num_epochs, time_steps, _, num_train_AC = get_params_for_train(params)
 
     for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
 
@@ -476,7 +472,7 @@ def train(params, agent, env, best_params = None):
         update = 0
         reward_list = []
 
-        for _ in tqdm(range(time_steps), desc="Time Steps Progress"): 
+        for t in tqdm(range(time_steps), desc="Time Steps Progress"): 
 
             state = env.get_state()
             state_tensor = torch.tensor(state)
@@ -503,7 +499,7 @@ def train(params, agent, env, best_params = None):
 
         transition_probas = update_transition_probas(transition_probas, env)
 
-        for _ in tqdm(range(num_train_agent), desc="Train Agent"): 
+        for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
 
             batch = agent.buffer.sample(batch_size=time_steps)
             critic_loss = agent.update_critic_network(batch)                   
@@ -511,21 +507,21 @@ def train(params, agent, env, best_params = None):
 
             actor_loss_list.append(actor_loss)
             critic_loss_list.append(critic_loss)
-            gradient_dict_all[update] = gradient_dict
 
         agent.plan(batch)
 
         agent.soft_update(network="critic")
         agent.soft_update(network="actor")
 
+        gradient_dict_all[update] = gradient_dict
+
         agent.buffer.clear()
 
         reward_by_episode[episode] = reward_list
-
-    # save_agent(agent)
     
-    return reward_by_episode, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, action_dict, gradient_dict, transition_probas
+    save_agent(agent)
+    
+    return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
     """
@@ -554,8 +550,9 @@ def get_transition_proba_df(transition_probas):
     df_transition_proba = pd.DataFrame(flatten_dict)
     return df_transition_proba
 
-def save_all(reward_by_episode, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, action_dict, gradient_dict, transition_probas, base_path = None):
+
+def save_all(next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, base_path = None):
     """
     Save all relevant data from the training process.
 
@@ -573,7 +570,6 @@ def save_all(reward_by_episode, next_state_model_list_all, critic_loss_list,\
     """
 
     # Create the directory if it doesn't exist
-    
     base_path = os.getcwd()
     base_path += "/foundations/output_csv"
     os.makedirs(base_path, exist_ok=True)
@@ -587,22 +583,21 @@ def save_all(reward_by_episode, next_state_model_list_all, critic_loss_list,\
     df_transition.to_csv(base_path + '/transition_proba.csv')
 
     import json
-    # Specify the filename
     filename = base_path + '/gradient_dict.json'
 
-    # Write the dictionary to a file as JSON
     with open(filename, 'w') as f:
         json.dump(gradient_dict, f)
     
     filename = base_path + '/reward_dict.json'
 
-    # Write the dictionary to a file as JSON
     with open(filename, 'w') as f:
         json.dump(reward_by_episode, f)
+    
+    print(f"CSVs haven been saved at {base_path}")
 
 
 def start_train(config_file, param_file, save_file = True, 
-                data_filename = 'output_csv', image_filename = 'output_plots', plot_curves = True):
+                data_filename = 'data', image_filename = 'images', plot_curves = True):
     """
     Start the training process for a reinforcement learning environment and agent.
 
@@ -613,27 +608,31 @@ def start_train(config_file, param_file, save_file = True,
 
     This function orchestrates the loading of configurations, creation of environments and agents, and the training process.
     """
+
     params, hidden = load_hyperparams(param_file)
 
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
 
-    reward_by_episode, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
+    next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
 
     csv_filepath = os.getcwd() + '/foundations/' + data_filename
     image_filepath = os.getcwd() + '/foundations/' + image_filename
+
     if save_file:
 
-        save_all(reward_by_episode, next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, action_dict, gradient_dict, transition_probas)
+        save_all(next_state_model_list_all, critic_loss_list,\
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
     
     if plot_curves:
 
         plot(csv_filepath, image_filepath, transition_probas)
 
+
 def plot_best(data_filepath, images_filepath):
     plot(data_filepath, images_filepath)
+
 
 def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, 
                  plot_best_param = True, 

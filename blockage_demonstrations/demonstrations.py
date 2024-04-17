@@ -209,4 +209,3 @@ if __name__=="__main__":
     sd = Static_Disruption(env, agent, 1, 3)
     disrupted_env = sd.disrupted_environment
     queue_metrics_dis = sd.control(environment=disrupted_env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
-    #breakpoint()

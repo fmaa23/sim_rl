@@ -84,4 +84,6 @@ arrival_rate: 0.3
 
 max_agents: inf
 
-n_sim: 100
+sim_time: 100
+
+max_arr_rate_list: [375, 375, 375]

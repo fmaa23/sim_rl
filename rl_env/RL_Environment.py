@@ -136,12 +136,11 @@ class RLEnv:
         """
         state = []
         for i in range(self.net.num_edges): 
-            # if isinstance(self.qn_net.q_classes[i], LossQueue):
-            if i != 12:
+            if isinstance(self.net.edge2queue[i], LossQueue):
                 queue_data=self.net.get_queue_data(queues=i)
                 if len(queue_data[queue_data[:, 2] == 0, 2]) > 0:
                     queue_data[queue_data[:, 2] == 0, 2] = self.net.current_time
-                # ind_serviced = np.where(queue_data[:,2]!=0)[0]
+
                 if len(queue_data)>0:
                     throughput = len(queue_data)
                     EtE_delay= queue_data[:,2]-queue_data[:,0]
@@ -151,10 +150,34 @@ class RLEnv:
                     state.append(0)
         return state
 
+        # for edge in range((self.net.num_edges-self.num_nullnodes)):
+            
+        #     edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
+        #     if len(edge_data) > 0:
+        #         self._state[edge]=edge_data[-1][3]
+        #     else:
+        #         self._state[edge]=0
+
+        # all_queues = self.net.edge2queue
+        # self._state = []
+        # for index in range(len(all_queues)):
+        #     if isinstance(all_queues[index], LossQueue):
+        #         self._state.append(all_queues[index]._num_arrivals)
+        #         self._state.append(all_queues[index].num_departures)
+        #         self._state.append(len(all_queues[index].queue))
+
+        # for index in range(len(all_queues)):
+        #     if isinstance(all_queues[index], LossQueue):
+        #         self._state.append(len(all_queues[index].queue))
+        
+        # self.record_num_exit_nodes.append(len(self.net.get_queue_data(queues=12)))
+        # print(f"processed jobs: {len(self.net.get_queue_data(queues=12))}")
+
     def record_sim_data(self):
         for num in range(self.net.num_edges):
             self.num_entries.append(len(self.net.get_queue_data(queues = num)))
         
+
     def get_next_state(self, action):
         """
         Computes and returns the next state of the environment given an action.
@@ -253,7 +276,8 @@ class RLEnv:
         
         self.iter +=1
         self.net.start_collecting_data()
-        self.net.simulate(n = self.qn_net.n_sim) 
+
+        self.net.simulate(n = self.qn_net.sim_time) 
 
         return self.get_state()
         
@@ -279,18 +303,64 @@ class RLEnv:
             float: The calculated reward.
         """
 
-        throughput_ratio = len(self.net.get_queue_data(queues=12)) / len(self.net.get_queue_data(queues=0))
         avg_delay = []
-        for i in range(self.net.num_edges - 1): 
-            # if isinstance(self.qn_net.q_classes[i], LossQueue): modify
+
+        for i in range(self.net.num_edges):
+            if isinstance(self.net.edge2queue[i], LossQueue): 
                 queue_data=self.net.get_queue_data(queues=i)[self.num_entries[i]:]
                 ind_serviced = np.where(queue_data[:,2]!=0)[0]
+
                 if len(ind_serviced)>0:
                     throughput = len(ind_serviced)
                     EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
                     tot_EtE_delay = EtE_delay.sum()
                     avg_delay.append(tot_EtE_delay / throughput)
+
+        num_exits = 0
+        for i in range(self.net.num_edges):
+            if isinstance(self.net.edge2queue[i], NullQueue): 
+                num_exits += len(self.net.get_queue_data(queues=i))
+        
+        throughput_ratio = num_exits / len(self.net.get_queue_data(queues=0))
+
         return -np.mean(avg_delay) / throughput_ratio
+
+        # reward = []
+        # for i in range(self.net.num_edges): 
+        #     queue_data=self.net.get_queue_data(queues=i)
+        #     ind_serviced = np.where(queue_data[:,2]!=0)[0]
+        #     if len(ind_serviced)>0:
+        #         throughput = len(ind_serviced)
+        #         EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+        #         tot_EtE_delay = EtE_delay.sum()
+        #         reward.append(tot_EtE_delay / throughput)
+        # return -np.mean(reward)
+
+        # reward = 0
+        # for i in range(1,self.net.num_edges): 
+        #     if isinstance(self.net.edge2queue[i], NullQueue):
+        #         continue
+        #     queue_data=self.net.get_queue_data(queues=i)
+        #     # Colmun 1 indicates if the job was processed, for null node it is always 0 
+        #     ind_serviced = np.where(queue_data[:,2]!=0)[0]
+        #     ind_waiting = np.where(queue_data[:,2]==0)[0]
+        #     if len(ind_serviced)>0 or len(ind_waiting)>0:
+        #         #throughput = len(ind_serviced)
+        #         if len(ind_serviced)>0:
+        #             serviced_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+        #             total_serviced_delay = serviced_delay.sum()
+        #         else: 
+        #             total_serviced_delay=0 
+                
+        #         if len(ind_waiting)>0:
+        #             waiting_delay = self.net.time-queue_data[ind_waiting,0]
+        #             total_waiting_delay= waiting_delay.sum()
+        #         else: 
+        #             total_waiting_delay=0
+
+        #         reward += -(total_waiting_delay+total_serviced_delay)
+
+        # return reward
 
     def create_queueing_env(self, config_file):
         return create_queueing_env(config_file)
@@ -332,6 +402,7 @@ class RLEnv:
                 return throughput
             except UnboundLocalError: 
                 return 0 
+            
 if __name__=="__main__": 
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'

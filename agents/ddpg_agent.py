@@ -50,7 +50,7 @@ class DDPGAgent():
         self.planning_steps = params['planning_steps']
 
         # create buffer to replay experiences
-        self.buffer = ReplayBuffer(max_size=params['buffer_size'])
+        self.buffer = ReplayBuffer(max_size=params['batch_size'])
 
         # actor networks + optimizer + learning rate scheduler
         self.actor = Actor(n_states, n_actions, hidden['actor']).to(self.device)
@@ -90,7 +90,6 @@ class DDPGAgent():
 
         self.num_select_action = 0
 
-
     def update_actor_network(self, batch):
         total_policy_loss = torch.zeros(1, requires_grad=True).to(self.device)
         self.actor_optim.zero_grad()
@@ -106,6 +105,8 @@ class DDPGAgent():
         mean_policy_loss.backward() # retain_graph=True
 
         self.actor_scheduler.step()
+
+        # Log gradient information
         
         if True:
             
@@ -316,7 +317,6 @@ class DDPGAgent():
         
         for target_param, source_param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(source_param.data)
-
 
     def convert_state(self, state_tensor):
         state_list = state_tensor.tolist()
