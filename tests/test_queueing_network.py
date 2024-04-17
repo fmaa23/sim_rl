@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 # Get the absolute path of the parent directory (i.e., the root of your project)
@@ -7,7 +6,7 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 import pytest
-from Supporting_files.queueing_network import *  # Adjust import based on your project structure
+from queue_env.queueing_network import *  # Adjust import based on your project structure
 
 @pytest.fixture
 def queue_network():

@@ -6,7 +6,7 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 
-from Supporting_files.buffer import ReplayBuffer
+from foundations.buffer import ReplayBuffer
 import pytest
 import torch
 
