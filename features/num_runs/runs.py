@@ -17,7 +17,7 @@ import os
 # Training Multiple Agents   
 
 class NumRuns: 
-    def __init__(self, confidence_level=0.95, desired_error = 2, num_runs = 2, time_steps = 100): 
+    def __init__(self, confidence_level=0.95, desired_error = 1, num_runs = 10, time_steps = 100): 
         self.agents = None 
         self.num_runs = num_runs
         self.time_steps = time_steps 
@@ -41,9 +41,7 @@ class NumRuns:
             env = create_simulation_env({'num_sim':100}, config_param_filepath) 
             for time_step in range(self.time_steps): 
                 state = env.get_state()
-                print(state)
                 action = agent.actor(state).detach()
-                print(action)
                 state = env.get_next_state(action)[0]
             agents_transition_proba.append(env.transition_proba)
         return agents_transition_proba
