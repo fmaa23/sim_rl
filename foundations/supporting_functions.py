@@ -157,7 +157,8 @@ def make_unique_edge_type(adjacent_list, edge_list):
             edge_type_list.append(edge_type)
         edge_type_info[end_node] = edge_type_list
     
-    return edge_type_info # keys are node_id, values are the edge_types
+    return edge_type_info # keys are target node_id, values are the edge_types
+
 
 def create_params(config_file):
     """
@@ -176,6 +177,7 @@ def create_params(config_file):
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
     sim_time = config_params['sim_time']
+    entry_nodes = config_params['entry_nodes']
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
 
@@ -216,19 +218,17 @@ def create_q_classes(edge_list):
 
     return q_classes
 
-def get_service_time(edge_type_info, miu_dict, exit_nodes):
-        services_f = {}
-        for end_node in edge_type_info.keys():
-            if end_node not in exit_nodes:
-                service_rate = miu_dict[end_node]
+def get_node_tuple_from_edgetype(edge_list):
+    node_tuple_dict = {}
+    
+    for source_node, endnode_type_dict in edge_list.items():
+        for end_node, edge_type in endnode_type_dict.items():
+            if edge_type in node_tuple_dict:
+                node_tuple_dict[edge_type].append((source_node, end_node))
+            else:
+                node_tuple_dict[edge_type] = [(source_node, end_node)]
+    return node_tuple_dict
 
-                for edge_type in edge_type_info[end_node]:
-                    def ser_f(t):
-                        return t + np.exp(service_rate)
-                    
-                    services_f[edge_type] = ser_f
-
-        return services_f
 
 def get_node_id(edge_type, edge_type_info):
     for node in edge_type_info.keys():
@@ -249,11 +249,7 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     Returns:
     - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
     """
-    def rate(t):
-        return 25 + 350 * np.sin(np.pi * t / 2)**2
-
-    def arr(t):
-        return poisson_random_measure(t, rate, config_params['arrival_rate'])
+    
     
     q_args = {}
     edge_type_lists = []
@@ -262,20 +258,27 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
             values = edge_type_info[key]
             edge_type_lists += values
 
+    node_tuple_by_edgetype=get_node_tuple_from_edgetype(edge_list)
+    entry_node_encountered = 0
+
     for edge_type in edge_type_lists:
         queue_type = q_classes[edge_type]
-        node_id = get_node_id(edge_type, edge_type_info)
+        node_id = get_node_id(edge_type, edge_type_info) 
         service_rate = miu_dict[node_id]
+
         if queue_type == LossQueue:
-            if edge_type == 1:
+            if node_tuple_by_edgetype[edge_type] in config_params['entry_nodes']:
+                max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
+                rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2
                 q_args[edge_type] = {
-                'arrival_f': arr,
+                'arrival_f': lambda  t, rate=rate: poisson_random_measure(t, rate,max_arrival_rate),
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
                 'qbuffer': buffer_size_for_each_queue[edge_type],
                 'service_rate': service_rate,
-                 'active_cap': float('inf'), 
-                 'active_status' : True
+                'active_cap': float('inf'), 
+                'active_status' : True
                 }
+                entry_node_encountered+=1
             else:
                 q_args[edge_type] = {
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),

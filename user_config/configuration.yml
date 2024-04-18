@@ -80,10 +80,12 @@ buffer_size_for_each_queue:
   11: 5000
   12: 5000
 
-arrival_rate: 0.3
+arrival_rate: [0.3]
 
 max_agents: inf
 
 sim_time: 100
 
 max_arr_rate_list: [375, 375, 375]
+
+entry_nodes: [(0,1)]

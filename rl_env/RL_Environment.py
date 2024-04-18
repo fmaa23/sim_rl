@@ -6,19 +6,21 @@ sys.path.append(str(root_dir))
 import numpy as np
 from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
-from foundations.base_functions import *
+from foundations.base_functions import * 
 from queueing_tool.queues.queue_servers import *
+
 
 transition_proba = {}
 
 class RLEnv: 
-    def __init__(self, qn_net, num_sim = 5000, start_state = None): 
+    def __init__(self, qn_net, num_sim = 5000, entry_nodes=[(0,1)], start_state = None): 
         """
         Initializes the reinforcement learning environment.
 
         Args:
             qn_net: The queueing network object.
             num_sim (int): The number of simulations to run. Defaults to 5000.
+            entry_nodes (tuple): Source and target node for the queue that accepts external arrivals. 
             start_state: The initial state of the environment. If None, a default state is used.
 
         Initializes the queueing network parameters and starts the simulation.
@@ -36,7 +38,8 @@ class RLEnv:
         self.net.start_collecting_data()
 
         # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
-        self.net.initialize(edge_type=1)
+        self.entry_nodes= entry_nodes
+        self.net.initialize(edges=self.entry_nodes)
 
         self.initialize_params_for_visualization()
 
@@ -54,7 +57,7 @@ class RLEnv:
         Returns:
             int: The number of entry nodes.
         """
-        return len(self.adja_list[0])
+        return len(self.entry_nodes)
 
     def get_nullnodes(self):
         """
@@ -75,6 +78,17 @@ class RLEnv:
                     num_nullnodes += 1
         
         return num_nullnodes
+    
+    def get_entry_edges_indices(self): 
+        entry_edge_indices=[] 
+        for i in range(self.net.num_edges): 
+            source_node = self.net.edge2queue[i].edge[0]
+            target_node = self.net.edge2queue[i].edge[1]
+
+            if (source_node, target_node) in self.entry_nodes: 
+                entry_edge_indices.append(i) 
+        return entry_edge_indices
+
     
     def initialize_params_for_visualization(self):
         """
@@ -223,7 +237,7 @@ class RLEnv:
         Raises:
             ValueError: If the action space is incompatible with the dimensions expected.
         """
-        if len(action) != self.net.num_nodes -  self.num_nullnodes:
+        if len(action) != self.net.num_envnodes -  self.num_nullnodes:
             raise ValueError('The action space is incomatible with the dimensions')
     
     def test_nan(self, element):
@@ -397,7 +411,7 @@ class RLEnv:
             try:
                 return delay 
             except UnboundLocalError: 
-                return 0    
+                return np.inf    
         if metric =="throughput": 
             try:
                 return throughput
@@ -407,8 +421,8 @@ class RLEnv:
 if __name__=="__main__": 
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
-    env = create_simulation_env({'num_sim':5000}, config_param_filepath)
-    env.net.initialize(queues=0)
+    from foundations.supporting_functions import create_simulation_env
+    env = create_simulation_env({'num_sim':5000, 'entry_nodes': [(0,1)]}, config_param_filepath)
     breakpoint()
 
 
