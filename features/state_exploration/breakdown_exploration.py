@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import yaml
 import matplotlib.pyplot as plt
 
-class ExploreStateEngine:
+class BreakdownEngine:
     def __init__(self, rl_env):
         """
         Initialize the ExploreStateEngine with default parameters and configurations.
@@ -362,5 +362,5 @@ if __name__ == "__main__":
     rl_env = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(rl_env, params, hidden)
 
-    Engine = ExploreStateEngine(rl_env)
+    Engine = BreakdownEngine(rl_env)
     Engine.run(agent, num_runs = 10)
