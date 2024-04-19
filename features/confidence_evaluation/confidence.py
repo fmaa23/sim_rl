@@ -26,7 +26,8 @@ class Confidence():
         self.timesteps = timesteps 
         self.total_rewards = []
         
-    def train(self, params, agent, env, num_episodes, best_params=None):
+
+    def train(self,params, agent, env, num_episodes, best_params = None):
         """
         Conduct training sessions for a given agent and environment.
 
@@ -34,96 +35,100 @@ class Confidence():
         - params (dict): Hyperparameters for training.
         - agent: The agent to be trained.
         - env: The environment in which the agent operates.
-        - num_episodes (int): The number of episodes to train the agent for.
-        - best_params (dict, optional): If provided, these parameters will override the default training parameters.
 
         Returns:
         - Multiple values including lists that track various metrics through training.
         """
+
         if best_params is not None:
             for key in params.keys():
                 if key not in best_params.keys():
                     best_params[key] = params[key]
+        
             params = best_params
 
-        next_state_list_all = []
-        rewards_list_all = []
-        critic_loss_list_all = []
-        actor_loss_list_all = []
-        reward_list = []
-        actor_gradient_list_all = []
+        next_state_model_list_all = []
+        reward_model_list_all =[]
+        gradient_dict_all = {}
         action_dict = {}
-        gradient_dict = {}
+        gradient_dict_all = {}
         transition_probas = init_transition_proba(env)
 
-        _,batch_size, num_epochs, time_steps, target_update_frequency = get_params_for_train(params)
+        actor_loss_list= []
+        critic_loss_list = []
+        reward_list = []
+        reward_by_episode = {}
 
-        agent.train()
-        print(num_episodes)
-        for episode in tqdm(range(num_episodes), desc="Training Progress"):  # num_episodes now comes directly as an argument
+        _, _, num_epochs, time_steps, _, num_train_AC = get_params_for_train(params)
+
+        for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
+
+            agent.train()
             env.reset()
-            state = env.explore_state(agent, env.qn_net, episode)
-            t = 0
+            env.simulate()
 
-            actor_loss_list= []
-            critic_loss_list = []
-            actor_gradient_list = []
-            while t < time_steps:
-                if type(state) == np.ndarray:
-                    state = torch.from_numpy(state).to(device)
-                action = agent.select_action(state).to(device) 
-                
+            update = 0
+            reward_list = []
+
+            for t in tqdm(range(time_steps), desc="Time Steps Progress"): 
+
+                state = env.get_state()
+                state_tensor = torch.tensor(state)
+                action = agent.select_action(state_tensor).to(device) 
+            
                 action_list = action.cpu().numpy().tolist()
                 for index, value in enumerate(action_list):
                     node_list = action_dict.setdefault(index, [])
                     node_list.append(value)
                     action_dict[index] = node_list
-                                
-                next_state = env.get_next_state(action)    
-                next_state = torch.tensor(next_state).float().to(device)
+
+                next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
+                
                 reward = env.get_reward()
-        
+
                 reward_list.append(reward)                               
-                experience = (state, action, reward, next_state)        
+                experience = (state_tensor, action, reward, next_state_tensor) 
+                
                 agent.store_experience(experience)                             
+
+            reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=time_steps, epochs=num_epochs)
+            next_state_model_list_all += next_state_loss_list
+            reward_model_list_all += reward_model_loss_list
+
+            transition_probas = update_transition_probas(transition_probas, env)
+
+            for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
+
+                batch = agent.buffer.sample(batch_size=time_steps)
+                critic_loss = agent.update_critic_network(batch)                   
+                actor_loss, gradient_dict = agent.update_actor_network(batch)    
+
+                actor_loss_list.append(actor_loss)
+                critic_loss_list.append(critic_loss)
+
+            agent.plan(batch)
+
+            agent.soft_update(network="critic")
+            agent.soft_update(network="actor")
+
+            gradient_dict_all[update] = gradient_dict
+
+            agent.buffer.clear()
+
+            reward_by_episode[episode] = reward_list
+        
+        save_agent(agent)
+        
+        return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
             
-                if agent.buffer.get_current_size() > batch_size:
-                    reward_loss_list, next_state_loss_list = agent.fit_model(batch_size=batch_size, epochs=num_epochs)
-                    next_state_list_all += next_state_loss_list
-                    rewards_list_all += reward_loss_list
-
-                    transition_probas = update_transition_probas(transition_probas, env)
-                    
-                    batch = agent.buffer.sample(batch_size=batch_size)
-                    critic_loss = agent.update_critic_network(batch)                   
-                    actor_loss, gradient_dict = agent.update_actor_network(batch)    
-
-                    actor_loss_list.append(actor_loss)
-                    critic_loss_list.append(critic_loss)
-                    agent.plan(batch)
-
-                t += 1
-                state = next_state
-
-                if t % target_update_frequency == 0:
-                    agent.soft_update(network="critic")
-                    agent.soft_update(network="actor")
-
-            actor_loss_list_all += actor_loss_list
-            critic_loss_list_all += critic_loss_list
-            actor_gradient_list_all += actor_gradient_list
-    
-        return rewards_list_all, next_state_list_all, critic_loss_list_all,\
-            actor_loss_list_all, reward_list, action_dict, gradient_dict, transition_probas
-            
-    def evaluate_agent(self,agent, timesteps):
+    def evaluate_agent(self,agent,env, timesteps):
         total_reward = 0 
-        state = self.env.reset()
-        for _ in range(timesteps):
+        state = env.reset()
+        for _ in tqdm(range(timesteps),desc="Evaluate"):
             state = env.get_state()
             action = agent.actor(state).detach()
             state = env.get_next_state(action)[0]
-            reward = self.env.get_rewward()
+            reward = env.get_reward()
             total_reward += reward
         return total_reward
     
@@ -160,44 +165,40 @@ class Confidence():
             print(f"------ Training the agent for {num_episode} episodes ------") 
             print(num_episode)
 
-            rewards_list_all, next_state_list_all, \
-            critic_loss_list_all, actor_loss_list_all, \
-            reward_list, action_dict, gradient_dict, \
-            transition_probas = self.train(params, agent, sim_environment, num_episode)
-            
-            csv_filepath = os.getcwd() + '/Supporting_files/' + data_filename
-            image_filepath = os.getcwd() + '/Supporting_files/' + image_filename
-            
+            next_state_model_list_all, critic_loss_list,\
+            actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = self.train(params, agent, sim_environment,num_episode)
+           
+            supporting_files_dir = os.path.join(os.getcwd(), 'foundations')
+            csv_filepath = os.path.join(supporting_files_dir, data_filename)
+            image_filepath = os.path.join(supporting_files_dir, image_filename)
             if save_file:
-                save_all(rewards_list_all, next_state_list_all, \
-                critic_loss_list_all, actor_loss_list_all, \
-                reward_list, action_dict, gradient_dict, \
+                save_all(next_state_model_list_all, \
+                critic_loss_list, actor_loss_list, \
+                reward_by_episode, action_dict, gradient_dict, \
                 transition_probas, base_path=csv_filepath)
         
-            if plot_curves:
-                plot(csv_filepath, image_filepath)
+            # if plot_curves:
+            #     plot(csv_filepath, image_filepath)
            
             
             # Saving a copy of the trained agent in the current directory
             trained_agent = copy.deepcopy(agent)                                      
-            torch.save(trained_agent.state_dict(), f"trained_agent_{num_episode}.pth")
+            # torch.save(trained_agent.state_dict(), f"trained_agent_{num_episode}.pth")
             
             # Evaluate the agent on the environment
             print(f"------ Evaluating the {num_episode} episode agent  ------")
-            total_reward = self.evaluate_agent(trained_agent, self.timesteps)
+            total_reward = self.evaluate_agent(trained_agent, sim_environment,self.timesteps)
             self.total_rewards.append(total_reward)
         self.save_reward_plot()
-            
-                
-        
+    
          
         
         
 # Logic for using this class 
 
 # 1. Specify the data structures that will be needed to configre the class 
-num_episodes = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000] # this list contains the number of episodes that the agent will be trained for 
-timesteps = 1000 # this is the number of timesteps that the agent will be evaluated for
+num_episodes = [100, 300, 500,700,900] # this list contains the number of episodes that the agent will be trained for 
+timesteps = 600 # this is the number of timesteps that the agent will be evaluated for
 
 # 2. Specify the file path to the agent's configuration yaml file 
 agent = 'user_config/eval_hyperparams.yml'
@@ -206,7 +207,7 @@ env = 'user_config/configuration.yml'
 # 4. Intiialze the confidence class with the agent , environement and the number of episodes 
 confidence = Confidence(num_episodes, timesteps)
 # 5. Initialize the training and evaluation process - allow this to show updates to the user according to the status - training xxx episode agent , evaluating xxx epsiode agent 
-confidence.start_train(env, agent,save_file = True, data_filename = 'data', image_filename = 'images')
+confidence.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
 # - also allow this fuinction to automatically save, the agent objects , the final graph of episodes vs reward for each environment 
 # make these stored in attributes so that theu can be retrieved later 
 
