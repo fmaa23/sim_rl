@@ -4,7 +4,7 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 import numpy as np
-from features.state_exploration.state_exploration import *
+# from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
 from foundations.base_functions import *
 from queueing_tool.queues.queue_servers import *
@@ -43,9 +43,12 @@ class RLEnv:
         self.num_entrynodes = self.get_entrynodes()
         self.departure_nodes =  self.num_nullnodes
 
-        self.ExploreStateEngine = ExploreStateEngine()
+        # self.ExploreStateEngine = ExploreStateEngine()
 
         self.num_entries = []
+
+        self.temperature = 0.2
+        self.growth_factor = (0.5/self.temperature)**(1/10)
     
     def get_entrynodes(self):
         """
@@ -94,12 +97,12 @@ class RLEnv:
         """
         self.transition_proba = self.net.transitions(False)
         self.adja_list= self.qn_net.adja_list
-        self.sim_n = num_sim # Take next step (num_events)
+        self.sim_n = num_sim
         self.iter = 0
 
-        self.current_queue_id = 0 # Edge Index, assuming we always starting as the 
-        self.current_source_vertex = self.net.edge2queue[self.current_queue_id].edge[0] # Source Queue Vertex, the source node 
-        self.current_edge_tuple = self.net.edge2queue[self.current_queue_id].edge # (source_vertex, target_vertex, edge_index, type)
+        self.current_queue_id = 0
+        self.current_source_vertex = self.net.edge2queue[self.current_queue_id].edge[0] 
+        self.current_edge_tuple = self.net.edge2queue[self.current_queue_id].edge 
         self.current_queue = self.net.edge2queue[self.current_queue_id]
 
     def test_state_is_valid(self, start_state):
@@ -150,29 +153,6 @@ class RLEnv:
                     state.append(0)
         return state
 
-        # for edge in range((self.net.num_edges-self.num_nullnodes)):
-            
-        #     edge_data = self.net.get_queue_data(queues=edge) # self.net.get_queue_data(edge_type=2)
-        #     if len(edge_data) > 0:
-        #         self._state[edge]=edge_data[-1][3]
-        #     else:
-        #         self._state[edge]=0
-
-        # all_queues = self.net.edge2queue
-        # self._state = []
-        # for index in range(len(all_queues)):
-        #     if isinstance(all_queues[index], LossQueue):
-        #         self._state.append(all_queues[index]._num_arrivals)
-        #         self._state.append(all_queues[index].num_departures)
-        #         self._state.append(len(all_queues[index].queue))
-
-        # for index in range(len(all_queues)):
-        #     if isinstance(all_queues[index], LossQueue):
-        #         self._state.append(len(all_queues[index].queue))
-        
-        # self.record_num_exit_nodes.append(len(self.net.get_queue_data(queues=12)))
-        # print(f"processed jobs: {len(self.net.get_queue_data(queues=12))}")
-
     def record_sim_data(self):
         for num in range(self.net.num_edges):
             self.num_entries.append(len(self.net.get_queue_data(queues = num)))
@@ -201,7 +181,7 @@ class RLEnv:
             if len(next_node_list) != 0:
                 action_next_node_list = [x - 1 for x in next_node_list] 
                 # Apply non-linear transformation here
-                action_probs = softmax_with_temperature(action[action_next_node_list], temperature=0.2)
+                action_probs = softmax_with_temperature(action[action_next_node_list], temperature=self.temperature)
                 
                 for j, next_node in enumerate(next_node_list): 
                     self.test_nan(action_probs[j])
@@ -211,8 +191,14 @@ class RLEnv:
 
         self.net.set_transitions(self.transition_proba)
         current_state = self.simulate()
-        return current_state
 
+        return current_state
+    
+    def update_temperature(self):
+        self.temperature *= self.growth_factor
+        if self.temperature >= 0.5:
+            self.temperature = 0.5
+        
     def test_actions_equal_nodes(self, action):
         """
         Tests if the length of the action array is equal to the expected number of nodes minus null nodes.
@@ -325,52 +311,20 @@ class RLEnv:
 
         return -np.mean(avg_delay) / throughput_ratio
 
-        # reward = []
-        # for i in range(self.net.num_edges): 
-        #     queue_data=self.net.get_queue_data(queues=i)
-        #     ind_serviced = np.where(queue_data[:,2]!=0)[0]
-        #     if len(ind_serviced)>0:
-        #         throughput = len(ind_serviced)
-        #         EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-        #         tot_EtE_delay = EtE_delay.sum()
-        #         reward.append(tot_EtE_delay / throughput)
-        # return -np.mean(reward)
-
-        # reward = 0
-        # for i in range(1,self.net.num_edges): 
-        #     if isinstance(self.net.edge2queue[i], NullQueue):
-        #         continue
-        #     queue_data=self.net.get_queue_data(queues=i)
-        #     # Colmun 1 indicates if the job was processed, for null node it is always 0 
-        #     ind_serviced = np.where(queue_data[:,2]!=0)[0]
-        #     ind_waiting = np.where(queue_data[:,2]==0)[0]
-        #     if len(ind_serviced)>0 or len(ind_waiting)>0:
-        #         #throughput = len(ind_serviced)
-        #         if len(ind_serviced)>0:
-        #             serviced_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-        #             total_serviced_delay = serviced_delay.sum()
-        #         else: 
-        #             total_serviced_delay=0 
-                
-        #         if len(ind_waiting)>0:
-        #             waiting_delay = self.net.time-queue_data[ind_waiting,0]
-        #             total_waiting_delay= waiting_delay.sum()
-        #         else: 
-        #             total_waiting_delay=0
-
-        #         reward += -(total_waiting_delay+total_serviced_delay)
-
-        # return reward
-
     def create_queueing_env(self, config_file):
         return create_queueing_env(config_file)
                 
-    def reset(self): 
+    def reset(self, qn_net = None): 
         self.net.clear_data()
-        qn_net = self.create_queueing_env(config_file = 'user_config/configuration.yml')
-        self.qn_net = qn_net
-        self.net = qn_net.queueing_network
-        self.num_entries = []
+        if qn_net is None:
+            qn_net = self.create_queueing_env(config_file = 'user_config/configuration.yml')
+            self.qn_net = qn_net
+            self.net = qn_net.queueing_network
+            self.num_entries = []
+        else:
+            self.qn_net = qn_net
+            self.net = qn_net.queueing_network
+            self.num_entries = []
 
     def return_queue(self,queue_index, metric):
         """

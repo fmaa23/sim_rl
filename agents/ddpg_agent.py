@@ -62,7 +62,7 @@ class DDPGAgent():
         self.planning_steps = params['planning_steps']
 
         # create buffer to replay experiences
-        self.buffer = ReplayBuffer(max_size=params['batch_size'])
+        self.buffer = ReplayBuffer(max_size=params['buffer_size'])
 
         # actor networks + optimizer + learning rate scheduler
         self.actor = Actor(n_states, n_actions, hidden['actor']).to(self.device)

@@ -7,7 +7,7 @@ import yaml
 
 
 from agents.ddpg_agent import DDPGAgent
-from features.state_exploration.state_exploration import *
+# from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
 from tuning.wandb_tuning import *
 from foundations.plot_datasparq import *
@@ -524,6 +524,8 @@ def train(params, agent, env, best_params = None):
         reward_by_episode[episode] = reward_list
 
         latest_transition_proba = env.transition_proba
+
+        # env.update_temperature()
     
     save_agent(agent)
     
