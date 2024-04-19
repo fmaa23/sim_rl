@@ -327,7 +327,6 @@ def create_RL_env(q_net, params, entry_nodes):
     Returns:
     - RLEnv: An instance of the RL environment.
     """
-    breakpoint()
     env = RLEnv(q_net, num_sim = params['num_sim'], entry_nodes=entry_nodes)
     return env
 
