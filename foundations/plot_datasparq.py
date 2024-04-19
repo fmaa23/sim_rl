@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import json
 import os
+import numpy as np
 
 
 def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'):
@@ -61,10 +62,82 @@ def plot_reward(data_filepath, images_filepath):
     with open(filename, 'r') as f:
         reward_data = json.load(f)
     
+    #alm = np.array([value[0] for value in reward_data.values()])
     plt.plot(reward_data[list(reward_data.keys())[-1]])
+    plt.title('Last Episode Reward per Time Step')
     save_path = os.path.join(images_filepath, 'Reward.png')
     plt.savefig(save_path)
     plt.close()
+
+def plot_reward(data_filepath, images_filepath):
+    plt.figure()
+
+    filename = os.path.join(data_filepath, 'reward_dict.json')
+
+    with open(filename, 'r') as f:
+        reward_data = json.load(f)
+    
+    #alm = np.array([value[0] for value in reward_data.values()])
+    plt.plot(reward_data[list(reward_data.keys())[-1]])
+    plt.title('Last Episode Reward per Time Step')
+    plt.xlabel('Time Steps')
+    plt.ylabel('Reward')
+    save_path = os.path.join(images_filepath, 'Reward Per Time Step.png')
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_first_reward(data_filepath, images_filepath):
+    plt.figure()
+
+    filename = os.path.join(data_filepath, 'reward_dict.json')
+
+    with open(filename, 'r') as f:
+        reward_data = json.load(f)
+    
+    first_reward_per_episode = np.array([value[0] for value in reward_data.values()])
+    plt.plot(first_reward_per_episode)
+    plt.title('First Reward Value Per Episode')
+    plt.xlabel('Episodes')
+    plt.ylabel('Reward')
+    save_path = os.path.join(images_filepath, 'First_Reward_Per_Episode.png')
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_last_reward(data_filepath, images_filepath):
+    plt.figure()
+
+    filename = os.path.join(data_filepath, 'reward_dict.json')
+
+    with open(filename, 'r') as f:
+        reward_data = json.load(f)
+    
+    last_reward_per_episode = np.array([value[-1] for value in reward_data.values()])
+    plt.plot(last_reward_per_episode)
+    plt.title('Last Reward Value Per Episode')
+    plt.xlabel('Episodes')
+    plt.ylabel('Reward')
+    save_path = os.path.join(images_filepath, 'Last_Reward_Per_Episode.png')
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_average_reward(data_filepath, images_filepath):
+    plt.figure()
+
+    filename = os.path.join(data_filepath, 'reward_dict.json')
+
+    with open(filename, 'r') as f:
+        reward_data = json.load(f)
+    
+    average_reward_per_episode = np.array([value for value in reward_data.values()])
+    plt.plot(average_reward_per_episode.mean(axis=1))
+    plt.title('Average Reward Per Episode')
+    plt.xlabel('Episodes')
+    plt.ylabel('Reward')
+    save_path = os.path.join(images_filepath, 'Average_Reward_Per_Episode.png')
+    plt.savefig(save_path)
+    plt.close()
+
+
 
 def plot_actor_vector(data_filepath, images_filepath):
     plt.figure()
@@ -142,3 +215,6 @@ def plot(data_filepath, images_filepath, transition_probas = None):
     plot_next_state_model_loss(data_filepath, images_filepath)
 
     print(f"plots have been saved at {filepath}")
+
+if __name__=="__main__": 
+    breakpoint()

@@ -286,7 +286,7 @@ class RLEnv:
         Returns:
             The state of the environment after the simulation.
         """
-        self.net.initialize(edge_type=1)
+        self.net.initialize(edges=self.entry_nodes)
         
         self.iter +=1
         self.net.start_collecting_data()

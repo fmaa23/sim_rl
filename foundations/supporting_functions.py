@@ -266,16 +266,20 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
 
     node_tuple_by_edgetype=get_node_tuple_from_edgetype(edge_list)
     entry_node_encountered = 0
+    env_entry_nodes = [tuple(item) for item in config_params['entry_nodes']]
 
     for edge_type in edge_type_lists:
         queue_type = q_classes[edge_type]
         node_id = get_node_id(edge_type, edge_type_info) 
         service_rate = miu_dict[node_id]
 
+
         if queue_type == LossQueue:
-            if node_tuple_by_edgetype[edge_type] in config_params['entry_nodes']:
+            if node_tuple_by_edgetype[edge_type][0] in env_entry_nodes:
+                
                 max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
-                rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2
+                rate = lambda t: 25 + 350 * np.sin(np.pi * t / 2)**2
+                
                 q_args[edge_type] = {
                 'arrival_f': lambda  t, rate=rate: poisson_random_measure(t, rate,max_arrival_rate),
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
@@ -531,7 +535,7 @@ def train(params, agent, env, best_params = None):
 
         agent.buffer.clear()
 
-        reward_by_episode[episode] = reward_list
+        reward_by_episode[episode] = reward_list 
 
         latest_transition_proba = env.transition_proba
     
