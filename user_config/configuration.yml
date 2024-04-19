@@ -88,4 +88,4 @@ sim_time: 100
 
 max_arr_rate_list: [375, 375, 375]
 
-entry_nodes: [(0,1)]
+entry_nodes: [[0,1]]

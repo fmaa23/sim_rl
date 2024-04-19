@@ -1,6 +1,6 @@
 ---
 rl_params:
-  num_episodes: 10
+  num_episodes: 35
   
   threshold: 10
 

@@ -177,7 +177,8 @@ def create_params(config_file):
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
     sim_time = config_params['sim_time']
-    entry_nodes = config_params['entry_nodes']
+    entry_nodes = [tuple(entry_node) for entry_node in config_params['entry_nodes']]
+
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
 
@@ -192,8 +193,13 @@ def create_params(config_file):
     
     transition_proba_all = config_params['transition_proba_all']
 
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time, entry_nodes
 
+def get_entry_nodes(config_file): 
+    config_params = load_config(config_file)
+    entry_nodes = [tuple(entry_node) for entry_node in config_params['entry_nodes']]
+    return entry_nodes
+    
 def create_q_classes(edge_list):
     """
     Creates a dictionary mapping queue identifiers to their corresponding queue class.
@@ -301,7 +307,7 @@ def create_queueing_env(config_file):
     - Queue_network: An instance of the queueing environment.
     """
     arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(config_file)
+        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time, entry_nodes = create_params(config_file)
     
     q_net = Queue_network()
     q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
@@ -309,7 +315,7 @@ def create_queueing_env(config_file):
     q_net.create_env()
     return q_net
 
-def create_RL_env(q_net, params):
+def create_RL_env(q_net, params, entry_nodes):
     """
     Create a reinforcement learning environment.
 
@@ -321,7 +327,8 @@ def create_RL_env(q_net, params):
     Returns:
     - RLEnv: An instance of the RL environment.
     """
-    env = RLEnv(q_net, num_sim = params['num_sim'])
+    breakpoint()
+    env = RLEnv(q_net, num_sim = params['num_sim'], entry_nodes=entry_nodes)
     return env
 
 def create_simulation_env(params, config_file):
@@ -337,7 +344,8 @@ def create_simulation_env(params, config_file):
     - RLEnv: The RL environment ready for simulation.
     """
     q_net = create_queueing_env(config_file)
-    RL_env = create_RL_env(q_net, params)
+    entry_nodes = get_entry_nodes(config_file)
+    RL_env = create_RL_env(q_net, params, entry_nodes)
 
     return RL_env
 
