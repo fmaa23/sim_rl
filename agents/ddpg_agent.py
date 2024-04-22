@@ -97,9 +97,7 @@ class DDPGAgent():
 
         # record state visits
         self.visited_count = {}
-
         global gradient_dict
-
         self.num_select_action = 0
 
     def update_actor_network(self, batch):
@@ -290,6 +288,7 @@ class DDPGAgent():
             experience = batch[num]
             state, action, reward, next_state = experience
             experiences = []
+            
             for _ in range(self.planning_steps):
                 action_hat = (action + (torch.randn(len(action)) * self.epsilon).to(self.device))
                 action_hat = torch.clamp(action_hat, min=0, max=1).to(self.device)
