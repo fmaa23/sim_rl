@@ -26,6 +26,8 @@ def get_arrival_f(self, max_rate_list):
         
 Queue_network.get_arrival_f = get_arrival_f
         
+
+# Definition of the NoiseEvaluator class
 class NoiseEvaluator:
     def __init__(self,frequency,mean,variance):
         """
@@ -41,7 +43,7 @@ class NoiseEvaluator:
         
     def train(params, agent, env, best_params = None):
         """
-        Conduct training sessions for a given agent and environment.
+        This is a modified version of the core training function whicch includes the addition of noise to the environment. 
 
         Parameters:
         - params (dict): Hyperparameters for training.
@@ -173,7 +175,7 @@ class NoiseEvaluator:
 
     def compute_increment(self): 
         """This function is main entry point for adding noise to the environment. This function samples from a normal distribution with mean and variance specified in the constructor and
-        returns the noise increment to be added to the environment at a given time interval.
+        returns the noise increment to be added to the environment with a probability specified by the frequency parameter.
         Args:
         
         """
@@ -183,3 +185,11 @@ class NoiseEvaluator:
             return noise
         else:
             return 0
+        
+        
+        
+if __name__ == "__main__":
+    noise_evaluator = NoiseEvaluator(0.5,0,1)
+    agent = 'user_config/eval_hyperparams.yml'
+    eval_env = 'user_config/configuration.yml' 
+    noise_evaluator.start_train(eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')

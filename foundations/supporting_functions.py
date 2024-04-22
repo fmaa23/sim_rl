@@ -621,7 +621,7 @@ def save_all(next_state_model_list_all, critic_loss_list,\
 def start_train(config_file, param_file, save_file = True, 
                 data_filename = 'data', image_filename = 'images', plot_curves = True):
     """
-    Start the training process for a reinforcement learning environment and agent.
+    Starts the training process for a reinforcement learning environment and agent.
 
     Parameters:
     - config_file (str, optional): The file path to the environment configuration file. Defaults to "configuration_file.yaml".
@@ -733,3 +733,10 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
             plot_best(image_filepath)
     else:
         ray_tune()
+        
+        
+def control():
+    """ This function is used to allow a trained agent to actively make decisions in the environment.
+    """
+    pass 
+        
