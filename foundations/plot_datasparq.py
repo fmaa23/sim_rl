@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import json
 import os
+import numpy as np 
 
 
 def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'):
@@ -65,6 +66,29 @@ def plot_reward(data_filepath, images_filepath):
     plt.savefig(save_path)
     plt.close()
 
+    mean_reward = []
+    for key in reward_data.keys():
+        mean_reward.append(np.mean(reward_data[key]))
+    plt.figure()
+    plt.plot(mean_reward)
+    save_path = os.path.join(images_filepath, 'Average_reward.png')
+    plt.savefig(save_path)
+    plt.close()
+
+def plot_average_reward_episode(data_filepath, images_filepath): 
+    plt.figure()
+    filename = data_filepath + '/reward_dict.json'
+
+    with open(filename, 'r') as f:
+        reward_data = json.load(f)
+    
+    reward_list = np.array([reward_per_episode for reward_per_episode in reward_data.values()])
+    reward_average_per_episode = reward_list.mean(axis=1)
+    plt.plot(reward_average_per_episode)
+    save_path = os.path.join(images_filepath, 'Reward_Avg_Per_Episode.png')
+    plt.savefig(save_path)
+    plt.close()
+
 def plot_actor_vector(data_filepath, images_filepath):
     plt.figure()
 
@@ -101,7 +125,7 @@ def plot_transition_proba(data_filepath, images_filepath, transition_proba_dict,
 
     save_path = os.path.join(images_filepath, 'transition probas.png')
     plt.savefig(save_path)
-    plt.close()
+    plt.close() 
 
 
 def plot_reward_model_loss(data_filepath, images_filepath):
@@ -132,6 +156,7 @@ def plot(data_filepath, images_filepath, transition_probas = None):
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)
     plot_reward(data_filepath, images_filepath)
+    plot_average_reward_episode(data_filepath, images_filepath)
     plot_actor(data_filepath, images_filepath)
     plot_critic(data_filepath, images_filepath)
     plot_actor_vector(data_filepath, images_filepath)
@@ -141,3 +166,5 @@ def plot(data_filepath, images_filepath, transition_probas = None):
     plot_next_state_model_loss(data_filepath, images_filepath)
 
     print(f"plots have been saved at {filepath}")
+if __name__=="__main__": 
+    breakpoint()

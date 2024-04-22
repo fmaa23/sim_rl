@@ -6,19 +6,21 @@ sys.path.append(str(root_dir))
 import numpy as np
 # from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
-from foundations.base_functions import *
+from foundations.base_functions import * 
 from queueing_tool.queues.queue_servers import *
+
 
 transition_proba = {}
 
 class RLEnv: 
-    def __init__(self, qn_net, num_sim = 5000, start_state = None): 
+    def __init__(self, qn_net, num_sim = 5000, entry_nodes=[(0,1)], start_state = None): 
         """
         Initializes the reinforcement learning environment.
 
         Args:
             qn_net: The queueing network object.
             num_sim (int): The number of simulations to run. Defaults to 5000.
+            entry_nodes (tuple): Source and target node for the queue that accepts external arrivals. 
             start_state: The initial state of the environment. If None, a default state is used.
 
         Initializes the queueing network parameters and starts the simulation.
@@ -36,19 +38,31 @@ class RLEnv:
         self.net.start_collecting_data()
 
         # Simulation is specified by time in seconds, the number of events will depend on the arrival rate
-        self.net.initialize(edge_type=1)
+        self.entry_nodes= entry_nodes
+        self.net.initialize(edges=self.entry_nodes)
 
         self.initialize_params_for_visualization()
 
         self.num_entrynodes = self.get_entrynodes()
         self.departure_nodes =  self.num_nullnodes
 
-        # self.ExploreStateEngine = ExploreStateEngine()
+        self.num_nodes = self.get_num_nodes()
 
         self.num_entries = []
+        self.record_delay = {}
 
-        self.temperature = 0.2
+        self.temperature = 0.1
         self.growth_factor = (0.5/self.temperature)**(1/10)
+    
+    def get_num_nodes(self):
+        num_nodes_list = []
+        for key in self.adja_list.keys():
+            next_nodes = self.adja_list[key]
+            for node in next_nodes:
+                if node not in num_nodes_list:
+                    num_nodes_list.append(node)
+        
+        return len(num_nodes_list)
     
     def get_entrynodes(self):
         """
@@ -57,7 +71,7 @@ class RLEnv:
         Returns:
             int: The number of entry nodes.
         """
-        return len(self.adja_list[0])
+        return len(self.entry_nodes)
 
     def get_nullnodes(self):
         """
@@ -78,6 +92,17 @@ class RLEnv:
                     num_nullnodes += 1
         
         return num_nullnodes
+    
+    def get_entry_edges_indices(self): 
+        entry_edge_indices=[] 
+        for i in range(self.net.num_edges): 
+            source_node = self.net.edge2queue[i].edge[0]
+            target_node = self.net.edge2queue[i].edge[1]
+
+            if (source_node, target_node) in self.entry_nodes: 
+                entry_edge_indices.append(i) 
+        return entry_edge_indices
+
     
     def initialize_params_for_visualization(self):
         """
@@ -140,7 +165,11 @@ class RLEnv:
         state = []
         for i in range(self.net.num_edges): 
             if isinstance(self.net.edge2queue[i], LossQueue):
-                queue_data=self.net.get_queue_data(queues=i)
+                if len(self.num_entries) > 0:
+                    queue_data=self.net.get_queue_data(queues=i)# [self.num_entries[i]:]
+                else:
+                    queue_data=self.net.get_queue_data(queues=i)
+
                 if len(queue_data[queue_data[:, 2] == 0, 2]) > 0:
                     queue_data[queue_data[:, 2] == 0, 2] = self.net.current_time
 
@@ -153,11 +182,43 @@ class RLEnv:
                     state.append(0)
         return state
 
+    def get_reward(self):
+        """
+        Calculates and returns the reward based on the current state of the environment.
+
+        The reward calculation is based on the throughput and end-to-end delay of the queues.
+
+        Returns:
+            float: The calculated reward.
+        """
+
+        avg_delay = []
+
+        for i in range(self.net.num_edges):
+            if isinstance(self.net.edge2queue[i], LossQueue): 
+                queue_data=self.net.get_queue_data(queues=i)[self.num_entries[i]:]
+                ind_serviced = np.where(queue_data[:,2]!=0)[0]
+
+                if len(ind_serviced)>0:
+                    throughput = len(ind_serviced)
+                    EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
+                    tot_EtE_delay = EtE_delay.sum()
+                    avg_delay.append(tot_EtE_delay / throughput)
+
+        num_exits = 0
+        for i in range(self.net.num_edges):
+            if isinstance(self.net.edge2queue[i], NullQueue): 
+                num_exits += len(self.net.get_queue_data(queues=i))
+        
+        throughput_ratio = num_exits / len(self.net.get_queue_data(queues=0)) # hard-coded
+
+        return -np.mean(avg_delay) / throughput_ratio
+
     def record_sim_data(self):
+        #self.num_entries = []
         for num in range(self.net.num_edges):
             self.num_entries.append(len(self.net.get_queue_data(queues = num)))
         
-
     def get_next_state(self, action):
         """
         Computes and returns the next state of the environment given an action.
@@ -179,7 +240,7 @@ class RLEnv:
             next_node_list = list(self.transition_proba[node].keys())
 
             if len(next_node_list) != 0:
-                action_next_node_list = [x - 1 for x in next_node_list] 
+                action_next_node_list = [x-1 for x in next_node_list] 
                 # Apply non-linear transformation here
                 action_probs = softmax_with_temperature(action[action_next_node_list], temperature=self.temperature)
                 
@@ -209,7 +270,7 @@ class RLEnv:
         Raises:
             ValueError: If the action space is incompatible with the dimensions expected.
         """
-        if len(action) != self.net.num_nodes -  self.num_nullnodes:
+        if len(action) != self.net.num_envnodes -  self.num_nullnodes:
             raise ValueError('The action space is incomatible with the dimensions')
     
     def test_nan(self, element):
@@ -259,11 +320,8 @@ class RLEnv:
             The state of the environment after the simulation.
         """
         self.net.initialize(edge_type=1)
-        
-        self.iter +=1
         self.net.start_collecting_data()
-
-        self.net.simulate(n = self.qn_net.sim_time) 
+        self.net.simulate(n = self.qn_net.sim_jobs) 
 
         return self.get_state()
         
@@ -278,38 +336,6 @@ class RLEnv:
                     inverted_dict[value] = [key]
 
         return inverted_dict
-
-    def get_reward(self):
-        """
-        Calculates and returns the reward based on the current state of the environment.
-
-        The reward calculation is based on the throughput and end-to-end delay of the queues.
-
-        Returns:
-            float: The calculated reward.
-        """
-
-        avg_delay = []
-
-        for i in range(self.net.num_edges):
-            if isinstance(self.net.edge2queue[i], LossQueue): 
-                queue_data=self.net.get_queue_data(queues=i)[self.num_entries[i]:]
-                ind_serviced = np.where(queue_data[:,2]!=0)[0]
-
-                if len(ind_serviced)>0:
-                    throughput = len(ind_serviced)
-                    EtE_delay= queue_data[ind_serviced,2]-queue_data[ind_serviced,0]
-                    tot_EtE_delay = EtE_delay.sum()
-                    avg_delay.append(tot_EtE_delay / throughput)
-
-        num_exits = 0
-        for i in range(self.net.num_edges):
-            if isinstance(self.net.edge2queue[i], NullQueue): 
-                num_exits += len(self.net.get_queue_data(queues=i))
-        
-        throughput_ratio = num_exits / len(self.net.get_queue_data(queues=0))
-
-        return -np.mean(avg_delay) / throughput_ratio
 
     def create_queueing_env(self, config_file):
         return create_queueing_env(config_file)
@@ -351,7 +377,7 @@ class RLEnv:
             try:
                 return delay 
             except UnboundLocalError: 
-                return 0    
+                return np.inf    
         if metric =="throughput": 
             try:
                 return throughput
@@ -361,9 +387,5 @@ class RLEnv:
 if __name__=="__main__": 
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
-    env = create_simulation_env({'num_sim':5000}, config_param_filepath)
-    env.net.initialize(queues=0)
-    breakpoint()
-
-
-
+    from foundations.supporting_functions import create_simulation_env
+    env = create_simulation_env({'num_sim':5000, 'entry_nodes': [(0,1)]}, config_param_filepath)

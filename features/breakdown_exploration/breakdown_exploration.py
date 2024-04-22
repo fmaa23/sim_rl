@@ -128,16 +128,15 @@ class BreakdownEngine:
         Returns:
         - Queue_network: An instance of the queueing environment.
         """
-        arrival_rate, _, q_classes, q_args, \
-            adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(self.config_filepath)
+        arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(self.config_filepath, miu_list)
         
         q_net = Queue_network()
-        q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
+        q_net.process_input(arrival_rate, miu_dict, q_classes, q_args, adjacent_list, 
                             edge_list, transition_proba_all, max_agents, sim_time)
         q_net.create_env()
         return q_net
 
-    def create_blockage_cases(self):
+    def create_blockage_cases(self, std = 0.1):
         """
         Creates blockage cases based on 'miu' values from the network model,
         setting a blockage (high value) on all nodes except the first one.
@@ -150,15 +149,15 @@ class BreakdownEngine:
 
         blockage_cases = {}
         for key in miu_dict.keys():
-            new_miu_dict = {key: 0.1 for key in miu_dict.keys()}
+            new_miu_dict = {key: abs(np.random.normal(scale=std)) for key in miu_dict.keys()}
             if key != 1:
-                new_miu_dict[key] = 10
+                new_miu_dict[key] = float('inf')
 
-                key_name = f"bn_{key}" # block node i 
+                key_name = f"bn_{key}" 
                 blockage_cases[key_name] = new_miu_dict
         
-        current_path = os.getcwd()
-        relative_path = "features\\state_exploration\\output_data"
+        current_path = os.getcwd() + "MScDataSparqProject\\"
+        relative_path = "features\\breakdown_exploration\\output_data"
 
         output_file_path = os.path.join(current_path, relative_path, "all_breakdown_cases.json")
         with open(output_file_path, 'w') as json_file:
@@ -316,7 +315,7 @@ class BreakdownEngine:
 
         return case_num, self.blockage_cases[case_num]
 
-    def run(self, agent, num_runs):
+    def run(self, agent):
         """
         Runs the simulation for a specified number of iterations using a given agent.
         Each run involves resetting environments, creating blockage cases, exploring states,
@@ -326,13 +325,13 @@ class BreakdownEngine:
             agent: The agent responsible for running simulations.
             num_runs (int): Number of simulation runs to perform.
         """
-        for run in range(num_runs):
+        self.blockage_cases_dict = self.create_blockage_cases()
+        self.blockage_cases = list(self.blockage_cases_dict.values())
+
+        for run in range(len(self.blockage_cases)):
 
             if self.reset:
                 self.reset_weights(run, self.reset_frequency)
-
-            self.blockage_cases_dict = self.create_blockage_cases()
-            self.blockage_cases = list(self.blockage_cases_dict.values())
 
             case_num, miu_list = self.explore_state()
 
@@ -341,7 +340,7 @@ class BreakdownEngine:
 
             self.next_state_model_list_all, self.critic_loss_list,\
             self.actor_loss_list, self.reward_by_episode, self.action_dict, \
-            self.gradient_dict, self.transition_probas = train(params, agent, self.rl_env)
+            self.gradient_dict, self.transition_probas = train(params, agent, self.rl_env, blockage_qn_net = queue_env)
             
             self.states_with_rewards[case_num] = self.get_reward()
             
@@ -353,6 +352,8 @@ class BreakdownEngine:
             self.save_key_states()
             self.save_peripheral_states()
 
+            save_agent(agent)
+
 if __name__ == "__main__":
     param_file = 'user_config/eval_hyperparams.yml'
     config_file = 'user_config/configuration.yml'
@@ -363,4 +364,4 @@ if __name__ == "__main__":
     agent = create_ddpg_agent(rl_env, params, hidden)
 
     Engine = BreakdownEngine(rl_env)
-    Engine.run(agent, num_runs = 10)
+    Engine.run(agent)

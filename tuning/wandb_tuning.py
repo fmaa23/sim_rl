@@ -3,6 +3,17 @@ from tqdm import tqdm
 # Set the environment variable
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
+import sys
+from pathlib import Path
+
+root_dir = Path(__file__).resolve().parent.parent
+sys.path.append(str(root_dir))
+parent_dir = os.path.dirname(os.path.dirname(root_dir))
+os.chdir(parent_dir)
+if os.getcwd() not in sys.path:
+    sys.path.append(os.getcwd())
+
+
 from agents.ddpg_agent import DDPGAgent
 from rl_env.RL_Environment import RLEnv
 import torch
@@ -228,4 +239,10 @@ def get_best_param(project_name, opt_target = 'reward'):
     return best_hyperparameters
 
 if __name__ == "__main__":
-    init_wandb(project_name = 'datasparq_sample_run', tune_param_filepath = 'file_path')
+    project_name = 'datasparq'
+    num_runs = 10
+    tune_param_filepath = 'user_config/tuning_hyperparams.yml'
+    config_param_filepath = 'user_config/configuration.yml'
+    eval_param_filepath = 'user_config/eval_hyperparams.yml'
+    init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, num_runs = num_runs, opt_target = 'reward')
+    

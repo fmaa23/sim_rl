@@ -10,16 +10,16 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 
-from agents.ddpg import DDPGAgent
-from environments.RL_Environment import RLEnv
+from agents.ddpg_agent import DDPGAgent
+from rl_env.RL_Environment import RLEnv
 import torch
 import numpy as np
 import wandb
 import yaml
 import os
 import random 
-from Supporting_files.base_functions import *
-from Supporting_files.supporting_functions import * 
+from foundations.supporting_functions import *
+from foundations.base_functions import * 
 
 import ray
 from ray import train as train_ray
@@ -226,7 +226,7 @@ if __name__=="__main__": #
 
         }
     tuner = tune.Tuner(
-        tune.with_resources(train, resources={"gpu": 0.5}),
+        tune.with_resources(train, resources={"gpu": 0.5, "cpu":0.5}),
         tune_config=tune.TuneConfig(
         metric="reward",
         mode="max",

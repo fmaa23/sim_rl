@@ -28,7 +28,7 @@ miu_list:
   1: 0.250
   2: 0.25
   3: 0.01500
-  4: 10
+  4: 100
   5: 1.20
   6: 0.01000
   7: 10
@@ -80,10 +80,13 @@ buffer_size_for_each_queue:
   11: 5000
   12: 5000
 
-arrival_rate: 0.3
+arrival_rate: [0.3]
 
 max_agents: inf
 
-sim_time: 100
+sim_jobs: 100
 
 max_arr_rate_list: [375, 375, 375]
+
+entry_nodes:
+  - [0, 1] 

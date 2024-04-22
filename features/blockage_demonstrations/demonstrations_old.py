@@ -1,18 +1,24 @@
 import sys
+import os
 from pathlib import Path
-# Get the absolute path of the parent directory (i.e., the root of your project)
-root_dir = Path(__file__).resolve().parent.parent
-# Add the parent directory to sys.path
+
+root_dir = Path(__file__).resolve().parent
 sys.path.append(str(root_dir))
+parent_dir = os.path.dirname(os.path.dirname(root_dir))
+os.chdir(parent_dir)
+if os.getcwd() not in sys.path:
+    sys.path.append(os.getcwd())
 
 import torch 
 import matplotlib.pyplot as plt
-from supporting_functions import *
-from environments.RL_Environment import *
-from queueing_network import * 
+from foundations.supporting_functions import *
+from rl_env.RL_Environment import *
+from queue_env.queueing_network import * 
+from queueing_tool.queues.queue_servers import *
 import numpy as np
 import copy
 import os 
+from queueing_tool.queues.queue_servers import *
 
 class config():
     # Creates the configuration object for the demonstrations 
@@ -148,16 +154,16 @@ class Static_Disruption(Network_Control):
         q_args = self.environment.qn_net.q_args 
         edge_list = self.environment.qn_net.edge_list 
         new_class = len(q_classes)
-        q_classes[new_class] = qt.LossQueue
+        q_classes[new_class] = LossQueue
         q_args[new_class] = {'service_f': lambda t: t+np.inf}
         edge_list[source_node][target_node] = new_class
 
         org_net = self.environment.qn_net
         new_net = copy.copy(org_net)
         new_net.process_input(org_net.lamda, org_net.miu, q_classes, q_args, org_net.adja_list, 
-                        edge_list, org_net.transition_proba)
+                        edge_list, org_net.transition_proba, max_agents = float('inf'), sim_jobs = 100)
         new_net.create_env()
-        dis_environment = RLEnv(qn_net=new_net, num_sim=5000)
+        dis_environment = RLEnv(qn_net=new_net, num_sim=100)
         
         return dis_environment
     
@@ -199,13 +205,15 @@ if __name__=="__main__":
     agent = torch.load('Agent/trained_agent.pt')
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
-    env = create_simulation_env({'num_sim':5000}, config_param_filepath)
+    env = create_simulation_env({'num_sim':100}, config_param_filepath)
     #env = get_env(n=5000)
-    nc = Network_Control(agent, env)
-    nc.plot_queue_realtime()
-    queue_metrics = nc.control(environment=env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
+    if False:
+        nc = Network_Control(agent, env)
+        nc.plot_queue_realtime()
+        queue_metrics = nc.control(environment=env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
 
     ## Static Disruption 
     sd = Static_Disruption(env, agent, 1, 3)
     disrupted_env = sd.disrupted_environment
     queue_metrics_dis = sd.control(environment=disrupted_env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
+    #breakpoint()

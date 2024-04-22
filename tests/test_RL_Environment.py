@@ -5,10 +5,9 @@ root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
 
-
 # Now you can do an absolute import
-from environments.RL_Environment import RLEnv
-from Supporting_files.supporting_functions import * 
+from rl_env.RL_Environment import RLEnv
+from foundations.supporting_functions import * 
 import pytest
 import numpy as np 
 

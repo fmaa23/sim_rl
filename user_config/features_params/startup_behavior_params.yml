@@ -1,0 +1,6 @@
+---
+window_size: 5
+
+threshold: 0.01
+
+consecutive_points: 5

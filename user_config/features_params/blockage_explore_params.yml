@@ -1,0 +1,16 @@
+---
+w1: 0.5
+
+w2: 0.5
+
+reset: False
+
+reset_frequency: 2
+
+num_output: 5
+
+output_json: True
+
+output_histogram: False
+
+output_coverage_metric: True

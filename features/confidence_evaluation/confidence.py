@@ -134,8 +134,7 @@ class Confidence():
         plt.ylabel('Total Reward')
         plt.title('Total Reward vs Number of Episodes trained')
         plt.savefig(file_path, dpi=1000)  # Save the plot with a resolution of 1000 DPI
-      
-        
+
         
     def start_train(self, config_file, param_file, save_file = True, 
                 data_filename = 'data', image_filename = 'images', plot_curves = True ):

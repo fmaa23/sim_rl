@@ -7,8 +7,8 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 import torch
-from agents.ddpg import DDPGAgent
-from Supporting_files.State_Exploration import *
+from agents.ddpg_agent import DDPGAgent
+from features.state_exploration.state_exploration import *
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -19,8 +19,11 @@ def ddpg_agent():
     """
     n_states = 10
     n_actions = 2
-    hidden = {'actor': [64, 64], 'critic': [64, 64], 'reward_model': [10, 10], 'next_state_model': [10, 10]}
-    params = {'tau': 0.1, 'learning_rate': 0.001, 'discount': 0.99, 'epsilon': 0.1, 'planning_steps': 5}
+    hidden = {'actor': [64, 64], 'critic': [64, 64],
+            'reward_model': [10, 10], 'next_state_model': [10, 10]}
+    params = {'tau': 0.1, 'actor_lr': 0.001,'critic_lr': 0.001,
+            'batch_size': 20,
+            'discount': 0.99, 'epsilon': 0.1, 'planning_steps': 5}
     agent = DDPGAgent(n_states, n_actions, hidden, params)
     return agent
 
