@@ -66,7 +66,6 @@ class Confidence():
             agent.train()
             env.reset()
             env.simulate()
-
             update = 0
             reward_list = []
 
@@ -83,18 +82,14 @@ class Confidence():
                     action_dict[index] = node_list
 
                 next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
-                
                 reward = env.get_reward()
-
                 reward_list.append(reward)                               
                 experience = (state_tensor, action, reward, next_state_tensor) 
-                
                 agent.store_experience(experience)                             
 
             reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=time_steps, epochs=num_epochs)
             next_state_model_list_all += next_state_loss_list
             reward_model_list_all += reward_model_loss_list
-
             transition_probas = update_transition_probas(transition_probas, env)
 
             for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
@@ -107,14 +102,10 @@ class Confidence():
                 critic_loss_list.append(critic_loss)
 
             agent.plan(batch)
-
             agent.soft_update(network="critic")
             agent.soft_update(network="actor")
-
             gradient_dict_all[update] = gradient_dict
-
             agent.buffer.clear()
-
             reward_by_episode[episode] = reward_list
         
         save_agent(agent)
@@ -133,16 +124,17 @@ class Confidence():
         return total_reward
     
     
-    def save_reward_plot(self, file_path='reward_plot.png'):
+    def save_reward_plot(self, file_path,filename='reward_plot.png'):
         plt.plot(self.num_episodes, self.total_rewards)
         plt.xlabel('Number of Episodes')
         plt.ylabel('Total Reward')
         plt.title('Total Reward vs Number of Episodes trained')
-        plt.savefig(file_path, dpi=1000)  # Save the plot with a resolution of 1000 DPI
+        file_save=os.path.join(file_path, filename)
+        plt.savefig(file_save, dpi=1000)  # Save the plot with a resolution of 1000 DPI
       
         
         
-    def start_train(self, config_file, param_file, save_file = True, 
+    def start_train(self, config_file, eval_config_file, param_file, save_file = True, 
                 data_filename = 'data', image_filename = 'images', plot_curves = True ):
         """
         This is a modified version of the stanadard start train function that is used to train the agent for a given number of episodes and then evaluate the agent on the environment.
@@ -159,6 +151,7 @@ class Confidence():
             print(f"------ Initializing the {num_episode} episode agent ------")
             params, hidden = load_hyperparams(param_file)
             sim_environment = create_simulation_env(params, config_file)
+            eval_environment =create_simulation_env(params, eval_config_file)
             agent = create_ddpg_agent(sim_environment, params, hidden)
             
             # Train the agent for the specified number of episodes
@@ -170,26 +163,21 @@ class Confidence():
            
             supporting_files_dir = os.path.join(os.getcwd(), 'foundations')
             csv_filepath = os.path.join(supporting_files_dir, data_filename)
-            image_filepath = os.path.join(supporting_files_dir, image_filename)
             if save_file:
                 save_all(next_state_model_list_all, \
                 critic_loss_list, actor_loss_list, \
                 reward_by_episode, action_dict, gradient_dict, \
                 transition_probas, base_path=csv_filepath)
-        
-            # if plot_curves:
-            #     plot(csv_filepath, image_filepath)
-           
             
             # Saving a copy of the trained agent in the current directory
-            trained_agent = copy.deepcopy(agent)                                      
-            # torch.save(trained_agent.state_dict(), f"trained_agent_{num_episode}.pth")
-            
+            trained_agent = copy.deepcopy(agent)                                                  
             # Evaluate the agent on the environment
             print(f"------ Evaluating the {num_episode} episode agent  ------")
-            total_reward = self.evaluate_agent(trained_agent, sim_environment,self.timesteps)
+            total_reward = self.evaluate_agent(trained_agent, eval_environment,self.timesteps)
             self.total_rewards.append(total_reward)
-        self.save_reward_plot()
+        confidence_dir = os.path.join(os.getcwd(), 'features', 'confidence_evaluation')
+        os.makedirs(confidence_dir, exist_ok=True)
+        self.save_reward_plot(confidence_dir)
     
          
         
@@ -197,18 +185,17 @@ class Confidence():
 # Logic for using this class 
 
 # 1. Specify the data structures that will be needed to configre the class 
-num_episodes = [100, 300, 500,700,900] # this list contains the number of episodes that the agent will be trained for 
+num_episodes = [100, 300,500,700,900] # this list contains the number of episodes that the agent will be trained for 
 timesteps = 600 # this is the number of timesteps that the agent will be evaluated for
 
 # 2. Specify the file path to the agent's configuration yaml file 
 agent = 'user_config/eval_hyperparams.yml'
-# 3. Speficy the file path for the environment's configuration yaml file
-env = 'user_config/configuration.yml'
+# 3. Speficy the file path for the training and evaluation environment's configuration yaml file
+train_env = 'user_config/configuration.yml'
+eval_env = 'user_config/configuration.yml'
 # 4. Intiialze the confidence class with the agent , environement and the number of episodes 
 confidence = Confidence(num_episodes, timesteps)
 # 5. Initialize the training and evaluation process - allow this to show updates to the user according to the status - training xxx episode agent , evaluating xxx epsiode agent 
-confidence.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
-# - also allow this fuinction to automatically save, the agent objects , the final graph of episodes vs reward for each environment 
-# make these stored in attributes so that theu can be retrieved later 
+confidence.start_train(train_env, eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
 
 

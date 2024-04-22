@@ -15,7 +15,6 @@ class ExploreStateEngine():
         Initialize the ExploreStateEngine with default parameters and configurations.
         """
         self.eval_param_filepath = 'user_config/eval_hyperparams.yml'
-
         self.activate_features()
         self.load_params()
         self.init_track_reward()
@@ -26,7 +25,6 @@ class ExploreStateEngine():
         Activate features based on loaded hyperparameters.
         """
         params = self.load_hyperparams()
-
         self.output_json_files = params['output_json']
         self.reset = params['reset'] 
         self.output_histogram = params['output_histogram']
@@ -51,8 +49,6 @@ class ExploreStateEngine():
 
         # Assuming __file__ is somewhere inside 'D:\\MScDataSparqProject'
         project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-        # Now directly append your target directory to the project base
         abs_file_path = os.path.join(project_dir, 'user_config', 'eval_hyperparams.yml')
         
         with open(abs_file_path, 'r') as env_param_file:
@@ -199,15 +195,12 @@ class ExploreStateEngine():
         """
         Generate the file paths for storing states information.
         """
-        #base_path = os.getcwd()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # Go up one directory to the MScDataSparqProject directory
         project_dir = os.path.dirname(script_dir)
         base_path = project_dir
 
-        base_path_key = base_path + "/features/feature_4_state_exploration/key_states/"
-        base_path_peripheral = base_path + "/features/feature_4_state_exploration/peripheral_states/"
+        base_path_key = os.path.join(base_path, "features", "feature_4_state_exploration", "key_states")
+        base_path_peripheral = os.path.join(base_path, "features", "feature_4_state_exploration", "peripheral_states")
 
         os.makedirs(base_path_key, exist_ok=True)
         os.makedirs(base_path_peripheral, exist_ok=True)
@@ -217,6 +210,7 @@ class ExploreStateEngine():
         peripheral_states_filename = os.path.join(base_path_peripheral, "peripheral_states.json")
 
         return base_path_key, base_path_peripheral, key_states_filename, peripheral_states_filename
+
 
     def calculate_q_values(self, DDPG_agent, key_states_filename, peripheral_states_filename, visit_counts):
         """
@@ -234,10 +228,11 @@ class ExploreStateEngine():
 
         with open(peripheral_states_filename, 'r') as json_file:
             peripheral_states = json.load(json_file)
-        peripheral_states = self.convert_format(peripheral_states)
 
+        peripheral_states = self.convert_format(peripheral_states)
         all_key_states = key_states['top_states'] + key_states['least_states']
         q_value_list = []
+
         with torch.no_grad():
             for state in all_key_states:
                 state_tensor = torch.tensor(state).float() 
@@ -251,7 +246,6 @@ class ExploreStateEngine():
                 visit = 0
             else:
                 visit = visit_counts[state]
-
             visits_list.append(visit)
         
         return q_value_list, visits_list
@@ -267,12 +261,10 @@ class ExploreStateEngine():
         for key in keystates_dict.keys():
             for state in keystates_dict[key]:
                 q_values_list = self.reward_info.setdefault(state, [])
-
                 state_tensor = torch.tensor(state).float()
                 with torch.no_grad():
                     q_values = agent.critic([state_tensor, agent.actor(state_tensor)]).item()
                 q_values_list.append(q_values)
-
                 self.reward_info[state] = q_values_list
     
     def track_reward(self, agent, reward_rankings, visit_rankings):
@@ -309,17 +301,13 @@ class ExploreStateEngine():
         - folder_name (str): The name of the folder.
         - file_name (str): The name of the file.
         """
-        #base_path = os.getcwd()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # Go up one directory to the MScDataSparqProject directory
         project_dir = os.path.dirname(script_dir)
-        base_path = project_dir
-        base_path = base_path + f"/features/feature_4_state_exploration/{folder_name}/"
+        base_path = os.path.join(project_dir, "features", "feature_4_state_exploration", folder_name)
 
         os.makedirs(base_path, exist_ok=True)
 
-        # Specify the filenames
+        # Specify the filename
         file_path = os.path.join(base_path, file_name)
 
         return base_path, file_path
@@ -416,13 +404,12 @@ class ExploreStateEngine():
         for start_node in env.adja_list.keys():
             for end_node in env.adja_list[start_node]:
                 if end_node in env.adja_list.keys():
-                
                     edge_index = env.edge_list[start_node][end_node]
-
                     max_buffer = env.q_args[edge_index]['qbuffer']
                     max_buffer_size.append(max_buffer)
         
         sample_states = []
+        
         for _ in range(self.num_sample):
             array = np.array([np.random.randint(0, max_val) for max_val in max_buffer_size])
             sample_states.append(array)
