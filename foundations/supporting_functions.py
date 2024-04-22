@@ -735,19 +735,19 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
         ray_tune()
         
         
-def control(environment, agent, time_steps):
-    """ This function is used to allow a trained agent to actively make decisions in the environment and returns the total reward obtained after a specified number of time steps.
-    """
-    environment.simulate()
-    total_reward = 0 
-    state = environment.reset()
-    for _ in tqdm(range(time_steps),desc="Control"): 
-        state = environment.get_state()
-        action = agent.actor(state).detach()
-        state = environment.get_next_state(action)[0]
-        reward = environment.get_reward()
-        total_reward += reward
-    return total_reward
+def start_evaluation(environment, agent, time_steps):
+        """ This function is used to allow a trained agent to actively make decisions in the environment and returns the total reward obtained after a specified number of time steps.
+        """
+        #environment.simulate() 
+        total_reward = 0 
+        state = environment.reset()
+        for _ in tqdm(range(time_steps),desc="Control"): 
+            state = environment.get_state()
+            action = agent.actor(state).detach()
+            state = environment.get_next_state(action)[0]
+            reward = environment.get_reward()
+            total_reward += reward
+        return total_reward
     
         
     
