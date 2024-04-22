@@ -112,7 +112,7 @@ class Confidence():
         
         return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
             
-    def evaluate_agent(self,agent,env, timesteps):
+    def evaluate_agent(self,agent,env, timesteps): # make redundant when importing from core functions 
         total_reward = 0 
         state = env.reset()
         for _ in tqdm(range(timesteps),desc="Evaluate"):

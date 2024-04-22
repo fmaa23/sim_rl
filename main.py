@@ -19,8 +19,6 @@ config_dir = 'user_config'
 config_param_filepath = os.path.join(config_dir, 'configuration.yml')
 eval_param_filepath = os.path.join(config_dir, 'eval_hyperparams.yml')
 
-
-
 data_filename = 'output_csv'
 image_filename = 'output_plots' 
 
