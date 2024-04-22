@@ -319,7 +319,13 @@ class RLEnv:
         Returns:
             The state of the environment after the simulation.
         """
+<<<<<<< HEAD
         self.net.initialize(edge_type=1)
+=======
+        self.net.initialize(edges=self.entry_nodes)
+        
+        self.iter +=1
+>>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
         self.net.start_collecting_data()
         self.net.simulate(n = self.qn_net.sim_jobs) 
 

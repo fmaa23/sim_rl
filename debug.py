@@ -1,24 +1,29 @@
 from foundations.supporting_functions import start_train, start_tuning
 import time
 
-config_param_filepath = 'user_config/configuration.yml'
-eval_param_filepath = 'user_config/eval_hyperparams.yml'
+import os
+
+config_dir = 'user_config'
+
+# Create the file paths using os.path.join
+config_param_filepath = os.path.join(config_dir, 'configuration.yml')
+eval_param_filepath = os.path.join(config_dir, 'eval_hyperparams.yml')
+tune_param_filepath = os.path.join(config_dir, 'tuning_hyperparams.yml')
+
 
 data_filename = 'output_csv'
 image_filename = 'output_plots' 
 
-function = 'train'
+function = 'tune'
 
 if __name__ == "__main__":
 
     if function == 'tune':
         project_name = 'datasparq'
+        wandb_api_key='02bb2e4979e9df3d890f94a917a95344aae652b9'#replace with yours here
         num_runs = 10
-        tune_param_filepath = 'user_config/tuning_hyperparams.yml'
         plot_best_param = False
-        config_param_filepath = 'user_config/configuration.yml'
-        eval_param_filepath = 'user_config/eval_hyperparams.yml'
-        start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, plot_best_param)
+        start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath,wandb_api_key, plot_best_param)
     
     if function == 'train':
         start_time = time.time()

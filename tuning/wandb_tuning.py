@@ -37,11 +37,7 @@ def load_hyperparams(eval_param_filepath):
 
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Go up one directory to the MScDataSparqProject directory
     project_dir = os.path.dirname(script_dir)
-
-    # Build the path to the configuration file
     abs_file_path = os.path.join(project_dir, eval_param_filepath)
     
     with open(abs_file_path, 'r') as env_param_file:
@@ -56,11 +52,7 @@ def load_tuning_config(tune_param_filepath):
 
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Go up one directory to the MScDataSparqProject directory
     project_dir = os.path.dirname(script_dir)
-
-    # Build the path to the configuration file
     abs_file_path = os.path.join(project_dir, tune_param_filepath)
 
     with open(abs_file_path, 'r') as tune_params_file:
@@ -137,8 +129,6 @@ def get_agent_parameters(config):
 def init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, opt_target = 'reward', num_runs = 100):
     # initialize W&B
     wandb.login()
-
-    # initial project
     wandb.init(project = project_name)
 
     # read hyperparameter files
@@ -218,16 +208,12 @@ def init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_pa
     wandb.agent(sweep_id, wandb_train, count=num_runs)
 
 def get_best_param(project_name, opt_target = 'reward'):
-
     api = wandb.Api()
     sweep = api.sweep(project_name)
-
-    # Get all runs in the sweep
     runs = sorted(sweep.runs,
                   key=lambda r: r.summary.get(opt_target, float("inf")),
                   reverse=True)  # Set reverse=False for metrics where lower is better
 
-    # Retrieve the best run
     best_run = runs[0]
 
     print("Best Hyperparameters:")
@@ -235,7 +221,6 @@ def get_best_param(project_name, opt_target = 'reward'):
         print(f"{key}: {value}")
 
     best_hyperparameters = best_run.config
-
     return best_hyperparameters
 
 if __name__ == "__main__":

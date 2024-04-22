@@ -3,7 +3,10 @@ import yaml
 import os
 import sys
 # Append the path where the queueing_tool package is located
-sys.path.append('D:\\MScDataSparqProject\\queue_env\\queue_foundations')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(script_dir)
+queue_foundations_dir = os.path.join(project_dir, "queue_env", "queue_foundations")
+sys.path.append(queue_foundations_dir)
 
 from queueing_tool.network.queue_network import QueueNetwork
 from queueing_tool.graph.graph_wrapper import adjacency2graph
@@ -56,17 +59,17 @@ class Queue_network:
         
         # Configure the network
         self.adja_list = adjacent_list
-        
         self.edge_list = edge_list
-        
         self.q_classes = q_classes
-        
         self.q_args = q_args
-
         self.max_agents = float(max_agents)
+<<<<<<< HEAD
 
         self.sim_jobs = sim_jobs
 
+=======
+        self.sim_time = sim_time
+>>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
         self.transition_proba = transition_proba
 
     def get_edge_list(self):
@@ -78,9 +81,11 @@ class Queue_network:
         edge = 1
         for q in self.adja_list.keys():
             q_edge_list = {}
+
             for q_adj in self.adja_list[q]:
                 q_edge_list[q_adj] = edge
                 edge += 1
+            
             self.edge_list[q] = q_edge_list
             
     def get_q_classes(self):
@@ -97,6 +102,7 @@ class Queue_network:
                 LossQueueList.append(LossQueue)
         
         self.q_classes= {}
+
         for i,queue_types in enumerate(LossQueueList):
             if i == 1:
                 print("Loss Queue Object:", queue_types)
@@ -140,7 +146,6 @@ class Queue_network:
         self.g = adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
         self.queueing_network = QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args, max_agents = self.max_agents)
         self.queueing_network.set_transitions(self.transition_proba)
-        # self.queueing_network.draw(figsize=(6, 3))
     
     def run_simulation(self, num_events = 50, collect_data = True):
         # specify which edges and queue to activate at the beginning

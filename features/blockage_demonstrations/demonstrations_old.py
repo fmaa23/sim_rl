@@ -14,7 +14,10 @@ import matplotlib.pyplot as plt
 from foundations.supporting_functions import *
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
+<<<<<<< HEAD:features/blockage_demonstrations/demonstrations_old.py
 from queueing_tool.queues.queue_servers import *
+=======
+>>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d:blockage_demonstrations/demonstrations.py
 import numpy as np
 import copy
 import os 
@@ -22,12 +25,12 @@ from queueing_tool.queues.queue_servers import *
 
 class config():
     # Creates the configuration object for the demonstrations 
-    def __init__(self, environment, agent, metric='throughput'): 
+    def __init__(self, environment, agent, queue_index, metric='throughput'): 
         self.environment = environment 
         self.agent = agent 
         self.metric = metric 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.queue_index = 2
+        self.queue_index = queue_index
         self.queue_metrics = [] 
         plt.ion()
         self.fig, self.ax = plt.subplots()
@@ -45,7 +48,7 @@ class Network_Control():
     - environment - testing RL Environment 
     - agent - trained agent with the learnt policy 
     """
-    def __init__(self , environment , agent, metric='throughput'):
+    def __init__(self , environment , agent, queue_index, metric='throughput'):
         """
             Initiates the class with the environment and the agent 
         """
@@ -53,7 +56,7 @@ class Network_Control():
         self.agent = agent
         self.metric = metric 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.queue_index = 2
+        self.queue_index = queue_index
         self.queue_metrics = [] 
         self.call_plot_num =0
         plt.ion()
@@ -87,10 +90,12 @@ class Network_Control():
         self.ax.plot(transition_proba_lists)
         self.ax.set(xlabel='Time Steps', ylabel='Transition Probability',
                 title=f'Transition Probability vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_transition_proba.png'
-        #plt.show()
-        plt.savefig(figure_name)
+        parent_path = os.getcwd()
+        figure_path = os.path.join(parent_path, 'blockage_demonstrations', 'results', 'Normal_Transition_Proba.png')
+        directory = os.path.dirname(figure_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(figure_path)
         self.call_plot_num+=1
 
     def plot_queue(self, labels, *queue_metrics_lists):
@@ -100,10 +105,12 @@ class Network_Control():
             self.ax.plot(range(len(queue_metrics)), queue_metrics, label=label)
         self.ax.set(xlabel='Time Steps', ylabel=self.metric,
                 title=self.metric + f' vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_queue.png'
-        #plt.show()
-        plt.savefig(figure_name)
+        parent_path = os.getcwd()
+        figure_path = os.path.join(parent_path, 'blockage_demonstrations', 'results', 'Normal_Plot_Queue.png')
+        directory = os.path.dirname(figure_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(figure_path)
         self.call_plot_num+=1
 
 
@@ -126,12 +133,9 @@ class Network_Control():
         for time_step in range(time_steps): 
             state = environment.get_state()
             action = agent.actor(state).detach()
-            state =environment.get_next_state(action)[0]
+            state =environment.get_next_state(action)
             queue_metrics.append(environment.return_queue(queue_index, metric=metric))
             queue_transition_proba.append(environment.transition_proba[source_edge][target_edge])
-            if time_step % 10 == 0:  # Corrected: to ensure it executes when time_step is a multiple of 10
-                # self.plot_queue() - this would be the real time plotting logic 
-                pass 
         
         self.plot_queue(metric,queue_metrics)  # Plot once after completing the loop
         self.plot_transition_proba(queue_transition_proba)
@@ -141,10 +145,9 @@ class Static_Disruption(Network_Control):
     """
     This class extends Network_Control for demonstrations where the agent has to handle disruptions
     """
-    def __init__(self, environment, agent , source_node, target_node):
-        super().__init__(environment, agent)
+    def __init__(self, environment, agent , queue_index, source_node, target_node):
+        super().__init__(environment, agent, queue_index)
         # Initialize any additional variables or settings specific to disruptions
-        self.queue_index = 2
         self.standard_environment = environment
         self.disrupted_environment = self.deactivate_node(source_node,target_node)
         
@@ -161,7 +164,11 @@ class Static_Disruption(Network_Control):
         org_net = self.environment.qn_net
         new_net = copy.copy(org_net)
         new_net.process_input(org_net.lamda, org_net.miu, q_classes, q_args, org_net.adja_list, 
+<<<<<<< HEAD:features/blockage_demonstrations/demonstrations_old.py
                         edge_list, org_net.transition_proba, max_agents = float('inf'), sim_jobs = 100)
+=======
+                        edge_list, org_net.transition_proba, org_net.max_agents, org_net.sim_time)
+>>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d:blockage_demonstrations/demonstrations.py
         new_net.create_env()
         dis_environment = RLEnv(qn_net=new_net, num_sim=100)
         
@@ -175,10 +182,12 @@ class Static_Disruption(Network_Control):
             self.ax.plot(range(len(queue_metrics)), queue_metrics, label=label)
         self.ax.set(xlabel='Time Steps', ylabel=self.metric,
                 title=self.metric + f' vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_queue_sd.png'
-        #plt.show()
-        plt.savefig(figure_name)
+        parent_path = os.getcwd()
+        figure_path = os.path.join(parent_path, 'blockage_demonstrations', 'results', 'Blocked_Plot_Queue.png')
+        directory = os.path.dirname(figure_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(figure_path)
         self.call_plot_num+=1
 
     def plot_transition_proba(self, transition_proba_lists):
@@ -186,11 +195,13 @@ class Static_Disruption(Network_Control):
         self.ax.clear()  # Clear previous plots
         self.ax.plot(transition_proba_lists)
         self.ax.set(xlabel='Time Steps', ylabel='Transition Probability',
-                title=f'Transition Probability vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_transition_proba_sd.png'
-        #plt.show()
-        plt.savefig(figure_name)
+                title=f'Blocked Transition Probability vs Time Steps for Queue {self.queue_index}')
+        parent_path = os.getcwd()
+        figure_path = os.path.join(parent_path, 'blockage_demonstrations', 'results', 'Blocked_Transition_Proba.png')
+        directory = os.path.dirname(figure_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(figure_path)
         self.call_plot_num+=1
         
     def multi_control(self):
@@ -205,15 +216,25 @@ if __name__=="__main__":
     agent = torch.load('Agent/trained_agent.pt')
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
+<<<<<<< HEAD:features/blockage_demonstrations/demonstrations_old.py
     env = create_simulation_env({'num_sim':100}, config_param_filepath)
     #env = get_env(n=5000)
     if False:
         nc = Network_Control(agent, env)
         nc.plot_queue_realtime()
         queue_metrics = nc.control(environment=env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
+=======
+    env = create_simulation_env({'num_sim':5000}, config_param_filepath)
+    nc = Network_Control(agent, env, queue_index=1)
+    queue_metrics = nc.control(environment=env, agent=agent, time_steps=100, queue_index=1, metric='throughput')
+>>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d:blockage_demonstrations/demonstrations.py
 
     ## Static Disruption 
-    sd = Static_Disruption(env, agent, 1, 3)
+    sd = Static_Disruption(env, agent, queue_index=1, source_node=1, target_node=2)
     disrupted_env = sd.disrupted_environment
+<<<<<<< HEAD:features/blockage_demonstrations/demonstrations_old.py
     queue_metrics_dis = sd.control(environment=disrupted_env, agent=agent, time_steps=100, queue_index=2, metric='throughput')
     #breakpoint()
+=======
+    queue_metrics_dis = sd.control(environment=disrupted_env, agent=agent, time_steps=100, queue_index=1, metric='throughput')
+>>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d:blockage_demonstrations/demonstrations.py
