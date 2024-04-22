@@ -6,7 +6,7 @@ sys.path.append(str(root_dir))
 import numpy as np
 # from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
-from foundations.base_functions import * 
+from foundations.wandb_base_functions import * 
 from queueing_tool.queues.queue_servers import *
 
 
@@ -319,13 +319,7 @@ class RLEnv:
         Returns:
             The state of the environment after the simulation.
         """
-<<<<<<< HEAD
         self.net.initialize(edge_type=1)
-=======
-        self.net.initialize(edges=self.entry_nodes)
-        
-        self.iter +=1
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
         self.net.start_collecting_data()
         self.net.simulate(n = self.qn_net.sim_jobs) 
 

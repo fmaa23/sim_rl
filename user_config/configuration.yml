@@ -88,9 +88,4 @@ sim_jobs: 100
 
 max_arr_rate_list: [375, 375, 375]
 
-<<<<<<< HEAD
-entry_nodes:
-  - [0, 1] 
-=======
 entry_nodes: [[0,1]]
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d

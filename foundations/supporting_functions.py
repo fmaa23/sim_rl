@@ -5,10 +5,10 @@ import numpy as np
 import os
 import yaml
 
-
 from agents.ddpg_agent import DDPGAgent
 from queue_env.queueing_network import *
 from tuning.wandb_tuning import *
+from tuning.ray_tuning import *
 from foundations.plot_datasparq import *
 from tqdm import tqdm
 from queueing_tool.network.queue_network import QueueNetwork
@@ -33,9 +33,8 @@ def load_config(env_param_filepath):
     project_dir = os.path.dirname(script_dir)
     # Build the path to the configuration file
     abs_file_path = os.path.join(project_dir, env_param_filepath)
-    with open(abs_file_path, 'r') as env_param_file:
-        config_params = yaml.load(env_param_file, Loader=yaml.FullLoader)
-<<<<<<< HEAD
+    with open(abs_file_path, 'r') as param_file:
+        config_params = yaml.load(param_file, Loader=yaml.FullLoader)
     
     # Convert lists to tuples
     try:
@@ -47,8 +46,6 @@ def load_config(env_param_filepath):
     except:
         pass
 
-=======
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
     return config_params
 
 def load_hyperparams(eval_param_filepath):
@@ -65,10 +62,13 @@ def load_hyperparams(eval_param_filepath):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(script_dir)
     abs_file_path = os.path.join(project_dir, eval_param_filepath)
+    
     with open(abs_file_path, 'r') as env_param_file:
         parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
+
     params = parameter_dictionary['rl_params']
     hidden = parameter_dictionary['network_params']
+
     return params, hidden
 
 def get_num_connections(adjacent_list):
@@ -180,7 +180,6 @@ def create_params(config_file, disrupt_case = False, disrupt = False, queue_inde
     """
     
     config_params = load_config(config_file)
-<<<<<<< HEAD
     miu_dict = config_params['miu_list']  
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
@@ -205,33 +204,19 @@ def create_params(config_file, disrupt_case = False, disrupt = False, queue_inde
     else:
         miu_dict = config_params['miu_list']
 
-=======
-    miu_dict = config_params['miu_list']
-    adjacent_list = config_params['adjacent_list']
-    max_agents = config_params['max_agents']
-    sim_time = config_params['sim_time']
-    entry_nodes = [tuple(entry_node) for entry_node in config_params['entry_nodes']]
-    exit_nodes = get_num_connections(adjacent_list)
-    edge_list = make_edge_list(adjacent_list, exit_nodes)
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
     q_classes = create_q_classes(edge_list)
     edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
     buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
     q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes)
     arrival_rate = config_params['arrival_rate']  
     transition_proba_all = config_params['transition_proba_all']
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time, entry_nodes
+    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_jobs, entry_nodes
 
-<<<<<<< HEAD
-    return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_jobs
-
-=======
 def get_entry_nodes(config_file): 
     config_params = load_config(config_file)
     entry_nodes = [tuple(entry_node) for entry_node in config_params['entry_nodes']]
     return entry_nodes
     
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
 def create_q_classes(edge_list):
     """
     Creates a dictionary mapping queue identifiers to their corresponding queue class.
@@ -252,10 +237,7 @@ def create_q_classes(edge_list):
                 q_classes[edge_index] = LossQueue
             else:
                 q_classes[edge_index] = NullQueue
-<<<<<<< HEAD
-=======
 
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
     return q_classes
 
 def get_node_tuple_from_edgetype(edge_list):
@@ -291,10 +273,7 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     Returns:
     - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
     """
-<<<<<<< HEAD
-=======
 
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
     q_args = {}
     edge_type_lists = []
 
@@ -312,16 +291,9 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
         node_id = get_node_id(edge_type, edge_type_info) 
         service_rate = miu_dict[node_id]
         if queue_type == LossQueue:
-<<<<<<< HEAD
             if node_tuple_by_edgetype[edge_type][0] in config_params['entry_nodes']:
                 max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
                 rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2
-                # rate = lambda t: 25 + 350*np.sin(np.pi*t/2)**2
-=======
-            if node_tuple_by_edgetype[edge_type][0] in env_entry_nodes:
-                max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
-                rate = lambda t: 25 + 350 * np.sin(np.pi * t / 2)**2
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
                 q_args[edge_type] = {
                 'arrival_f': lambda t, rate=rate: poisson_random_measure(t, rate, max_arrival_rate),
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
@@ -351,16 +323,13 @@ def create_queueing_env(config_file, disrupt_case = False, disrupt = False, queu
     Returns:
     - Queue_network: An instance of the queueing environment.
     """
-<<<<<<< HEAD
-    arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_jobs = create_params(config_file, 
+    arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, \
+    transition_proba_all, max_agents, sim_jobs, entry_nodes = create_params(config_file, 
                                                                                              disrupt_case = disrupt_case, 
                                                                                              disrupt = disrupt, 
                                                                                              queue_index = queue_index)
     
-=======
-    arrival_rate, miu_list, q_classes, q_args, \
-        adjacent_list, edge_list, transition_proba_all, max_agents, sim_time, entry_nodes = create_params(config_file)
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
+
     q_net = Queue_network()
     q_net.process_input(arrival_rate, miu_dict, q_classes, q_args, adjacent_list, 
                         edge_list, transition_proba_all, max_agents, sim_jobs)
@@ -394,14 +363,9 @@ def create_simulation_env(params, config_file, disrupt_case = False, disrupt = F
     Returns:
     - RLEnv: The RL environment ready for simulation.
     """
-<<<<<<< HEAD
     q_net = create_queueing_env(config_file, disrupt_case, disrupt = disrupt, queue_index = queue_index)
-    RL_env = create_RL_env(q_net, params)
-=======
-    q_net = create_queueing_env(config_file)
     entry_nodes = get_entry_nodes(config_file)
     RL_env = create_RL_env(q_net, params, entry_nodes)
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
 
     return RL_env
 
@@ -486,7 +450,7 @@ def save_agent(agent):
     and saves the given agent model to a file named 'tensor.pt' within this directory.
     """
     base_path = os.getcwd() + "MScDataSparqProject\\"
-    agent_dir = os.path.join(base_path, 'agent')
+    agent_dir = os.path.join(base_path, 'agents')
 
     # Create the directory if it does not exist
     if not os.path.exists(agent_dir):
@@ -599,7 +563,7 @@ def create_ddpg_agent(environment, params, hidden):
     """
     n_states = (environment.net.num_edges - environment.num_nullnodes)
     n_actions = len(environment.get_state()) - environment.num_nullnodes
-    agent = DDPGAgent(n_states, n_actions, hidden, params)
+    agent = DDPGAgent(n_states, n_actions, hidden, params, device)
     return agent
 
 def get_transition_proba_df(transition_probas):
@@ -670,21 +634,15 @@ def start_train(config_file, param_file, save_file = True,
     params, hidden = load_hyperparams(param_file)
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
+    
     next_state_model_list_all, critic_loss_list,\
-<<<<<<< HEAD
-          actor_loss_list, reward_by_episode, action_dict, \
-            gradient_dict, transition_probas = train(params, agent, sim_environment)
-
-    csv_filepath = os.getcwd() + '/foundations/' + data_filename
-    image_filepath = os.getcwd() + '/foundations/' + image_filename
-=======
-          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
+    actor_loss_list, reward_by_episode, action_dict, \
+    gradient_dict, transition_probas = train(params, agent, sim_environment)
     
     current_dir = os.getcwd()
     foundations_dir = 'foundations'
     csv_filepath = os.path.join(current_dir, foundations_dir, data_filename)
     image_filepath = os.path.join(current_dir, foundations_dir, image_filename)
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
 
     if save_file:
         save_all(next_state_model_list_all, critic_loss_list,\
@@ -701,7 +659,8 @@ def plot_best(data_filepath, images_filepath):
 def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, api_key, 
                  plot_best_param = True, 
                  data_filename = 'data',
-                 image_filename = 'images'):
+                 image_filename = 'images',
+                 tuner = 'wandb'):
     """
     Initiates the hyperparameter tuning process for a reinforcement learning project, optionally plots the best parameters,
     and starts a training session with those parameters.
@@ -722,52 +681,55 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
 
     Note: The function assumes access to Wandb and requires an API key for Wandb to be set up in advance.
     """
-    init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath,num_runs = num_runs, opt_target = 'reward')
+    if tuner == 'wandb':
+        init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath,num_runs = num_runs, opt_target = 'reward')
 
-    if plot_best_param:
-        api = wandb.Api(api_key = api_key) # replace your api key
-        runs = api.runs("datasparq")
-        best_run = None
-        best_metric = None # Assuming higher is better; initialize appropriately based on your metric
+        if plot_best_param:
+            api = wandb.Api(api_key = api_key) # replace your api key
+            runs = api.runs("datasparq")
+            best_run = None
+            best_metric = None # Assuming higher is better; initialize appropriately based on your metric
 
-        for run in runs:
-            # Make sure the metric is reported for the run
-            if "reward" in run.summary:
-                metric_value = run.summary["reward"]
-                
-                if best_run is None or metric_value > best_metric:
-                    best_metric = metric_value
-                    best_run = run
+            for run in runs:
+                # Make sure the metric is reported for the run
+                if "reward" in run.summary:
+                    metric_value = run.summary["reward"]
+                    
+                    if best_run is None or metric_value > best_metric:
+                        best_metric = metric_value
+                        best_run = run
 
-        if best_run:
-            print(f"Best run ID: {best_run.id}")
-            print(f"Best {best_metric} = {best_metric}")
-            print("Best parameters:")
-            for key, value in best_run.config.items():
-                print(f"{key}: {value}")
-        else:
-            print("No runs found or metric not reported.")
+            if best_run:
+                print(f"Best run ID: {best_run.id}")
+                print(f"Best {best_metric} = {best_metric}")
+                print("Best parameters:")
+                for key, value in best_run.config.items():
+                    print(f"{key}: {value}")
+            else:
+                print("No runs found or metric not reported.")
 
-        best_params = best_run.config
-        params, hidden = load_hyperparams(eval_param_filepath)
-        sim_environment = create_simulation_env(params, config_param_filepath)
-        agent = create_ddpg_agent(sim_environment, params, hidden)
-        current_dir = os.getcwd()
-        csv_filepath = os.path.join(current_dir, data_filename)
-        image_filepath = os.path.join(current_dir, image_filename)
+            best_params = best_run.config
+            params, hidden = load_hyperparams(eval_param_filepath)
+            sim_environment = create_simulation_env(params, config_param_filepath)
+            agent = create_ddpg_agent(sim_environment, params, hidden)
+            current_dir = os.getcwd()
+            csv_filepath = os.path.join(current_dir, data_filename)
+            image_filepath = os.path.join(current_dir, image_filename)
 
-        plot_best(csv_filepath, image_filepath)
+            plot_best(csv_filepath, image_filepath)
 
-        rewards_list_all, next_state_list_all, \
-            critic_loss_list_all, actor_loss_list_all, \
-            reward_list, action_dict, gradient_dict, \
-            transition_probas = train(params, agent, sim_environment, best_params = best_params)
+            rewards_list_all, next_state_list_all, \
+                critic_loss_list_all, actor_loss_list_all, \
+                reward_list, action_dict, gradient_dict, \
+                transition_probas = train(params, agent, sim_environment, best_params = best_params)
 
-        save_all(rewards_list_all, next_state_list_all, \
-                 critic_loss_list_all, actor_loss_list_all, \
-                 reward_list, action_dict, gradient_dict, \
-                 transition_probas, base_path=csv_filepath)
+            save_all(rewards_list_all, next_state_list_all, \
+                    critic_loss_list_all, actor_loss_list_all, \
+                    reward_list, action_dict, gradient_dict, \
+                    transition_probas, base_path=csv_filepath)
 
-        image_filepath = os.path.join(current_dir, image_filename)
+            image_filepath = os.path.join(current_dir, image_filename)
 
-        plot_best(image_filepath)
+            plot_best(image_filepath)
+    else:
+        ray_tune()

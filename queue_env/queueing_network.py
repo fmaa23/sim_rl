@@ -63,13 +63,8 @@ class Queue_network:
         self.q_classes = q_classes
         self.q_args = q_args
         self.max_agents = float(max_agents)
-<<<<<<< HEAD
 
         self.sim_jobs = sim_jobs
-
-=======
-        self.sim_time = sim_time
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
         self.transition_proba = transition_proba
 
     def get_edge_list(self):

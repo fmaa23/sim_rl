@@ -20,7 +20,7 @@ import yaml
 import matplotlib.pyplot as plt
 
 class BreakdownEngine:
-    def __init__(self, rl_env):
+    def __init__(self, rl_env, normal_std):
         """
         Initialize the ExploreStateEngine with default parameters and configurations.
         """
@@ -31,6 +31,8 @@ class BreakdownEngine:
         self.activate_features()
         self.load_params()
         self.init_device()
+
+        self.std = normal_std
 
     def activate_features(self):
         """
@@ -128,15 +130,16 @@ class BreakdownEngine:
         Returns:
         - Queue_network: An instance of the queueing environment.
         """
-        arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time = create_params(self.config_filepath, miu_list)
+        arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, \
+    transition_proba_all, max_agents, sim_jobs, entry_nodes = create_params(self.config_filepath, miu_list)
         
         q_net = Queue_network()
         q_net.process_input(arrival_rate, miu_dict, q_classes, q_args, adjacent_list, 
-                            edge_list, transition_proba_all, max_agents, sim_time)
+                            edge_list, transition_proba_all, max_agents, sim_jobs)
         q_net.create_env()
         return q_net
 
-    def create_blockage_cases(self, std = 0.1):
+    def create_blockage_cases(self):
         """
         Creates blockage cases based on 'miu' values from the network model,
         setting a blockage (high value) on all nodes except the first one.
@@ -149,7 +152,7 @@ class BreakdownEngine:
 
         blockage_cases = {}
         for key in miu_dict.keys():
-            new_miu_dict = {key: abs(np.random.normal(scale=std)) for key in miu_dict.keys()}
+            new_miu_dict = {key: abs(np.random.normal(scale=self.std)) for key in miu_dict.keys()}
             if key != 1:
                 new_miu_dict[key] = float('inf')
 
@@ -353,15 +356,23 @@ class BreakdownEngine:
             self.save_peripheral_states()
 
             save_agent(agent)
+    
+
 
 if __name__ == "__main__":
+    
+    # Filepath Used
     param_file = 'user_config/eval_hyperparams.yml'
     config_file = 'user_config/configuration.yml'
 
+    # Parameters
+    normal_std = 0.1
+
+    # Initialize Engine
     params, hidden = load_hyperparams(param_file)
 
     rl_env = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(rl_env, params, hidden)
 
-    Engine = BreakdownEngine(rl_env)
+    Engine = BreakdownEngine(rl_env, normal_std)
     Engine.run(agent)

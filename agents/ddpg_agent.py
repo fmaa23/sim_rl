@@ -10,7 +10,7 @@ torch.autograd.set_detect_anomaly(True)
 gradient_dict = {} 
 
 class DDPGAgent():
-    def __init__(self, n_states, n_actions, hidden, params):
+    def __init__(self, n_states, n_actions, hidden, params, device):
         """
         Creates a DynaDDPG agent in an environment. See page 5 of https://arxiv.org/pdf/1905.01072.pdf
         
@@ -51,7 +51,7 @@ class DDPGAgent():
         """
         self.state_size = n_states
         self.action_size = n_actions
-        self.device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device  = device
 
         # hyperparameters
         self.tau = params['tau']
@@ -62,17 +62,17 @@ class DDPGAgent():
         self.planning_steps = params['planning_steps']
 
         # create buffer to replay experiences
-        self.buffer = ReplayBuffer(max_size=params['buffer_size'])
+        self.buffer = ReplayBuffer(max_size=params['buffer_size'], device = self.device)
 
         # actor networks + optimizer + learning rate scheduler
-        self.actor = Actor(n_states, n_actions, hidden['actor']).to(self.device)
-        self.actor_target = Actor(n_states, n_actions,hidden['actor']).to(self.device)
+        self.actor = Actor(n_states, n_actions, hidden['actor'], self.device).to(self.device)
+        self.actor_target = Actor(n_states, n_actions,hidden['actor'], self.device).to(self.device)
         self.actor_optim = torch.optim.Adam(self.actor.parameters(), lr=self.actor_lr)
         self.actor_scheduler = torch.optim.lr_scheduler.ExponentialLR(self.actor_optim, gamma=0.8)
 
         # critic networks + optimizer
-        self.critic = Critic(n_states, n_actions, hidden['critic']).to(self.device)
-        self.critic_target = Critic(n_states, n_actions, hidden['critic']).to(self.device)
+        self.critic = Critic(n_states, n_actions, hidden['critic'],self.device).to(self.device)
+        self.critic_target = Critic(n_states, n_actions, hidden['critic'],self.device).to(self.device)
         self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
         
         # hard update to ensure same weights between policy and target networks
@@ -80,9 +80,9 @@ class DDPGAgent():
         self.hard_update(network="critic")
 
         # model networks + optimizer (separate reward and next state)
-        self.reward_model = RewardModel(n_states, n_actions, hidden['reward_model']).to(self.device)
+        self.reward_model = RewardModel(n_states, n_actions, hidden['reward_model'],self.device).to(self.device)
         self.reward_model_optim = torch.optim.Adam(self.reward_model.parameters(), lr=self.lr)
-        self.next_state_model = NextStateModel(n_states, n_actions, hidden['next_state_model']).to(self.device)
+        self.next_state_model = NextStateModel(n_states, n_actions, hidden['next_state_model'],self.device).to(self.device)
         self.next_state_model_optim = torch.optim.Adam(self.next_state_model.parameters(), lr=self.lr)
 
         # loss function
@@ -201,15 +201,12 @@ class DDPGAgent():
         - None  
 
         """
-        # not sure if we need to reset Model(s,a) to be a new network
-        # here we just take Model(s,a) from the previous iteration but re-train it
         reward_loss_list = []
         next_state_list = []
         if self.buffer.get_current_size() < batch_size:
             raise Exception('Number of transitions in buffer fewer than chosen threshold value')
         
         data = self.buffer.get_items()
-        #dataset = TensorDataset(data)
         dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 
         for epoch in range(epochs):
@@ -227,12 +224,6 @@ class DDPGAgent():
                 # loss1.backward(retain_graph=True)
                 loss1.backward()
                 self.reward_model_optim.step()
-
-                if False:
-                    print("reward_model parameters after training:")
-                    for name, param in self.reward_model.named_parameters():
-                        print(f"{name}: {param.data}")
-                    # print(f"gradient: {param.grad}")
 
                 # update network for Model(s,a) = s'
                 self.next_state_model_optim.zero_grad()

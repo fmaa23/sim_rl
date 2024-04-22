@@ -19,7 +19,7 @@ import yaml
 import os
 import random 
 from foundations.supporting_functions import *
-from foundations.base_functions import * 
+from foundations.wandb_base_functions import * 
 
 import ray
 from ray import train as train_ray
@@ -91,9 +91,6 @@ def load_tuning_config(tune_param_filepath):
             'num_episodes':{
                 'values': tune_params['num_episodes']
             },
-            'target_update_frequency':{
-                'values':tune_params['target_update_frequency']
-            },
             'time_steps':{
                 'values':tune_params['time_steps']
             }
@@ -154,22 +151,22 @@ def train(config,
                  action_dict[index] = node_list
                                           # line 5
             
-            next_state = env.get_next_state(action)                             # line 6
+            next_state = env.get_next_state(action)                       
             next_state = torch.tensor(next_state).float()
             reward = env.get_reward()
             rewards_list.append(reward)
 
             # Use tune.report to log the metric for hyperparameter optimization
-            ray.train.report({"reward": reward})                                 # line 6
+            ray.train.report({"reward": reward})                              
             experience = (state, action, reward, next_state)
-            agent.store_experience(experience)                                             # line 7
+            agent.store_experience(experience)                                     
 
             if agent.buffer.current_size > batch_size:
                 agent.fit_model(batch_size=batch_size, epochs=epochs)
                 batch = agent.buffer.sample(batch_size=batch_size)
                 agent.update_critic_network(batch)
                 agent.update_actor_network(batch)
-                agent.plan(batch)                                    # lines 13-16
+                agent.plan(batch)                                 
 
 
             t += 1
@@ -180,7 +177,7 @@ def train(config,
                 agent.soft_update(network="actor")
         return {"reward": np.mean(np.array(rewards_list))}
 
-if __name__=="__main__": #
+def ray_tune():
 
     config = load_tuning_config(tune_param_filepath='user_config/tuning_hyperparams.yml')
     
@@ -222,7 +219,6 @@ if __name__=="__main__": #
             "batch_size_buffer_sampling":tune.choice(config['parameters']['batch_size']['values']),
             "batch_size":tune.choice(config['parameters']['batch_size']['values']),
             "epochs":tune.choice(config['parameters']['epochs']['values']),
-            "target_update_frequency": tune.choice(config['parameters']['target_update_frequency']['values'])
 
         }
     tuner = tune.Tuner(
@@ -237,5 +233,7 @@ if __name__=="__main__": #
         run_config=train_ray.RunConfig()
         )
 
-# Start Tuning
-results = tuner.fit()
+    # Start Tuning
+    results = tuner.fit()
+
+    return results

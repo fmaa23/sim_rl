@@ -1,13 +1,8 @@
 ---
 rl_params:
-<<<<<<< HEAD
 
   num_episodes: 5
 
-=======
-  num_episodes: 35
-  
->>>>>>> 85c17b78781cc3f77c2b32b6dd335b457d39191d
   threshold: 10
 
   num_epochs: 100

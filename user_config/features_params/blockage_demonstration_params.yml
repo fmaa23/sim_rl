@@ -1,8 +1,0 @@
----
-num_sim: 100
-
-time_steps: 100
-
-queue_index: 2
-
-metric: throughput

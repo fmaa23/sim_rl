@@ -183,6 +183,3 @@ class NoiseEvaluator:
             return noise
         else:
             return 0
-        
-
-

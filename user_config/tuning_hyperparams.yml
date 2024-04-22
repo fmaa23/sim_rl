@@ -1,6 +1,6 @@
 ---
-lr_max: 0.1
-lr_min: 0.001
+learning_rate_min: 0.1
+learning_rate_max: 0.001
 
 epochs_list:
   - 10
@@ -38,3 +38,6 @@ num_episodes:
 
 time_steps: 
   - 10
+
+epsilon_state_exploration:
+  - 0.5

@@ -16,13 +16,13 @@ class ResidualBlock(nn.Module):
         out = self.norm(out)
         out = self.activation(out)
         if x.size(-1) != out.size(-1):
-            # Adapt identity if needed (e.g., during dimension change)
-            identity = nn.Linear(x.size(-1), out.size(-1))(identity)
+            linear_layer = nn.Linear(x.size(-1), out.size(-1)).to(x.device)
+            identity = linear_layer(identity)
         out += identity  # Skip connection
         return out
 
 class Actor(nn.Module):
-    def __init__(self, n_states, n_actions, hidden):
+    def __init__(self, n_states, n_actions, hidden, device):
         super(Actor, self).__init__()
         check_validity(hidden)
         
@@ -34,7 +34,7 @@ class Actor(nn.Module):
         layers.append(nn.Linear(hidden[-1], n_actions))
         layers.append(nn.Sigmoid())  # Ensure output is between 0 and 1
         self.layers = nn.Sequential(*layers)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
     
     def forward(self, state):
         if isinstance(state, torch.Tensor):
@@ -46,7 +46,7 @@ class Actor(nn.Module):
         return action
 
 class Critic(nn.Module):
-    def __init__(self, n_states, n_actions, hidden):
+    def __init__(self, n_states, n_actions, hidden, device):
         """
         Neural network representing the critic (denoted Q in literature). Given a
         state vector and action vector as input, return the Q value of this
@@ -72,7 +72,7 @@ class Critic(nn.Module):
         layers.append(nn.Linear(hidden[-1], 1))
 
         self.layer3 = nn.Sequential(*layers)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
 
     def forward(self,xa):
         """
@@ -102,7 +102,7 @@ class Critic(nn.Module):
 
 
 class RewardModel(nn.Module):
-    def __init__(self, n_states, n_actions, hidden=[3,3]):
+    def __init__(self, n_states, n_actions, hidden, device):
         """
         Neural network representing the DDPG agent's internal model of the environment.
         Given a state vector and action vector as input, returns the predicted reward
@@ -117,7 +117,7 @@ class RewardModel(nn.Module):
         """
         super().__init__()
         check_validity(hidden)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
 
         self.layer1 = nn.Sequential(nn.Linear(n_states, hidden[0]), nn.LeakyReLU(0.2))
         self.layer2 = nn.Sequential(nn.Linear(hidden[0]+n_actions, hidden[1]), nn.LeakyReLU(0.2))
@@ -158,7 +158,7 @@ class RewardModel(nn.Module):
 
 
 class NextStateModel(nn.Module):
-    def __init__(self, n_states, n_actions, hidden=[3,3]):
+    def __init__(self, n_states, n_actions, hidden, device):
         """
 .       Neural network representing the DDPG agent's internal model of the environment.
         Given a state vector and action vector as input, returns the predicted next
@@ -172,7 +172,7 @@ class NextStateModel(nn.Module):
 
         """
         super().__init__()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         check_validity(hidden)
 
         self.layer1 = nn.Sequential(nn.Linear(n_states, hidden[0]), nn.LeakyReLU(0.2))

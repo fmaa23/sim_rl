@@ -78,4 +78,3 @@ if __name__=="__main__":
 
     nr=NumRuns()
     std= nr.get_std(config_param_filepath = 'user_config/configuration.yml',eval_param_filepath = 'user_config/eval_hyperparams.yml')
-    breakpoint()

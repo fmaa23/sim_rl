@@ -18,24 +18,34 @@ from queueing_tool.queues.queue_servers import *
 import numpy as np
 import copy
 import os 
+import yaml
 
-class config():
-    # Creates the configuration object for the demonstrations 
-    def __init__(self, environment, agent, metric='throughput'): 
-        self.environment = environment 
-        self.agent = agent 
-        self.metric = metric 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.queue_index = 2
-        self.queue_metrics = [] 
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
-        self.ax.set(xlabel='Time Steps', ylabel = self.metric, title= self.metric + f' vs Time Steps for Queue {self.queue_index}')
-        
-    def retrieve_components(self):
-        # Getter function allowing other classes to access the environment and agent objects 
-        return self.environment , self.agent
-                    
+class save_plots:
+    """
+    Load configuration parameters from a YAML file.
+
+    Parameters:
+    - config_filepath (str): The file path to the configuration YAML file.
+
+    Returns:
+    - dict: A dictionary containing the configuration parameters.
+    """
+    def __init__(self):
+        self.param_file = "user_config\\features_params\\blockage_demonstration_params.yml"
+        self.save_file = "features\\blockage_demonstrations\output_plots"
+    
+    def save(self, queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt):
+        trans_proba_changes = queue_transition_proba_before_disrupt + queue_transition_proba_after_disrupt
+        plt.figure()
+        plt.plot(trans_proba_changes)
+        plt.title(f"Routing Proba Changes Before/After Disruption for Queue_{queue_index}")
+
+        current_dir = os.getcwd() + "MScDataSparqProject"
+        features_dir = 'features/blockage_demonstrations/output_plots'
+        data_filename = "Transition_Proba_BeforeAfter_Blockage.png"
+        save_filepath = os.path.join(current_dir, features_dir, data_filename)
+        plt.savefig(save_filepath)
+
 class Network_Control():
     """
     This class contains all the methods needed for the agent to control the network 
@@ -89,8 +99,12 @@ class Network_Control():
                 title=f'Transition Probability vs Time Steps for Queue {self.queue_index}')
         self.ax.legend()  # Add a legend to differentiate the lines
         figure_name = f'{self.call_plot_num}_plot_transition_proba.png'
-        #plt.show()
-        plt.savefig(figure_name)
+
+        current_dir = os.getcwd() + "MScDataSparqProject"
+        features_dir = 'features/blockage_demonstrations/output_plots'
+        save_filepath = os.path.join(current_dir, features_dir, figure_name)
+
+        plt.savefig(save_filepath)
         self.call_plot_num+=1
 
     def plot_queue(self, labels, *queue_metrics_lists):
@@ -102,8 +116,12 @@ class Network_Control():
                 title=self.metric + f' vs Time Steps for Queue {self.queue_index}')
         self.ax.legend()  # Add a legend to differentiate the lines
         figure_name = f'{self.call_plot_num}_plot_queue.png'
-        #plt.show()
-        plt.savefig(figure_name)
+
+        current_dir = os.getcwd() + "MScDataSparqProject"
+        features_dir = 'features/blockage_demonstrations/output_plots'
+        save_filepath = os.path.join(current_dir, features_dir, figure_name)
+
+        plt.savefig(save_filepath)
         self.call_plot_num+=1
 
     def control(self, env = None, agent=None, time_steps=None, queue_index=None, metric=None):
@@ -150,31 +168,6 @@ class Static_Disruption(Network_Control):
                                                            config_file = self.config_param_filepath, 
                                                            disrupt_case = True, disrupt = True, queue_index = self.queue_index)
         self.environment = self.disrupted_environment
-        
-    def deactivate_node_old(self,source_node, target_node, sim_jobs):
-        
-        q_classes = self.environment.qn_net.q_classes
-        q_args = self.environment.qn_net.q_args 
-        edge_list = self.environment.qn_net.edge_list 
-        new_class = len(q_classes)
-        q_classes[new_class] = LossQueue
-        q_args[new_class] = {
-                'service_f': lambda t: t+np.inf,
-                'qbuffer':5000,
-                'active_cap':float('inf'),
-                'active_status' : False}
-        edge_list[source_node][target_node] = new_class
-
-        max_agents = float('inf')
-
-        org_net = self.environment.qn_net
-        new_net = copy.copy(org_net)
-        new_net.process_input(org_net.lamda, org_net.miu, q_classes, q_args, org_net.adja_list, 
-                        edge_list, org_net.transition_proba, max_agents, sim_jobs)
-        new_net.create_env()
-        dis_environment = RLEnv(qn_net=new_net, num_sim=sim_jobs)
-        
-        return dis_environment
 
     def plot_queue(self, labels, *queue_metrics_lists):
         """Plotting function that supports a variable number of queue metrics lists and labels.""" 
@@ -205,18 +198,30 @@ class Static_Disruption(Network_Control):
         """
             This function shows the agent interating with the orignal environment and the disrupted environment in parallel 
         """
-        normal_metrics = self.control(environment=self.standard_environment, agent=self.agent, time_steps=self.time_steps, queue_index=self.queue_index, metric=self.metric)
-        disrupted_metrics = self.control(environment=self.disrupted_environment, agent=self.agent, time_steps=self.time_steps, queue_index=self.queue_index, metric=self.metric)
+        normal_metrics = self.control(environment=self.standard_environment, 
+                                      agent=self.agent, time_steps=self.time_steps, 
+                                      queue_index=self.queue_index, metric=self.metric)
+        
+        disrupted_metrics = self.control(environment=self.disrupted_environment, 
+                                         agent=self.agent, time_steps=self.time_steps, 
+                                         queue_index=self.queue_index, metric=self.metric)
+        
         self.plot_queue(normal_metrics, disrupted_metrics, labels=['Normal', 'Disrupted'])
 
 if __name__=="__main__": 
+
     sim_jobs = 100
     time_steps = 100
     queue_index = 2
     metric = 'throughput'
 
+    config_param_filepath = 'user_config/configuration.yml'
+    eval_param_filepath = 'user_config/eval_hyperparams.yml'
+    env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath)
+
     agent = torch.load('Agent/trained_agent.pt')
 
+    # No Disruption
     nc = Network_Control(agent)
     nc.plot_queue_realtime()
     queue_metrics, queue_transition_proba_before_disrupt = nc.control(agent=agent, time_steps=time_steps, queue_index=queue_index, metric=metric)
@@ -225,9 +230,5 @@ if __name__=="__main__":
     sd = Static_Disruption(agent, sim_jobs)
     queue_metrics_dis, queue_transition_proba_after_disrupt = sd.control(agent=agent, time_steps=time_steps, queue_index=queue_index, metric=metric)
 
-    trans_proba_changes = queue_transition_proba_before_disrupt + queue_transition_proba_after_disrupt
-
-    plt.figure()
-    plt.plot(trans_proba_changes)
-    plt.title(f"Routing Proba Changes Before/After Disruption for Queue_{queue_index}")
-    plt.savefig(os.getcwd())
+    # Save Plot
+    save_plots().save(queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt)
