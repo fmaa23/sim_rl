@@ -1,7 +1,7 @@
 from collections import deque
 import random
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import TensorDataset
 
 class ReplayBuffer():
     def __init__(self, max_size):
@@ -11,7 +11,6 @@ class ReplayBuffer():
         Args:
             max_size (int): maximum numbers of objects stored by replay buffer
         """
-        
         self.max_size = max_size
         self.device  = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.buffer = deque([], maxlen=max_size)
@@ -31,12 +30,10 @@ class ReplayBuffer():
             TypeError: If transition is not a tuple.
             ValueError: If transition is not a 4-tuple.
         """
-
         if not isinstance(transition, tuple):
             raise TypeError("Transition should be a tuple.")
         if len(transition) != 4:
             raise ValueError("Transition should be a 4-tuple.")
-        
         self.buffer.append(transition)
 
         
@@ -57,7 +54,6 @@ class ReplayBuffer():
             raise ValueError("Cannot sample from an empty buffer!")
         if len(self.buffer) < batch_size:
             raise ValueError("Sample size cannot be greater than the number of items contained in the buffer.")
-        
         return random.sample(self.buffer, batch_size)
 
     def get_items(self):
@@ -68,7 +64,6 @@ class ReplayBuffer():
         action = torch.stack([item[1] for item in self.buffer], dim=0).to(self.device)
         reward = torch.stack([torch.tensor(item[2]).view(-1) for item in self.buffer], dim=0).to(self.device)
         next_state = torch.stack([item[3] for item in self.buffer], dim=0).to(self.device)
-        
         return TensorDataset(state, action, reward, next_state)
 
 

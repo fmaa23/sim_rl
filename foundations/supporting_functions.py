@@ -30,16 +30,12 @@ def load_config(env_param_filepath):
 
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-
     # Go up one directory to the MScDataSparqProject directory
     project_dir = os.path.dirname(script_dir)
-
     # Build the path to the configuration file
     abs_file_path = os.path.join(project_dir, env_param_filepath)
-
     with open(abs_file_path, 'r') as env_param_file:
         config_params = yaml.load(env_param_file, Loader=yaml.FullLoader)
-
     return config_params
 
 def load_hyperparams(eval_param_filepath):
@@ -53,20 +49,13 @@ def load_hyperparams(eval_param_filepath):
     - tuple: A tuple containing two dictionaries, `params` for hyperparameters and `hidden` for hidden layer configurations.
     """
 
-    # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Go up one directory to the MScDataSparqProject directory
     project_dir = os.path.dirname(script_dir)
-
-    # Build the path to the configuration file
     abs_file_path = os.path.join(project_dir, eval_param_filepath)
-    
     with open(abs_file_path, 'r') as env_param_file:
         parameter_dictionary = yaml.load(env_param_file, Loader=yaml.FullLoader)
     params = parameter_dictionary['rl_params']
     hidden = parameter_dictionary['network_params']
-
     return params, hidden
 
 def get_num_connections(adjacent_list):
@@ -80,13 +69,14 @@ def get_num_connections(adjacent_list):
     - tuple: A tuple containing the total number of connections (int) and a list of exit nodes ([]).
     """
     exit_nodes = []
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
+
+    for start_node, end_node_list in adjacent_list.items():
+
         for end_node in end_node_list:
             if end_node not in list(adjacent_list.keys()):
                 if end_node not in exit_nodes:
                     exit_nodes.append(end_node)
-    
+
     return exit_nodes
 
 def make_edge_list(adjacent_list, exit_nodes):
@@ -98,23 +88,23 @@ def make_edge_list(adjacent_list, exit_nodes):
     - exit_nodes (list): A list of nodes identified as exit points in the network.
 
     Returns:
-    - dict: A dictionary representing the edge list, where keys are start nodes, and values are dictionaries of end nodes with their edge types.
+    - dict: A dict
+    ionary representing the edge list, where keys are start nodes, and values are dictionaries of end nodes with their edge types.
     """
     edge_list = {}
     edge_type = 1
-    for start_node in adjacent_list.keys():
-        end_node_list = adjacent_list[start_node]
-        
+
+    for start_node, end_node_list in adjacent_list.items():        
         connection_dict = {}
+
         for end_node in end_node_list:
             if end_node not in exit_nodes:
                 connection_dict[end_node] = edge_type
                 edge_type += 1
             else:
                 connection_dict[end_node] = 0
-        
-        edge_list[start_node] = connection_dict
-    
+
+        edge_list[start_node] = connection_dict  
     return edge_list
 
 def get_connection_info(adjacent_list):
@@ -128,12 +118,14 @@ def get_connection_info(adjacent_list):
     - dict: A dictionary where keys are end nodes, and values are lists of start nodes that connect to these end nodes.
     """
     connection_info = {}
-    for start_node in adjacent_list.keys():
-        for end_node in adjacent_list[start_node]:
+
+    for start_node, end_node_list in adjacent_list.items():
+
+        for end_node in end_node_list:
             connect_start_node_list = connection_info.setdefault(end_node, [])
             connect_start_node_list.append(start_node)
             connection_info[end_node] = connect_start_node_list
-    
+
     return connection_info
 
 def make_unique_edge_type(adjacent_list, edge_list):
@@ -147,16 +139,19 @@ def make_unique_edge_type(adjacent_list, edge_list):
     Returns:
     - dict: A dictionary where keys are node identifiers, and values are lists of unique edge types for edges ending at that node.
     """
+
     connection_info = get_connection_info(adjacent_list)
     edge_type_info = {}
+
     for end_node in connection_info.keys():
         start_node_list = connection_info[end_node]
         edge_type_list = []
+
         for start_node in start_node_list:
             edge_type = edge_list[start_node][end_node]
             edge_type_list.append(edge_type)
+
         edge_type_info[end_node] = edge_type_list
-    
     return edge_type_info # keys are target node_id, values are the edge_types
 
 
@@ -172,27 +167,19 @@ def create_params(config_file):
     """
     
     config_params = load_config(config_file)
-
     miu_dict = config_params['miu_list']
     adjacent_list = config_params['adjacent_list']
     max_agents = config_params['max_agents']
     sim_time = config_params['sim_time']
     entry_nodes = [tuple(entry_node) for entry_node in config_params['entry_nodes']]
-
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
-
     q_classes = create_q_classes(edge_list)
-    
     edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
-
     buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
     q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes)
-
-    arrival_rate = config_params['arrival_rate']
-    
+    arrival_rate = config_params['arrival_rate']  
     transition_proba_all = config_params['transition_proba_all']
-
     return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_time, entry_nodes
 
 def get_entry_nodes(config_file): 
@@ -211,8 +198,8 @@ def create_q_classes(edge_list):
     - dict: A dictionary where keys are queue identifiers (starting from 1) and values are queue class types.
     """
     q_classes = {}
-    for start_node in edge_list.keys():
-        end_nodes_dict = edge_list[start_node]
+
+    for start_node,end_nodes_dict in edge_list.items():
 
         for end_node in end_nodes_dict.keys():
             edge_index = end_nodes_dict[end_node]
@@ -221,18 +208,19 @@ def create_q_classes(edge_list):
             else:
                 q_classes[edge_index] = NullQueue
 
-
     return q_classes
 
 def get_node_tuple_from_edgetype(edge_list):
     node_tuple_dict = {}
-    
+
     for source_node, endnode_type_dict in edge_list.items():
+
         for end_node, edge_type in endnode_type_dict.items():
             if edge_type in node_tuple_dict:
                 node_tuple_dict[edge_type].append((source_node, end_node))
             else:
                 node_tuple_dict[edge_type] = [(source_node, end_node)]
+
     return node_tuple_dict
 
 
@@ -255,10 +243,10 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
     Returns:
     - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
     """
-    
-    
+
     q_args = {}
     edge_type_lists = []
+
     for key in edge_type_info.keys():
         if key not in exit_nodes:
             values = edge_type_info[key]
@@ -272,14 +260,10 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
         queue_type = q_classes[edge_type]
         node_id = get_node_id(edge_type, edge_type_info) 
         service_rate = miu_dict[node_id]
-
-
         if queue_type == LossQueue:
             if node_tuple_by_edgetype[edge_type][0] in env_entry_nodes:
-                
                 max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
                 rate = lambda t: 25 + 350 * np.sin(np.pi * t / 2)**2
-                
                 q_args[edge_type] = {
                 'arrival_f': lambda  t, rate=rate: poisson_random_measure(t, rate,max_arrival_rate),
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
@@ -297,7 +281,6 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
                 'active_cap':float('inf'),
                 'active_status' : False
                 }
-
     return q_args
 
 def create_queueing_env(config_file):
@@ -312,7 +295,6 @@ def create_queueing_env(config_file):
     """
     arrival_rate, miu_list, q_classes, q_args, \
         adjacent_list, edge_list, transition_proba_all, max_agents, sim_time, entry_nodes = create_params(config_file)
-    
     q_net = Queue_network()
     q_net.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
                         edge_list, transition_proba_all, max_agents, sim_time)
@@ -391,12 +373,12 @@ def get_params_for_train(params):
     time_steps = params['time_steps']
     target_update_frequency = params['target_update_frequency']
     num_train_AC = params['num_train_AC']
-
     return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, num_train_AC
 
 def init_transition_proba(env):
     transition_proba = {}
     adjacent_lists = env.qn_net.adja_list 
+
     for start_node in adjacent_lists.keys():
         if len(adjacent_lists[start_node]) > 1:
             transition_proba[start_node] = {}
@@ -407,21 +389,22 @@ def update_transition_probas(transition_probas, env):
     for start_node in transition_probas.keys():
         next_nodes = env.transition_proba[start_node].keys()
         next_proba_dict = transition_probas[start_node]
+
         for next_node in next_nodes:
             proba_list = next_proba_dict.setdefault(next_node, []) 
             if len(proba_list) == 0:
                 proba_list.append(env.qn_net.transition_proba[start_node][next_node])
             proba_list.append(env.transition_proba[start_node][next_node])
             next_proba_dict[next_node] = proba_list
+
         transition_probas[start_node] = next_proba_dict
-    
     return transition_probas
 
 def convert_format(state):
     initial_states = {}
+
     for index, num in enumerate(state):
         initial_states[index] = num
-    
     return initial_states
 
 def save_agent(agent): 
@@ -438,7 +421,6 @@ def save_agent(agent):
     if not os.path.exists(agent_dir):
         os.makedirs(agent_dir)
         print(f"Directory created at {agent_dir}")
-
     file_path = os.path.join(agent_dir, 'trained_agent.pt')
     torch.save(agent, file_path)
     print(f"Agent saved successfully at {file_path}")
@@ -460,7 +442,6 @@ def train(params, agent, env, best_params = None):
         for key in params.keys():
             if key not in best_params.keys():
                 best_params[key] = params[key]
-    
         params = best_params
 
     next_state_model_list_all = []
@@ -469,16 +450,14 @@ def train(params, agent, env, best_params = None):
     action_dict = {}
     gradient_dict_all = {}
     transition_probas = init_transition_proba(env)
-
     actor_loss_list= []
     critic_loss_list = []
     reward_list = []
     reward_by_episode = {}
-
     num_episodes, _, num_epochs, time_steps, _, num_train_AC = get_params_for_train(params)
     latest_transition_proba = None
-    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
 
+    for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
         agent.train()
         env.reset()
 
@@ -486,7 +465,6 @@ def train(params, agent, env, best_params = None):
             env.net.set_transitions(latest_transition_proba)
 
         env.simulate()
-
         update = 0
         reward_list = []
 
@@ -495,26 +473,22 @@ def train(params, agent, env, best_params = None):
             state = env.get_state()
             state_tensor = torch.tensor(state)
             action = agent.select_action(state_tensor).to(device) 
-        
             action_list = action.cpu().numpy().tolist()
+
             for index, value in enumerate(action_list):
                 node_list = action_dict.setdefault(index, [])
                 node_list.append(value)
                 action_dict[index] = node_list
 
             next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
-            
             reward = env.get_reward()
-
             reward_list.append(reward)                               
             experience = (state_tensor, action, reward, next_state_tensor) 
-            
             agent.store_experience(experience)                             
 
         reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=time_steps, epochs=num_epochs)
         next_state_model_list_all += next_state_loss_list
         reward_model_list_all += reward_model_loss_list
-
         transition_probas = update_transition_probas(transition_probas, env)
 
         for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
@@ -522,25 +496,18 @@ def train(params, agent, env, best_params = None):
             batch = agent.buffer.sample(batch_size=time_steps)
             critic_loss = agent.update_critic_network(batch)                   
             actor_loss, gradient_dict = agent.update_actor_network(batch)    
-
             actor_loss_list.append(actor_loss)
             critic_loss_list.append(critic_loss)
 
         agent.plan(batch)
-
         agent.soft_update(network="critic")
         agent.soft_update(network="actor")
-
         gradient_dict_all[update] = gradient_dict
-
         agent.buffer.clear()
-
         reward_by_episode[episode] = reward_list 
-
         latest_transition_proba = env.transition_proba
     
     save_agent(agent)
-    
     return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
@@ -562,8 +529,10 @@ def create_ddpg_agent(environment, params, hidden):
 
 def get_transition_proba_df(transition_probas):
     flatten_dict = {}
+
     for start_node in transition_probas.keys():
         end_nodes = list(transition_probas[start_node].keys())
+
         for end_node in end_nodes:
             flatten_dict[end_node] = transition_probas[start_node][end_node]
 
@@ -588,33 +557,27 @@ def save_all(next_state_model_list_all, critic_loss_list,\
 
     This function also saves data to various files for further analysis.
     """
-
+    import json
     # Create the directory if it doesn't exist
-    base_path = os.getcwd()
-    base_path += "/foundations/output_csv"
-    os.makedirs(base_path, exist_ok=True)
-
-    pd.DataFrame(actor_loss_list).to_csv(base_path + '/actor_loss.csv')
-    pd.DataFrame(critic_loss_list).to_csv(base_path + '/critic_loss.csv')
-    pd.DataFrame(next_state_model_list_all).to_csv(base_path + '/next_state_model_loss.csv')
-    pd.DataFrame(action_dict).to_csv(base_path + '/action_dict.csv')
+    if base_path is None:
+        base_path = os.getcwd()
+        
+    output_dir = os.path.join(base_path, "foundations", "output_csv")
+    os.makedirs(output_dir, exist_ok=True)
+    pd.DataFrame(actor_loss_list).to_csv(os.path.join(output_dir, 'actor_loss.csv'), index=False)
+    pd.DataFrame(critic_loss_list).to_csv(os.path.join(output_dir, 'critic_loss.csv'), index=False)
+    pd.DataFrame(next_state_model_list_all).to_csv(os.path.join(output_dir, 'next_state_model_loss.csv'), index=False)
+    pd.DataFrame(action_dict).to_csv(os.path.join(output_dir, 'action_dict.csv'), index=False)
 
     df_transition = get_transition_proba_df(transition_probas)
-    df_transition.to_csv(base_path + '/transition_proba.csv')
+    df_transition.to_csv(os.path.join(output_dir, 'transition_proba.csv'), index=False)
 
-    import json
-    filename = base_path + '/gradient_dict.json'
-
-    with open(filename, 'w') as f:
+    with open(os.path.join(output_dir, 'gradient_dict.json'), 'w') as f:
         json.dump(gradient_dict, f)
-    
-    filename = base_path + '/reward_dict.json'
-
-    with open(filename, 'w') as f:
+    with open(os.path.join(output_dir, 'reward_dict.json'), 'w') as f:
         json.dump(reward_by_episode, f)
-    
-    print(f"CSVs haven been saved at {base_path}")
 
+    print(f"CSVs have been saved at {output_dir}")
 
 def start_train(config_file, param_file, save_file = True, 
                 data_filename = 'data', image_filename = 'images', plot_curves = True):
@@ -630,23 +593,21 @@ def start_train(config_file, param_file, save_file = True,
     """
 
     params, hidden = load_hyperparams(param_file)
-
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
-
     next_state_model_list_all, critic_loss_list,\
           actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = train(params, agent, sim_environment)
-
-    csv_filepath = os.getcwd() + '/foundations/' + data_filename
-    image_filepath = os.getcwd() + '/foundations/' + image_filename
+    
+    current_dir = os.getcwd()
+    foundations_dir = 'foundations'
+    csv_filepath = os.path.join(current_dir, foundations_dir, data_filename)
+    image_filepath = os.path.join(current_dir, foundations_dir, image_filename)
 
     if save_file:
-
         save_all(next_state_model_list_all, critic_loss_list,\
           actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
     
     if plot_curves:
-
         plot(csv_filepath, image_filepath, transition_probas)
 
 
@@ -654,7 +615,7 @@ def plot_best(data_filepath, images_filepath):
     plot(data_filepath, images_filepath)
 
 
-def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, 
+def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, api_key, 
                  plot_best_param = True, 
                  data_filename = 'data',
                  image_filename = 'images'):
@@ -678,11 +639,11 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
 
     Note: The function assumes access to Wandb and requires an API key for Wandb to be set up in advance.
     """
-    init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath, num_runs = num_runs, opt_target = 'reward')
+    init_wandb(project_name, tune_param_filepath, config_param_filepath, eval_param_filepath,num_runs = num_runs, opt_target = 'reward')
 
     if plot_best_param:
-        api = wandb.Api(api_key = '02bb2e4979e9df3d890f94a917a95344aae652b9') # replace your api key
-        runs = api.runs("yolanda_wang_bu/datasparq")
+        api = wandb.Api(api_key = api_key) # replace your api key
+        runs = api.runs("datasparq")
         best_run = None
         best_metric = None # Assuming higher is better; initialize appropriately based on your metric
 
@@ -705,13 +666,12 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
             print("No runs found or metric not reported.")
 
         best_params = best_run.config
-
         params, hidden = load_hyperparams(eval_param_filepath)
         sim_environment = create_simulation_env(params, config_param_filepath)
         agent = create_ddpg_agent(sim_environment, params, hidden)
-        
-        csv_filepath = os.getcwd() + '\\' + data_filename
-        image_filepath = os.getcwd() + '\\' + image_filename
+        current_dir = os.getcwd()
+        csv_filepath = os.path.join(current_dir, data_filename)
+        image_filepath = os.path.join(current_dir, image_filename)
 
         plot_best(csv_filepath, image_filepath)
 
@@ -725,5 +685,6 @@ def start_tuning(project_name, num_runs, tune_param_filepath, config_param_filep
                  reward_list, action_dict, gradient_dict, \
                  transition_probas, base_path=csv_filepath)
 
-        image_filepath = os.getcwd() + '\\' + image_filename
+        image_filepath = os.path.join(current_dir, image_filename)
+
         plot_best(image_filepath)
