@@ -11,9 +11,9 @@ if os.getcwd() not in sys.path:
 
 import torch 
 import matplotlib.pyplot as plt
-from foundations.supporting_functions import *
-from foundations.supporting_functions import create_simulation_env
-from foundations.supporting_functions import Engine 
+from foundations.core_functions import *
+from foundations.core_functions import create_simulation_env
+from foundations.core_functions import Engine 
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
 from queueing_tool.queues.queue_servers import *

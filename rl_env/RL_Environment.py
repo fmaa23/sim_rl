@@ -6,7 +6,7 @@ sys.path.append(str(root_dir))
 import numpy as np
 # from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
-from foundations.wandb_base_functions import * 
+from queue_env.queue_base_functions import * 
 from queueing_tool.queues.queue_servers import *
 
 
@@ -452,5 +452,5 @@ class RLEnv:
 if __name__=="__main__": 
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
-    from foundations.supporting_functions import create_simulation_env
+    from foundations.core_functions import create_simulation_env
     env = create_simulation_env({'num_sim':5000, 'entry_nodes': [(0,1)]}, config_param_filepath)

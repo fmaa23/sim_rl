@@ -6,7 +6,7 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 import torch
-from foundations.model import *
+from agents.model import *
 import pytest
 from unittest.mock import MagicMock, patch
 

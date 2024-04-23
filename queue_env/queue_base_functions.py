@@ -6,9 +6,8 @@ import numpy as np
 import os
 
 from agents.ddpg_agent import DDPGAgent
-# from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
-from foundations.plot_datasparq import *
+from foundations.core_plotting import *
 from queueing_tool.queues.queue_servers import *
 
 def get_num_connections(adjacent_list):
@@ -162,6 +161,11 @@ def create_params(config_file):
     transition_proba_all = config_params['transition_proba_all']
 
     return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_jobs
+
+def get_entry_nodes(config_file): 
+    config_params = load_config(config_file)
+    entry_nodes = [tuple(entry_node) for entry_node in config_params['entry_nodes']]
+    return entry_nodes
 
 def create_q_classes(edge_list):
     """
