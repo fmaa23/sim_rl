@@ -7,6 +7,7 @@ sys.path.append(str(root_dir))
 
 import pytest
 from queue_env.queueing_network import *  # Adjust import based on your project structure
+from queueing_tool.queues.queue_servers import *
 
 @pytest.fixture
 def queue_network():
@@ -58,7 +59,7 @@ def sample_network_input():
     """
     arrival_rate = [0.1, 0.2]
     miu_list = [1.0, 2.0]
-    q_classes = {1: qt.QueueServer, 2: qt.LossQueue}
+    q_classes = {1: QueueServer, 2: LossQueue}
     q_args = {
         1: {'service_f': lambda t: t + 1, 'qbuffer': 10},
         2: {'service_f': lambda t: t + 2, 'qbuffer': 20},
@@ -66,8 +67,10 @@ def sample_network_input():
     adjacent_list = {1: [2, 3], 2: [3]}
     edge_list = {1: {2: 1, 3: 2}, 2: {3: 3}}
     transition_proba = {1: {2: 0.5, 3: 0.5}, 2: {3: 1.0}}
+    max_agents = float('inf')
+    sim_jobs = 100
     
-    return arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba
+    return arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba, max_agents, sim_jobs
 
 def test_queue_network_initialization(sample_network_input):
     """
@@ -80,10 +83,10 @@ def test_queue_network_initialization(sample_network_input):
     network = Queue_network()
     
     # Unpack the sample input parameters
-    arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba = sample_network_input
+    arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba, max_agents, sim_jobs = sample_network_input
     
     # Process the input parameters to initialize the network
-    network.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba)
+    network.process_input(arrival_rate, miu_list, q_classes, q_args, adjacent_list, edge_list, transition_proba, max_agents, sim_jobs)
     
     # Now check if the network has been initialized as expected
     # This might involve checking various attributes of the network object
@@ -94,3 +97,7 @@ def test_queue_network_initialization(sample_network_input):
     assert network.edge_list == edge_list, "edge_list not set correctly"
     assert network.q_classes == q_classes, "q_classes not set correctly"
     assert network.q_args == q_args, "q_args not set correctly"
+
+# Use this to run tests if you're executing the script directly
+if __name__ == "__main__":
+    pytest.main()

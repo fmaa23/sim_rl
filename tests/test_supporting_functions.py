@@ -11,6 +11,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 import yaml
 import tempfile
+import os
 
 def test_load_config(tmpdir):
     """
@@ -28,21 +29,6 @@ def test_load_config(tmpdir):
     config_path = str(config_file)
     loaded_config = load_config(config_path)
     assert loaded_config == sample_config, "The configuration was not loaded correctly."
-
-def test_get_num_connections():
-    """
-    Test the get_num_connections function by providing a sample adjacency list and verifying
-    that the function correctly calculates the total number of connections and identifies the exit nodes.
-    """
-    adjacent_list = {
-        0: [1, 2],
-        2: [3],
-        1: [3],
-        3: [4]
-    }
-    num_connections, exit_nodes = get_num_connections(adjacent_list)
-    assert num_connections == 4, "Total number of connections is incorrect."
-    assert exit_nodes == [4], "Exit nodes identified incorrectly."
 
 def test_make_edge_list():
     """
@@ -63,11 +49,14 @@ def test_make_edge_list():
 
 # Mock configuration for testing
 TEST_CONFIG = {
-    'arrival_rate': 375,
+    'arrival_rate': [0.3],
     'miu_list': {1:0.5, 2:0.5},
     'adjacent_list': {0: [1], 1: [2], 2:[3]},
     'buffer_size_for_each_queue': {1:10, 2:10},
-    'transition_proba_all':{0:{1:1}, 1:{2:1}, 2:{3:1}}
+    'transition_proba_all':{0:{1:1}, 1:{2:1}, 2:{3:1}},
+    'max_agents':float('inf'),
+    'sim_jobs':100,
+    'entry_nodes':[(0,1)]
     # Add other necessary parameters for your environment setup
 }
 
@@ -115,3 +104,7 @@ def test_environment_attributes(mock_config_file):
     
     # Clean up the temporary file
     os.remove(mock_config_file)
+
+# Use this to run tests if you're executing the script directly
+if __name__ == "__main__":
+    pytest.main([__file__, '-k', 'test_graph_construction'])

@@ -46,14 +46,14 @@ class save_plots:
         save_filepath = os.path.join(current_dir, features_dir, data_filename)
         plt.savefig(save_filepath)
 
-class ControlEvalaution():
+class ControlEvalaution:
     """
     This class contains all the methods needed for the agent to control the network 
     Inputs: 
     - environment - testing RL Environment 
     - agent - trained agent with the learnt policy 
     """
-    def __init__(self, agent, sim_jobs = 100, metric='throughput'):
+    def __init__(self, agent, sim_jobs = 100, metric='throughput', time_steps = 100):
         """
             Initiates the class with the environment and the agent 
         """
@@ -66,6 +66,7 @@ class ControlEvalaution():
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.queue_index = 2
         self.queue_metrics = [] 
+        self.time_steps = time_steps
         self.call_plot_num =0
         plt.ion()
         self.fig, self.ax = plt.subplots()
@@ -169,8 +170,9 @@ class DisruptionEvaluation(ControlEvalaution):
                                                            disrupt_case = True, disrupt = True, queue_index = self.queue_index)
         self.environment = self.disrupted_environment
 
-    def plot_queue(self, labels, *queue_metrics_lists):
+    def plot_queue(self, *queue_metrics_lists):
         """Plotting function that supports a variable number of queue metrics lists and labels.""" 
+        labels = ['Normal', 'Disrupted']
         self.fig, self.ax = plt.subplots()
         self.ax.clear()  # Clear previous plots
         for queue_metrics, label in zip(queue_metrics_lists, labels):
@@ -206,9 +208,7 @@ class DisruptionEvaluation(ControlEvalaution):
                                          agent=self.agent, time_steps=self.time_steps, 
                                          queue_index=self.queue_index, metric=self.metric)
         
-        self.plot_queue(normal_metrics, disrupted_metrics, labels=['Normal', 'Disrupted'])
-        
-        
+        self.plot_queue(normal_metrics, disrupted_metrics)
 
 if __name__=="__main__": 
 
@@ -224,12 +224,12 @@ if __name__=="__main__":
     agent = torch.load('Agent/trained_agent.pt')
 
     # No Disruption
-    nc = Control_Evalaution(agent)
+    nc = ControlEvalaution(agent, sim_jobs, metric, time_steps)
     nc.plot_queue_realtime()
     queue_metrics, queue_transition_proba_before_disrupt = nc.control(agent=agent, time_steps=time_steps, queue_index=queue_index, metric=metric)
 
     ## Static Disruption 
-    sd = Disruption_Evaluation(agent, sim_jobs)
+    sd = DisruptionEvaluation(agent, sim_jobs)
     queue_metrics_dis, queue_transition_proba_after_disrupt = sd.control(agent=agent, time_steps=time_steps, queue_index=queue_index, metric=metric)
 
     # Save Plot

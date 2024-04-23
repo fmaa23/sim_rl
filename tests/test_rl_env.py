@@ -12,7 +12,7 @@ import pytest
 import numpy as np 
 
 # Dynamically construct the path to the configuration directory
-config_path = Path(__file__).resolve().parent.parent / 'user_config'
+config_path = Path(__file__).resolve().parent.parent
 
 @pytest.fixture(scope='module')
 def setup_rlenv(request):
@@ -100,6 +100,5 @@ class TestRLEnv:
         actual_reward = setup_rlenv.get_reward()
         assert actual_reward == expected_reward, f"Expected {expected_reward} exit nodes, but got {actual_reward}."
 
-
 if __name__ == '__main__':
-    pytest.main
+    pytest.main()

@@ -32,7 +32,7 @@ class startup_behavior:
     def calculate_derivative(self, data):
         return np.diff(data)
 
-    def find_stabilization_point(self):
+    def find_stabilization_point(self, derivatives):
         abs_derivatives = np.abs(derivatives)
         count = 0  # Counter for consecutive points under threshold
         for i in range(len(abs_derivatives)):
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     smoothed_rewards = startup_engine.moving_average(rewards)
     derivatives = startup_engine.calculate_derivative(smoothed_rewards)
     
-    stabilization_point = startup_engine.find_stabilization_point()
+    stabilization_point = startup_engine.find_stabilization_point(derivatives)
     
     print(f"Stabilization occurs at timestep: {stabilization_point}")
 

@@ -13,13 +13,15 @@ from agents.ddpg_agent import DDPGAgent
 import torch.nn as nn
 import torch
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 n_states = 10
 n_actions = 2
 hidden = {'actor': [64, 64], 'critic': [64, 64],
           'reward_model': [10, 10], 'next_state_model': [10, 10]}
 params = {'tau': 0.1, 'actor_lr': 0.001,'critic_lr': 0.001,
           'batch_size': 20,
-          'discount': 0.99, 'epsilon': 0.1, 'planning_steps': 5}
+          'discount': 0.99, 'epsilon': 0.1, 'planning_steps': 5, 'planning_std':0.1, 'buffer_size':5000}
 
 
 @pytest.fixture
@@ -27,7 +29,7 @@ def ddpg_agent():
     """
     Pytest fixture to setup DDPGAgent for testing.
     """
-    return DDPGAgent(n_states, n_actions, hidden, params)
+    return DDPGAgent(n_states, n_actions, hidden, params, device)
 
 
 # seed setting for reproducibility
@@ -132,14 +134,14 @@ def test_update_actor_network(ddpg_agent, num_experiences=100):
     ddpg_agent.hard_update(network="critic")
 
     # create baseline model for comparison (Actor)
-    baseline_actor = Actor(n_states, n_actions, hidden['actor'])
+    baseline_actor = Actor(n_states, n_actions, hidden['actor'], device)
     baseline_optim = torch.optim.Adam(
         baseline_actor.parameters(), lr=params['actor_lr'])
     baseline_actor.apply(init_weights_constant)
     baseline_scheduler = torch.optim.lr_scheduler.ExponentialLR(baseline_optim, gamma=0.8)
 
     # create baseline model for comparison (Critic)
-    baseline_critic = Critic(n_states, n_actions, hidden['critic'])
+    baseline_critic = Critic(n_states, n_actions, hidden['critic'], device)
     baseline_critic.apply(init_weights_constant)
 
     # compare state dictionaries before updates
@@ -195,12 +197,12 @@ def test_update_critic_network(ddpg_agent, num_experiences=100):
     ddpg_agent.hard_update(network="critic")
 
     # create baseline model for comparison (Actor)
-    baseline_actor_target = Actor(n_states, n_actions, hidden['actor'])
+    baseline_actor_target = Actor(n_states, n_actions, hidden['actor'], device)
     baseline_actor_target.apply(init_weights_constant)
 
     # create baseline model for comparison (Critic)
-    baseline_critic = Critic(n_states, n_actions, hidden['critic'])
-    baseline_critic_target = Critic(n_states, n_actions, hidden['critic'])
+    baseline_critic = Critic(n_states, n_actions, hidden['critic'], device)
+    baseline_critic_target = Critic(n_states, n_actions, hidden['critic'], device)
     baseline_optim = torch.optim.Adam(
         baseline_critic.parameters(), lr=params['critic_lr'])
     baseline_critic.apply(init_weights_constant)
@@ -233,22 +235,6 @@ def test_update_critic_network(ddpg_agent, num_experiences=100):
     compare_state_dicts(baseline_critic.state_dict(),
                         ddpg_agent.critic.state_dict())
 
-
-
-# baseline_critic_model = Critic(n_states, n_actions, hidden['critic'])
-# baseline_reward_model = RewardModel(n_states, n_actions, hidden['reward_model'])
-# baseline_next_state_model = NextStateModel(n_states, n_actions, hidden['next_state_model'])
-
+# Use this to run tests if you're executing the script directly
 if __name__ == "__main__":
-    agent = DDPGAgent(n_states, n_actions, hidden, params)
-    try:
-        test_update_actor_network(agent)
-        print("Test for 'update_actor_network' method passed.")
-    except:
-        print("Test for 'update_actor_network' method failed.")
-
-    try:
-        test_update_critic_network(agent)
-        print("Test for 'update_critic_network' method passed.")
-    except:
-        print("Test for 'update_critic_network' method failed.")
+    pytest.main()

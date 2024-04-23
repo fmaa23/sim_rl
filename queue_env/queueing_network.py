@@ -15,6 +15,9 @@ from queueing_tool.queues.queue_servers import *
 
 class Queue_network:
     def __init__(self):
+        """
+        Initializes a new instance of the Queue_network class.
+        """
         pass
     
     def process_config(self, filename):
@@ -52,7 +55,22 @@ class Queue_network:
     
     def process_input(self, arrival_rate, miu_list, q_classes, q_args, adjacent_list, 
                         edge_list, transition_proba, max_agents, sim_jobs):
+        """
+        Configures the queue network simulation environment with provided inputs.
 
+        Parameters:
+            arrival_rate (float): The overall rate at which jobs arrive at the queue network.
+            miu_list (list): List of service rates for each queue.
+            q_classes (dict): Mapping of queue identifiers to their respective queue class types.
+            q_args (dict): Additional arguments specific to each queue class.
+            adjacent_list (dict): Adjacency list representing the connections between queues.
+            edge_list (dict): Detailed edge list providing specific connections and identifiers.
+            transition_proba (dict): Probabilities of transitioning from one queue to another.
+            max_agents (int): Maximum number of concurrent agents in the network.
+            sim_jobs (int): Total number of jobs to simulate.
+
+        No return value; configures instance variables directly.
+        """
         # param for first server
         self.lamda = arrival_rate
         self.miu = miu_list 
@@ -68,10 +86,12 @@ class Queue_network:
         self.transition_proba = transition_proba
 
     def get_edge_list(self):
-        # get self.edge list from self.adj_list
         """
-        example: edge_list = {0: {1: 1}, 1: {k: 2 for k in range(2, 22)}}
+        Generates an edge list based on the adjacency list stored in the instance.
+        
+        The edge list maps each queue to its adjacent queues with unique edge identifiers.
         """
+
         self.edge_list = {}
         edge = 1
         for q in self.adja_list.keys():
@@ -85,8 +105,9 @@ class Queue_network:
             
     def get_q_classes(self):
         """
-        example: q_classes = {1: qt.QueueServer, 2: qt.QueueServer}
-        # When we have specific buffer size we have to change it as follows to LossQueue(qbuffer=0) class 
+        Initializes the queue classes based on buffer sizes.
+        
+        Decides between using a general QueueServer or a LossQueue based on the presence of buffers.
         """
         LossQueueList = [] 
         
@@ -105,17 +126,10 @@ class Queue_network:
     
     def get_q_arg(self):
         """
-        example: q_args = {
-                        1: {
-                            'arrival_f': arr_f,
-                            'service_f': lambda t: t,
-                            'AgentFactory': qt.GreedyAgent
-                        },
-                        2: {
-                            'num_servers': 1,
-                            'service_f': ser_f
-                        }
-                        }
+        Constructs arguments for each queue class based on their configuration.
+
+        This method prepares service functions, agent factory settings, and buffer sizes
+        for each queue as needed.
         """
         q_args = {}
         for index, q in enumerate(list(self.q_classes.keys())):
@@ -137,13 +151,26 @@ class Queue_network:
         self.q_args = q_args
     
     def create_env(self):
-
+        """
+        Creates the queue network environment from the configured adjacency and edge lists.
+        
+        This method initializes the graph structure and the queue network with specified classes and arguments.
+        """
         self.g = adjacency2graph(adjacency=self.adja_list, edge_type=self.edge_list, adjust = 2)
         self.queueing_network = QueueNetwork(g=self.g, q_classes = self.q_classes, q_args = self.q_args, max_agents = self.max_agents)
         self.queueing_network.set_transitions(self.transition_proba)
     
     def run_simulation(self, num_events = 50, collect_data = True):
-        # specify which edges and queue to activate at the beginning
+        """
+        Runs the simulation of the queue network for a given number of events.
+
+        Parameters:
+            num_events (int): The number of events to simulate.
+            collect_data (bool): Specifies whether to collect and store data during simulation.
+
+        Returns:
+            dict: Collected data about agents if data collection is enabled; otherwise, None.
+        """
         self.queueing_network.initial()
         if collect_data:
             self.queueing_network.start_collecting_data()

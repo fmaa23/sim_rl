@@ -111,9 +111,6 @@ class Queue_network:
             arrival_f = lambda t, rate=rate: poisson_random_measure(t, lambda t: 2 + np.sin(2 * np.pi * t) + self.noise_evaluator.compute_increment(), rate)
             self.arrivals_f.append(arrival_f)
             
-        
- 
-        
 # Running the code for the noise evaluation        
 if __name__ == "__main__":
     # Define the object of the NoiseEvaluator class
@@ -131,5 +128,3 @@ if __name__ == "__main__":
     path_to_saved_agent = 'Agent/trained_agent.pt'
     saved_agent = torch.load(path_to_saved_agent)
     noise_evaluator.start_evaluation(eval_env , saved_agent,timesteps)
-    
-    

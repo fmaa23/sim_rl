@@ -10,11 +10,13 @@ from foundations.model import *
 import pytest
 from unittest.mock import MagicMock, patch
 
-@pytest.mark.parametrize("n_states,n_actions,hidden", [
-    (10, 2, [64, 64]),
-    (20, 4, [128, 128]),
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
+    (10, 2, [64, 64], device),
+    (20, 4, [128, 128], device),
 ])
-def test_actor_output_shape(n_states, n_actions, hidden):
+def test_actor_output_shape(n_states, n_actions, hidden, device):
     """
     Test the Actor model to ensure it produces the correct output shape and values range.
 
@@ -23,7 +25,7 @@ def test_actor_output_shape(n_states, n_actions, hidden):
     - n_actions (int): Number of possible actions.
     - hidden (list): List of integers representing the size of hidden layers.
     """
-    model = Actor(n_states, n_actions, hidden)
+    model = Actor(n_states, n_actions, hidden, device)
     sample_input = torch.rand(size=(1, n_states))
     output = model(sample_input)
     assert output.shape == (1, n_actions), "Actor output shape is incorrect"
@@ -31,11 +33,11 @@ def test_actor_output_shape(n_states, n_actions, hidden):
     # Additionally, check if outputs are within the expected range [0, 1]
     assert torch.all(0 <= output) and torch.all(output <= 1), "Actor output values not in [0, 1]"
 
-@pytest.mark.parametrize("n_states,n_actions,hidden", [
-    (10, 2, [64, 64]),
-    (20, 4, [128, 128]),
+@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
+    (10, 2, [64, 64], device),
+    (20, 4, [128, 128], device),
 ])
-def test_critic_output_shape(n_states, n_actions, hidden):
+def test_critic_output_shape(n_states, n_actions, hidden, device):
     """
     Test the Critic model for correct output shape based on given inputs.
 
@@ -44,17 +46,17 @@ def test_critic_output_shape(n_states, n_actions, hidden):
     - n_actions (int): Number of possible actions.
     - hidden (list): List of integers representing the size of hidden layers.
     """
-    model = Critic(n_states, n_actions, hidden)
+    model = Critic(n_states, n_actions, hidden, device)
     sample_state = torch.rand(size=(1, n_states))
     sample_action = torch.rand(size=(1, n_actions))
     output = model([sample_state, sample_action])
     assert output.shape == (1, 1), "Critic output shape is incorrect"
 
-@pytest.mark.parametrize("n_states,n_actions,hidden", [
-    (10, 2, [64, 64]),
-    (20, 4, [128, 128]),
+@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
+    (10, 2, [64, 64], device),
+    (20, 4, [128, 128], device),
 ])
-def test_reward_model_output_shape(n_states, n_actions, hidden):
+def test_reward_model_output_shape(n_states, n_actions, hidden, device):
     """
     Validate the output shape of the RewardModel given the environment state and action.
 
@@ -63,17 +65,17 @@ def test_reward_model_output_shape(n_states, n_actions, hidden):
     - n_actions (int): Number of possible actions.
     - hidden (list): List of integers representing the size of hidden layers.
     """
-    model = RewardModel(n_states, n_actions, hidden)
+    model = RewardModel(n_states, n_actions, hidden, device)
     sample_state = torch.rand(size=(1, n_states))
     sample_action = torch.rand(size=(1, n_actions))
     output = model([sample_state, sample_action])
     assert output.shape == (1, 1), "RewardModel output shape is incorrect"
 
-@pytest.mark.parametrize("n_states,n_actions,hidden", [
-    (10, 2, [64, 64]),
-    (20, 4, [128, 128]),
+@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
+    (10, 2, [64, 64], device),
+    (20, 4, [128, 128], device),
 ])
-def test_next_state_model_output_shape(n_states, n_actions, hidden):
+def test_next_state_model_output_shape(n_states, n_actions, hidden, device):
     """
     Test the NextStateModel for generating correct output shape, simulating the next state.
 
@@ -82,7 +84,7 @@ def test_next_state_model_output_shape(n_states, n_actions, hidden):
     - n_actions (int): Number of possible actions.
     - hidden (list): List of integers representing the size of hidden layers.
     """
-    model = NextStateModel(n_states, n_actions, hidden)
+    model = NextStateModel(n_states, n_actions, hidden, device)
     sample_state = torch.rand(size=(1, n_states))
     sample_action = torch.rand(size=(1, n_actions))
     output = model([sample_state, sample_action])
@@ -128,3 +130,7 @@ def test_check_validity():
     # Invalid input: length < 2
     with pytest.raises(Exception):
         check_validity([64])
+
+# Use this to run tests if you're executing the script directly
+if __name__ == "__main__":
+    pytest.main()

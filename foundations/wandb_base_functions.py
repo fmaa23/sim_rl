@@ -186,6 +186,18 @@ def create_q_classes(edge_list):
     return q_classes
 
 def get_node_tuple_from_edgetype(edge_list):
+    """
+    Creates a dictionary mapping each edge type to a list of tuples, where each tuple represents an edge
+    from a source node to an end node.
+
+    Parameters:
+    - edge_list (dict): A dictionary where each key is a source node and its value is another dictionary. 
+      The nested dictionary's key is the end node and its value is the edge type.
+
+    Returns:
+    - dict: A dictionary where keys are edge types and values are lists of tuples (source_node, end_node) 
+      representing the edges of that type.
+    """
     node_tuple_dict = {}
     
     for source_node, endnode_type_dict in edge_list.items():
@@ -197,6 +209,17 @@ def get_node_tuple_from_edgetype(edge_list):
     return node_tuple_dict
 
 def get_node_id(edge_type, edge_type_info):
+    """
+    Finds and returns the node ID associated with a specific edge type.
+
+    Parameters:
+    - edge_type (any): The type of the edge for which the node ID is to be found.
+    - edge_type_info (dict): A dictionary where each key is a node ID and its value is a list of edge types
+      associated with that node.
+
+    Returns:
+    - any: The node ID for the specified edge type if found; otherwise, None if no node has the specified edge type.
+    """
     for node in edge_type_info.keys():
         if edge_type in edge_type_info[node]:
             return node

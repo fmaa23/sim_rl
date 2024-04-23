@@ -4,6 +4,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ResidualBlock(nn.Module):
+    """
+    A Residual Block that adds the input (identity) to the output of a linear layer, normalization, 
+    and activation function.
+
+    Parameters:
+    - in_features (int): Number of input features.
+    - out_features (int): Number of output features.
+
+    Attributes:
+    - linear (nn.Linear): Linear transformation layer.
+    - norm (nn.LayerNorm): Layer normalization.
+    - activation (nn.LeakyReLU): Leaky ReLU activation function.
+    """
     def __init__(self, in_features, out_features):
         super(ResidualBlock, self).__init__()
         self.linear = nn.Linear(in_features, out_features)
@@ -11,6 +24,15 @@ class ResidualBlock(nn.Module):
         self.activation = nn.LeakyReLU(0.2)
         
     def forward(self, x):
+        """
+        Forward pass for the Residual Block.
+
+        Parameters:
+        - x (torch.Tensor): Input tensor.
+
+        Returns:
+        - torch.Tensor: Output tensor after applying the block's layers and adding the input tensor.
+        """
         identity = x
         out = self.linear(x)
         out = self.norm(out)
@@ -22,6 +44,19 @@ class ResidualBlock(nn.Module):
         return out
 
 class Actor(nn.Module):
+    """
+    An Actor network for actor-critic algorithms, using a sequence of layers and optional residual blocks.
+
+    Parameters:
+    - n_states (int): Number of states in the input space.
+    - n_actions (int): Number of actions in the output space.
+    - hidden (list): List of integers defining the number of nodes in each hidden layer.
+    - device (torch.device): The device tensors will be sent to for calculations.
+
+    Attributes:
+    - layers (nn.Sequential): Sequential container of layers.
+    - device (torch.device): Device on which the network will run.
+    """
     def __init__(self, n_states, n_actions, hidden, device):
         super(Actor, self).__init__()
         check_validity(hidden)
@@ -37,6 +72,15 @@ class Actor(nn.Module):
         self.device = device
     
     def forward(self, state):
+        """
+        Forward pass for the Actor network.
+
+        Parameters:
+        - state (torch.Tensor or array-like): Input state.
+
+        Returns:
+        - torch.Tensor: Action values as output from the network.
+        """
         if isinstance(state, torch.Tensor):
             state_tensor = state.clone().detach().to(self.device).float()
         else:
