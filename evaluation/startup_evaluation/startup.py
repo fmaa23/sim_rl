@@ -38,8 +38,6 @@ class StartupBehavior:
         return np.diff(data)
 
     def find_stabilization_point(self, derivatives):
-
-
         abs_derivatives = np.abs(derivatives)
         count = 0  # Counter for consecutive points under threshold
         for i in range(len(abs_derivatives)):

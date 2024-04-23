@@ -125,18 +125,7 @@ class ConvergenceEvaluation(Engine):
         save_agent(agent)
         return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
             
-    def evaluate_agent(self,agent,env, timesteps): # make redundant when importing from core functions 
-        total_reward = 0 
-        state = env.reset()
-        for _ in tqdm(range(timesteps),desc="Evaluate"):
-            state = env.get_state()
-            action = agent.actor(state).detach()
-            state = env.get_next_state(action)[0]
-            reward = env.get_reward()
-            total_reward += reward
-        return total_reward
-    
-    
+
     def save_reward_plot(self, file_path,filename='reward_plot.png'):
         plt.plot(self.num_episodes, self.total_rewards)
         plt.xlabel('Number of Episodes')
@@ -174,20 +163,24 @@ class ConvergenceEvaluation(Engine):
             next_state_model_list_all, critic_loss_list,\
             actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = self.train(params, agent, sim_environment,num_episode)
            
-            supporting_files_dir = os.path.join(os.getcwd(), 'foundations')
-            csv_filepath = os.path.join(supporting_files_dir, data_filename)
+            current_dir = os.getcwd()
+            foundations_dir = 'foundations'
+            csv_filepath = os.path.join(current_dir, foundations_dir, data_filename)
+            image_filepath = os.path.join(current_dir, foundations_dir, image_filename)
+
             if save_file:
-                save_all(next_state_model_list_all, \
-                critic_loss_list, actor_loss_list, \
-                reward_by_episode, action_dict, gradient_dict, \
-                transition_probas, base_path=csv_filepath)
+                save_all(next_state_model_list_all, critic_loss_list,\
+                actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
             
+            if plot_curves:
+                plot(csv_filepath, image_filepath, transition_probas)
+                    
             # Saving a copy of the trained agent in the current directory
             trained_agent = copy.deepcopy(agent)                                                  
             # Evaluate the agent on the environment
             print(f"------ Evaluating the {num_episode} episode agent  ------")
-            total_reward = self.evaluate_agent(trained_agent, eval_environment,self.timesteps)
             total_reward = self.start_evaluation(eval_config_file, trained_agent, self.timesteps, self.num_sim)
+            self.total_rewards.append(total_reward)
         confidence_dir = os.path.join(os.getcwd(), 'features', 'confidence_evaluation') # evaluate 
         os.makedirs(confidence_dir, exist_ok=True)
         self.save_reward_plot(confidence_dir)
@@ -206,14 +199,13 @@ timesteps = 600 # this is the number of timesteps that the agent will be evaluat
 agent = 'user_config/eval_hyperparams.yml'
 
 # 3. Speficy the file path for the training and evaluation environment's configuration yaml file
-train_env = 'user_config/configuration.yml'
-eval_env = 'user_config/configuration.yml'
+env = 'user_config/configuration.yml'
 
 # 4. Intiialze the confidence class with the agent , environement and the number of episodes 
 confidence = ConvergenceEvaluation(num_episodes, timesteps)
 
-# 5. Initialize the training and evaluation process - allow this to show updates to the user according to the status - training xxx episode agent , evaluating xxx epsiode agent 
-confidence.start_train(train_env, eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
+# 5. Initialize the training and evaluation process 
+confidence.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
 
 
 ### CHANGES ###
