@@ -17,9 +17,6 @@ import os
 from queue_env.queueing_network import Queue_network
 from foundations.wandb_base_functions import * 
 
-
-        
-
 # Definition of the NoiseEvaluator class
 class NoiseEvaluator(CoreFunctions):
     def __init__(self,frequency,mean,variance):

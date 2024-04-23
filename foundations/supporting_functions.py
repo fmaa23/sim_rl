@@ -505,7 +505,7 @@ def save_agent(agent):
     This function creates a directory named 'Agent' in the current working directory if it doesn't exist,
     and saves the given agent model to a file named 'tensor.pt' within this directory.
     """
-    base_path = os.getcwd() + "MScDataSparqProject\\"
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     agent_dir = os.path.join(base_path, 'agents')
 
     # Create the directory if it does not exist
@@ -528,7 +528,7 @@ def train(params, agent, env, best_params = None, blockage_qn_net = None):
     Returns:
     - Multiple values including lists that track various metrics through training.
     """
-
+    save_agent(agent)
     if best_params is not None:
         for key in params.keys():
             if key not in best_params.keys():
@@ -1258,7 +1258,7 @@ class CoreFunctions():
         This function creates a directory named 'Agent' in the current working directory if it doesn't exist,
         and saves the given agent model to a file named 'tensor.pt' within this directory.
         """
-        base_path = os.getcwd() + "MScDataSparqProject\\"
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         agent_dir = os.path.join(base_path, 'agents')
 
         # Create the directory if it does not exist

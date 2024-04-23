@@ -12,10 +12,10 @@ class startup_behavior:
 
     def load_json_data(self):
         # Current directory
-        current_dir = os.getcwd() + "\\MScDataSparqProject"
+        current_dir = os.path.dirname(os.path.dirname(os.getcwd()))
 
         # Construct the relative path to the target JSON file
-        relative_path = os.path.join(current_dir, '..', '..', '..', 'foundations', 'output_csv', 'reward_dict.json')
+        relative_path = os.path.join(current_dir, 'foundations', 'output_csv', 'reward_dict.json')
 
         # Normalize the path to avoid any cross-platform issues
         normalized_path = os.path.normpath(relative_path)

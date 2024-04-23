@@ -17,7 +17,7 @@ def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'
     The function saves the plot as 'Gradient.png' in the specified images directory.
     """
     plt.figure()
-    filename = data_filepath + '/gradient_dict.json'
+    filename = os.path.join(data_filepath, 'gradient_dict.json')
 
     with open(filename, 'r') as f:
         gradient_dict_loaded = json.load(f)
@@ -51,7 +51,8 @@ def plot_actor(data_filepath, images_filepath):
 
     The function saves the plot as 'Actor_loss.png' in the specified images directory.
     """
-    actor_loss = pd.read_csv(data_filepath + '/actor_loss.csv', index_col=0)
+    pathname = os.path.join(data_filepath, 'actor_loss.csv')
+    actor_loss = pd.read_csv(pathname, index_col=0)
 
     plt.figure()
     plt.plot(actor_loss)
@@ -71,7 +72,8 @@ def plot_critic(data_filepath, images_filepath):
 
     The function saves the plot as 'Critic_loss.png' in the specified images directory.
     """
-    critic_loss = pd.read_csv(data_filepath + '/critic_loss.csv', index_col=0)
+    pathname = os.path.join(data_filepath, "critic_loss.csv")
+    critic_loss = pd.read_csv(pathname, index_col=0)
 
     plt.figure()
     plt.plot(critic_loss)
@@ -92,7 +94,7 @@ def plot_reward(data_filepath, images_filepath):
     The function saves the plots as 'Reward.png' and 'Average_reward.png' in the specified images directory.
     """
     plt.figure()
-    filename = data_filepath + '/reward_dict.json'
+    filename = os.path.join(data_filepath, 'reward_dict.json')
 
     with open(filename, 'r') as f:
         reward_data = json.load(f)
@@ -122,7 +124,7 @@ def plot_average_reward_episode(data_filepath, images_filepath):
     The function saves the plot as 'Reward_Avg_Per_Episode.png' in the specified images directory.
     """
     plt.figure()
-    filename = data_filepath + '/reward_dict.json'
+    filename = os.path.join(data_filepath, 'reward_dict.json')
 
     with open(filename, 'r') as f:
         reward_data = json.load(f)
@@ -145,8 +147,8 @@ def plot_actor_vector(data_filepath, images_filepath):
     The function saves the plot as 'Actor_space.png' in the specified images directory.
     """
     plt.figure()
-
-    action_vector = pd.read_csv(data_filepath + "/action_dict.csv", index_col=0)
+    pathname = os.path.join(data_filepath, "action_dict.csv")
+    action_vector = pd.read_csv(pathname, index_col=0)
     for column in action_vector.columns:
         plt.plot(action_vector.index, action_vector[column], label=column)
 
@@ -170,7 +172,8 @@ def plot_transition_proba(data_filepath, images_filepath, transition_proba_dict,
 
     The function saves the plot as 'transition_probas.png' in the specified images directory.
     """
-    df = pd.read_csv(data_filepath + '/transition_proba.csv', index_col = 0)
+    pathname = os.path.join(data_filepath, "transition_proba.csv")
+    df = pd.read_csv(pathname, index_col = 0)
 
     num_col = [int(index) for index in list(df.columns)]
     df.columns = num_col
@@ -202,7 +205,8 @@ def plot_reward_model_loss(data_filepath, images_filepath):
 
     The function saves the plot as 'Reward_model_loss.png' in the specified images directory.
     """
-    reward_model_loss_new = pd.read_csv(data_filepath + '/reward_model_loss.csv', index_col=0)
+    pathname = os.path.join(data_filepath, "reward_model_loss.csv")
+    reward_model_loss_new = pd.read_csv(pathname, index_col=0)
     
     plt.figure()
     plt.plot(reward_model_loss_new.rolling(window=12).mean())
@@ -222,7 +226,8 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
 
     The function saves the plot as 'Next_model_loss.png' in the specified images directory.
     """
-    next_state_model = pd.read_csv(data_filepath + '/next_state_model_loss.csv', index_col=0)
+    pathname = os.path.join(data_filepath, "next_state_model_loss.csv")
+    next_state_model = pd.read_csv(pathname, index_col=0)
     
     plt.figure()
     plt.plot(next_state_model)
@@ -243,7 +248,7 @@ def plot(data_filepath, images_filepath, transition_probas = None):
 
     This function calls all individual plotting functions and saves their outputs in the specified directory.
     """
-    filepath = os.getcwd() + '/foundations' + '/output_plots'
+    filepath = os.path.join(os.getcwd(), 'foundations', 'output_plots')
 
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)
