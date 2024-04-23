@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
 from foundations.supporting_functions import *
-from foundations.supporting_functions import CoreFunctions
+from foundations.supporting_functions import Engine
 import numpy as np
 import copy
 import os 
@@ -21,7 +21,7 @@ from foundations.wandb_base_functions import *
         
 
 # Definition of the NoiseEvaluator class
-class NoiseEvaluator(CoreFunctions):
+class NoiseEvaluator(Engine):
     def __init__(self,frequency,mean,variance):
         """
         Args:
@@ -45,7 +45,8 @@ class NoiseEvaluator(CoreFunctions):
             return noise
         else:
             return 0
-        
+    
+    # Change this when have the queueing network class properly configured so it just imports the queueing network and works with a modified version of it  
     def create_q_args(self,edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes):
         """
         Constructs arguments for queue initialization based on the network configuration.

@@ -12,6 +12,7 @@ if os.getcwd() not in sys.path:
 import torch 
 import matplotlib.pyplot as plt
 from foundations.supporting_functions import *
+from foundations.supporting_functions import Engine 
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
 from queueing_tool.queues.queue_servers import *
@@ -46,14 +47,14 @@ class save_plots:
         save_filepath = os.path.join(current_dir, features_dir, data_filename)
         plt.savefig(save_filepath)
 
-class ControlEvalaution():
+class ControlEvaluation(Engine):
     """
     This class contains all the methods needed for the agent to control the network 
     Inputs: 
     - environment - testing RL Environment 
     - agent - trained agent with the learnt policy 
     """
-    def __init__(self, agent, sim_jobs = 100, metric='throughput'):
+    def __init__(self, queue_index, metric='throughput'):
         """
             Initiates the class with the environment and the agent 
         """
@@ -64,32 +65,15 @@ class ControlEvalaution():
         self.agent = agent
         self.metric = metric 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.queue_index = 2
+        self.queue_index = queue_index
         self.queue_metrics = [] 
-        self.call_plot_num =0
+        self.call_plot_num = 0
         plt.ion()
         self.fig, self.ax = plt.subplots()
         self.ax.set(xlabel='Time Steps', ylabel = self.metric, title= self.metric + f' vs Time Steps for Queue {str(self.queue_index)}')
-        
-    def configure(self,time_steps , metric, queue_index = None):
-        """
-            This function configures the network control parameters       
-        """
-        self.queue_index = queue_index
-        self.time_steps = time_steps
-        self.metric = metric
+    
         
     
-    def plot_queue_realtime(self):
-        """
-            This function continually plots the queue length at each time step in real time 
-        """
-        self.ax.clear()
-        self.ax.plot(range(len(self.queue_metrics)), self.queue_metrics)
-        self.ax.set(xlabel='Time Steps', ylabel=self.metric, title=self.metric + f' vs Time Steps for Queue {str(self.queue_index)}')
-        plt.draw()
-        plt.pause(0.01)
-        plt.show()
         
     def plot_transition_proba(self, transition_proba_lists):
         """Plotting function that supports a variable number of queue metrics lists and labels.""" 
@@ -124,42 +108,30 @@ class ControlEvalaution():
         plt.savefig(save_filepath)
         self.call_plot_num+=1
 
-    def control(self, env = None, agent=None, time_steps=None, queue_index=None, metric=None):
-        """
-        This function is the main control loop for the agent and network interaction.
-        """
-        # Use instance attributes if no arguments are provided
-        agent = agent or self.agent
-        time_steps = time_steps if time_steps is not None else self.time_steps
-        queue_index = queue_index if queue_index is not None else self.queue_index
-        metric = metric or self.metric
+    def start_evaluation(self, environment, agent, time_steps, num_simulations):
         source_edge = self.environment.net.edge2queue[queue_index].edge[0]
         target_edge = self.environment.net.edge2queue[queue_index].edge[1]
         queue_metrics = []
         queue_transition_proba = [] 
-        
-        if env is not None:
-            self.environment = env
-
         self.environment.simulate()
-        
         for time_step in range(time_steps): 
             state = self.environment.get_state()
             action = agent.actor(state).detach()
             state = self.environment.get_next_state(action)[0]
             queue_metrics.append(self.environment.return_queue(queue_index, metric=metric))
             queue_transition_proba.append(self.environment.transition_proba[source_edge][target_edge])
-        
         self.plot_queue(metric,queue_metrics)  # Plot once after completing the loop
         self.plot_transition_proba(queue_transition_proba)
+        
         return queue_metrics, queue_transition_proba
 
-class DisruptionEvaluation(ControlEvalaution):
+
+class DisruptionEvaluation(ControlEvaluation):
     """
     This class extends Control Evaluation for demonstrating scenarios where the agent has to handle disruptions
     """
     def __init__(self, agent, sim_jobs):
-        super().__init__(agent)
+        super().__init__(agent , queue_index, metric)
         # Initialize any additional variables or settings specific to disruptions
         self.queue_index = 2
 
@@ -196,13 +168,12 @@ class DisruptionEvaluation(ControlEvalaution):
         
     def multi_control(self):
         """
-            This function shows the agent interating with the orignal environment and the disrupted environment in parallel 
+            This function shows the agent interacting with the orignal environment and the disrupted environment in parallel 
         """
-        normal_metrics = self.control(environment=self.standard_environment, 
-                                      agent=self.agent, time_steps=self.time_steps, 
-                                      queue_index=self.queue_index, metric=self.metric)
+        normal_metrics = self.start_evaluation(environment=self.standard_environment, 
+                                      agent=self.agent, time_steps=self.time_steps) 
         
-        disrupted_metrics = self.control(environment=self.disrupted_environment, 
+        disrupted_metrics = self.start_evaluation(environment=self.disrupted_environment, 
                                          agent=self.agent, time_steps=self.time_steps, 
                                          queue_index=self.queue_index, metric=self.metric)
         
@@ -212,25 +183,33 @@ class DisruptionEvaluation(ControlEvalaution):
 
 if __name__=="__main__": 
 
+    
     sim_jobs = 100
     time_steps = 100
     queue_index = 2
     metric = 'throughput'
 
     config_param_filepath = 'user_config/configuration.yml'
-    eval_param_filepath = 'user_config/eval_hyperparams.yml'
     env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath)
-
     agent = torch.load('Agent/trained_agent.pt')
 
     # No Disruption
-    nc = Control_Evalaution(agent)
-    nc.plot_queue_realtime()
-    queue_metrics, queue_transition_proba_before_disrupt = nc.control(agent=agent, time_steps=time_steps, queue_index=queue_index, metric=metric)
+    nc = ControlEvaluation(queue_index = queue_index, metric=metric)
+    nc.start_evaluation(environment=env , agent=agent, time_steps=time_steps, num_simulations=sim_jobs)
+    
 
     ## Static Disruption 
-    sd = Disruption_Evaluation(agent, sim_jobs)
-    queue_metrics_dis, queue_transition_proba_after_disrupt = sd.control(agent=agent, time_steps=time_steps, queue_index=queue_index, metric=metric)
+    sd = DisruptionEvaluation(agent, sim_jobs)
+    queue_metrics_dis, queue_transition_proba_after_disrupt = sd.multi_control()
 
     # Save Plot
+    queue_metrics, queue_transition_proba_before_disrupt = None , None 
     save_plots().save(queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt)
+    
+    
+    
+    ### CHANGES ### 
+    # 1. Add functionality for saving the plots to a specified file path 
+    # 2. Ensure that the function calls in the static disruption are correct 
+    # 3. Clean up names 
+    # Change to OOP structure
