@@ -688,8 +688,9 @@ def save_all(next_state_model_list_all, critic_loss_list,\
 
     print(f"CSVs have been saved at {output_dir}")
 
-def start_train(config_file, param_file, save_file = True, 
-                data_filename = 'data', image_filename = 'images', plot_curves = True):
+def start_train(config_file, param_file, 
+                data_filename, image_filename, 
+                plot_curves, save_file):
     """
     Starts the training process for a reinforcement learning environment and agent.
 
