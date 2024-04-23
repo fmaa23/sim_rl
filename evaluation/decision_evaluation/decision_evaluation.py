@@ -114,14 +114,14 @@ class DisruptionEvaluation(ControlEvaluation):
     """
     This class extends Control Evaluation for demonstrating scenarios where the agent has to handle disruptions.
     """
-    def __init__(self, sim_jobs, queue_index, metric):
+    def __init__(self, queue_index, metric):
         super().__init__(agent, queue_index, metric)
         
         self.queue_index = queue_index
         self.metric = metric
 
         
-    def plot_transition_proba_changes(self, transition_proba_before_disrupt, transition_proba_after_disrupt):
+    def plot_transition_proba_changes(self, queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt):
         self.param_file = "user_config\\features_params\\blockage_demonstration_params.yml"
         self.save_file = "features\\blockage_demonstrations\output_plots"
         trans_proba_changes = queue_transition_proba_before_disrupt + queue_transition_proba_after_disrupt
@@ -151,25 +151,30 @@ class DisruptionEvaluation(ControlEvaluation):
         self.plot_transition_proba_changes(normal_transition_proba, disrupted_transition_proba)
 
 
-if __name__=="__main__": 
 
-    sim_jobs = 100
-    time_steps = 100
+# Example Usage
+if __name__=="__main__": 
+    
+    # Define the parameters for initializing the CoNtrol Envaluation Object   
     queue_index = 2
     metric = 'throughput'
-
-    config_param_filepath = 'user_config/configuration.yml'
-    env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath)
-    agent = torch.load('Agent/trained_agent.pt')
-
-    # No Disruption
     nc = ControlEvaluation(queue_index = queue_index, metric=metric)
+
+    # Define the standard parameters for starting the evaluation
+    sim_jobs = 100
+    time_steps = 100
+    env  = 'user_config/configuration.yml'
+    # env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath) - will be doing for OOP structure
+    agent = torch.load('Agent/trained_agent.pt')
     nc.start_evaluation(environment=env , agent=agent, time_steps=time_steps, num_simulations=sim_jobs)
+
     
 
     ## Static Disruption 
+    queue_index = 2
+    metric = 'throughput'
     sd = DisruptionEvaluation(agent, sim_jobs)
-    queue_metrics_dis, queue_transition_proba_after_disrupt = sd.multi_control()
+    sd.start_evaluation(environment=env , agent=agent, time_steps=time_steps, num_simulations=sim_jobs)
 
     # Save Plot
     queue_metrics, queue_transition_proba_before_disrupt = None , None 
