@@ -295,7 +295,7 @@ def save_agent(agent):
     torch.save(agent, file_path)
     print(f"Agent saved successfully at {file_path}")
 
-def train(params, agent, env, best_params = None, blockage_qn_net = None):
+def train(self, params, agent, env, best_params = None, blockage_qn_net = None):
     """
     Conduct training sessions for a given agent and environment.
 
@@ -603,7 +603,7 @@ def start_evaluation(environment, agent, time_steps):
 # Converting this folder into a class
 class Engine():
     def __init__(self):
-        pass
+        pass 
     def load_config(env_param_filepath):
         """
         Load environment configuration parameters from a YAML file.
@@ -880,7 +880,7 @@ class Engine():
 
         print(f"CSVs have been saved at {output_dir}")
 
-    def start_train(config_file, param_file, save_file = True, 
+    def start_train(self,config_file, param_file, save_file = True, 
                     data_filename = 'data', image_filename = 'images', plot_curves = True):
         """
         Starts the training process for a reinforcement learning environment and agent  - might change this so that it accepts the objects instead 
@@ -893,7 +893,7 @@ class Engine():
         This function orchestrates the loading of configurations, creation of environments and agents, and the training process.
         """
 
-        params, hidden = load_hyperparams(param_file)
+        params, hidden = self.load_hyperparams(param_file)
         sim_environment = create_simulation_env(params, config_file)
         agent = create_ddpg_agent(sim_environment, params, hidden)
         
