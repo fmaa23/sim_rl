@@ -12,6 +12,7 @@ if os.getcwd() not in sys.path:
 import torch 
 import matplotlib.pyplot as plt
 from foundations.supporting_functions import *
+from foundations.supporting_functions import create_simulation_env
 from foundations.supporting_functions import Engine 
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
@@ -21,31 +22,6 @@ import copy
 import os 
 import yaml
 
-class save_plots:
-    """
-    Load configuration parameters from a YAML file.
-
-    Parameters:
-    - config_filepath (str): The file path to the configuration YAML file.
-
-    Returns:
-    - dict: A dictionary containing the configuration parameters.
-    """
-    def __init__(self):
-        self.param_file = "user_config\\features_params\\blockage_demonstration_params.yml"
-        self.save_file = "features\\blockage_demonstrations\output_plots"
-    
-    def save(self, queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt):
-        trans_proba_changes = queue_transition_proba_before_disrupt + queue_transition_proba_after_disrupt
-        plt.figure()
-        plt.plot(trans_proba_changes)
-        plt.title(f"Routing Proba Changes Before/After Disruption for Queue_{queue_index}")
-
-        current_dir = os.getcwd() + "MScDataSparqProject"
-        features_dir = 'features/blockage_demonstrations/output_plots'
-        data_filename = "Transition_Proba_BeforeAfter_Blockage.png"
-        save_filepath = os.path.join(current_dir, features_dir, data_filename)
-        plt.savefig(save_filepath)
 
 
 class ControlEvaluation(Engine):
@@ -77,8 +53,6 @@ class ControlEvaluation(Engine):
         self.ax.set(xlabel='Time Steps', ylabel = self.metric, title= self.metric + f' vs Time Steps for Queue {str(self.queue_index)}')
     
         
-    
-        
     def plot_transition_proba(self, transition_proba_lists):
         """Plotting function that supports a variable number of queue metrics lists and labels.""" 
         self.ax.clear()  # Clear previous plots
@@ -94,9 +68,11 @@ class ControlEvaluation(Engine):
 
         plt.savefig(save_filepath)
         self.call_plot_num+=1
-
+        
+  
     def plot_queue(self, labels, *queue_metrics_lists):
         """Plotting function that supports a variable number of queue metrics lists and labels.""" 
+        self.fig, self.ax = plt.subplots()
         self.ax.clear()  # Clear previous plots
         for queue_metrics, label in zip(queue_metrics_lists, labels):
             self.ax.plot(range(len(queue_metrics)), queue_metrics, label=label)
@@ -112,7 +88,8 @@ class ControlEvaluation(Engine):
         plt.savefig(save_filepath)
         self.call_plot_num+=1
 
-    def start_evaluation(self, environment, agent, time_steps, num_simulations):
+
+    def evaluation(self, environment, agent, time_steps, num_simulations):
         source_edge = self.environment.net.edge2queue[queue_index].edge[0]
         target_edge = self.environment.net.edge2queue[queue_index].edge[1]
         queue_metrics = []
@@ -128,65 +105,54 @@ class ControlEvaluation(Engine):
         self.plot_transition_proba(queue_transition_proba)
         
         return queue_metrics, queue_transition_proba
+    
+    def start_evaluation(self, environment, agent, time_steps, num_simulations):
+        return self.evaluation(environment, agent, time_steps, num_simulations)
 
 
 class DisruptionEvaluation(ControlEvaluation):
     """
-    This class extends Control Evaluation for demonstrating scenarios where the agent has to handle disruptions
+    This class extends Control Evaluation for demonstrating scenarios where the agent has to handle disruptions.
     """
-    def __init__(self, agent, sim_jobs):
-        super().__init__(agent , queue_index, metric)
-        # Initialize any additional variables or settings specific to disruptions
-        self.queue_index = 2
+    def __init__(self, sim_jobs, queue_index, metric):
+        super().__init__(agent, queue_index, metric)
+        
+        self.queue_index = queue_index
+        self.metric = metric
 
-        self.standard_environment = create_simulation_env({'num_sim':sim_jobs}, self.config_param_filepath, disrupt_case = True)
-        self.disrupted_environment = create_simulation_env(params = {'num_sim':sim_jobs}, 
-                                                           config_file = self.config_param_filepath, 
-                                                           disrupt_case = True, disrupt = True, queue_index = self.queue_index)
-        self.environment = self.disrupted_environment
+        
+    def plot_transition_proba_changes(self, transition_proba_before_disrupt, transition_proba_after_disrupt):
+        self.param_file = "user_config\\features_params\\blockage_demonstration_params.yml"
+        self.save_file = "features\\blockage_demonstrations\output_plots"
+        trans_proba_changes = queue_transition_proba_before_disrupt + queue_transition_proba_after_disrupt
+        plt.figure()
+        plt.plot(trans_proba_changes)
+        plt.title(f"Routing Proba Changes Before/After Disruption for Queue_{queue_index}")
 
-    def plot_queue(self, *queue_metrics_lists):
-        """Plotting function that supports a variable number of queue metrics lists and labels.""" 
+        current_dir = os.getcwd() + "MScDataSparqProject"
+        features_dir = 'features/blockage_demonstrations/output_plots'
+        data_filename = "Transition_Proba_BeforeAfter_Blockage.png"
+        save_filepath = os.path.join(current_dir, features_dir, data_filename)
+        plt.savefig(save_filepath)
+        
+    def start_evaluation(self, environment_path , agent, time_steps, num_simulations):
+        """
+        This function shows the agent interacting with the original environment and the disrupted environment in parallel.
+        """
+        standard_environment = create_simulation_env({'num_sim': sim_jobs}, environment_path, disrupt_case=False)
+        disrupted_environment = create_simulation_env(params={'num_sim': sim_jobs},
+                                                           config_file=self.config_param_filepath,
+                                                           disrupt_case=True, disrupt=True, queue_index=self.queue_index)
+        normal_metrics,normal_transition_proba = self.evaluation(standard_environment, agent, time_steps , nun_simulations=num_simulations)
+        disrupted_metrics,disrupted_transition_proba = self.evaluation(disrupted_environment, agent, time_steps, num_simulations=num_simulations)
+        
         labels = ['Normal', 'Disrupted']
-        self.fig, self.ax = plt.subplots()
-        self.ax.clear()  # Clear previous plots
-        for queue_metrics, label in zip(queue_metrics_lists, labels):
-            self.ax.plot(range(len(queue_metrics)), queue_metrics, label=label)
-        self.ax.set(xlabel='Time Steps', ylabel=self.metric,
-                title=self.metric + f' vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_queue_sd.png'
-        #plt.show()
-        plt.savefig(figure_name)
-        self.call_plot_num+=1
+        self.plot_queue(labels, normal_metrics, disrupted_metrics)
+        self.plot_transition_proba_changes(normal_transition_proba, disrupted_transition_proba)
 
-    def plot_transition_proba(self, transition_proba_lists):
-        """Plotting function that supports a variable number of queue metrics lists and labels.""" 
-        self.ax.clear()  # Clear previous plots
-        self.ax.plot(transition_proba_lists)
-        self.ax.set(xlabel='Time Steps', ylabel='Transition Probability',
-                title=f'Transition Probability vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_transition_proba_sd.png'
-        plt.savefig(figure_name)
-        self.call_plot_num+=1
-        
-    def multi_control(self):
-        """
-            This function shows the agent interacting with the orignal environment and the disrupted environment in parallel 
-        """
-        normal_metrics = self.start_evaluation(environment=self.standard_environment, 
-                                      agent=self.agent, time_steps=self.time_steps) 
-        
-        disrupted_metrics = self.start_evaluation(environment=self.disrupted_environment, 
-                                         agent=self.agent, time_steps=self.time_steps, 
-                                         queue_index=self.queue_index, metric=self.metric)
-        
-        self.plot_queue(normal_metrics, disrupted_metrics)
 
 if __name__=="__main__": 
 
-    
     sim_jobs = 100
     time_steps = 100
     queue_index = 2
@@ -207,7 +173,7 @@ if __name__=="__main__":
 
     # Save Plot
     queue_metrics, queue_transition_proba_before_disrupt = None , None 
-    save_plots().save(queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt)
+    
     
     
     
@@ -215,4 +181,5 @@ if __name__=="__main__":
     # 1. Add functionality for saving the plots to a specified file path 
     # 2. Ensure that the function calls in the static disruption are correct 
     # 3. Clean up names 
+    # 4. Ensure that the saving is being done correclty 
     # Change to OOP structure
