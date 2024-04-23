@@ -10,7 +10,7 @@ def main(args):
         start_tuning(project_name, num_runs, args.param_file,
                      args.config_file, args.param_file,
                      wandb_api_key, plot_best_param,
-                     tuner='ray_tune')
+                     tuner=args.tuner)
     elif args.function == 'train':
         start_train(args.config_file, args.param_file, 
                     data_filename=args.data_file, 
@@ -34,6 +34,8 @@ if __name__ == "__main__":
                         help="Flag to save output files")
     parser.add_argument("--plot_curves", type=bool, default=True,
                         help="Flag to plot generated curves")
+    parser.add_argument("--tuner", required = False,
+                        help='Flag to choose which tuner to use')
 
     args = parser.parse_args()
     main(args)

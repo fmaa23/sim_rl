@@ -264,7 +264,7 @@ Set up the hyperparameter tuning ranges in `tuning_params.yml`:
 This command starts training the agent within the simulated queueing environment. Results are saved in `/foundations/output_csv` and `/foundations/output_plots`.
 
 ```bash
-python main_eval.py --config /user_config/queueing_configuration.yaml --params /user_config/eval_hyperparameters.yaml
+python main.py --function train --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True
 ```
 
 ### Hyperparameter Tuning
@@ -276,7 +276,7 @@ Below provides users two types of tuning strategies that feature different funct
 A machine learning development platform that allows users to track and visualize varou aspects of their model training process in real-time, including loss and accuracy charts, parameter distributions, gradient histograms and system metrics. To run wandb:
 
 ```bash
-python main.py --function train --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True
+python main.py --function tune --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True --tuner wandb 
 ```
 
 #### **Ray Tuning**
@@ -284,8 +284,7 @@ python main.py --function train --config_file user_config/configuration.yml --pa
 An industry standard tool for distributed hyperparameter tuning which integrates with TensorBoard and extensive analysis libraries. It also allows users to leverage cutting edge optimization algorithms at scale, including Bayesian Optimization, Population Based Training and HyperBand. To run ray tuning:
 
 ```bash
-python main.py --function tune --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_c
-sv --image_file output_plots --plot_curves True --save_file True
+python main.py --function tune --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True --tuner ray_tune
 ```
 
 ## Step 3: Explore Features
