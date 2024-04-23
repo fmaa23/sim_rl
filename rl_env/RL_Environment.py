@@ -55,6 +55,12 @@ class RLEnv:
         self.growth_factor = (0.5/self.temperature)**(1/10)
     
     def get_num_nodes(self):
+        """
+        Counts the unique nodes that are present as next nodes in the adjacency list.
+
+        Returns:
+            int: The total number of unique nodes present in the adjacency list.
+        """
         num_nodes_list = []
         for key in self.adja_list.keys():
             next_nodes = self.adja_list[key]
@@ -94,6 +100,12 @@ class RLEnv:
         return num_nullnodes
     
     def get_entry_edges_indices(self): 
+        """
+        Retrieves indices of entry edges based on predefined entry nodes.
+
+        Returns:
+            list: A list of indices corresponding to the edges that are considered entry points.
+        """
         entry_edge_indices=[] 
         for i in range(self.net.num_edges): 
             source_node = self.net.edge2queue[i].edge[0]
@@ -131,10 +143,22 @@ class RLEnv:
         self.current_queue = self.net.edge2queue[self.current_queue_id]
 
     def test_state_is_valid(self, start_state):
+        """
+        Validates the start state and initializes it if None is provided.
+
+        Parameters:
+            start_state (array-like or None): Initial state of the system.
+        """
         if start_state is None: 
             self._state = np.zeros(self.net.num_edges-self.num_nullnodes)
 
     def get_net_connections(self):
+        """
+        Returns the current transition probabilities of the network.
+
+        Returns:
+            dict: A dictionary representing the transition probabilities.
+        """
         return self.transition_proba
 
     def explore_state(self, agent, env, episode):
@@ -215,7 +239,9 @@ class RLEnv:
         return -np.mean(avg_delay) / throughput_ratio
 
     def record_sim_data(self):
-        #self.num_entries = []
+        """
+        Records simulation data by counting the entries in each queue of the network.
+        """
         for num in range(self.net.num_edges):
             self.num_entries.append(len(self.net.get_queue_data(queues = num)))
         
@@ -256,6 +282,9 @@ class RLEnv:
         return current_state
     
     def update_temperature(self):
+        """
+        Updates the temperature parameter and caps it at 0.5 if it exceeds this value.
+        """
         self.temperature *= self.growth_factor
         if self.temperature >= 0.5:
             self.temperature = 0.5
@@ -304,6 +333,15 @@ class RLEnv:
         return action
 
     def convert_format(self, state):
+        """
+        Converts a list of numerical state values into a dictionary mapping each index to its respective value.
+
+        Parameters:
+            state (list): A list of numerical values representing a state.
+
+        Returns:
+            dict: A dictionary with indices as keys and the corresponding state values as values.
+        """
         initial_states = {}
         for index, num in enumerate(state):
             initial_states[index] = num
@@ -326,6 +364,15 @@ class RLEnv:
         return self.get_state()
         
     def inverted_adjacency(self,adjacency):
+        """
+        Creates an inverted adjacency list where each node points back to its predecessors.
+
+        Parameters:
+            adjacency (dict): A dictionary representing the adjacency list to be inverted.
+
+        Returns:
+            dict: The inverted adjacency list.
+        """
         inverted_dict = {}
 
         for key, values in adjacency.items():
@@ -338,9 +385,27 @@ class RLEnv:
         return inverted_dict
 
     def create_queueing_env(self, config_file):
+        """
+        Creates a queueing environment based on a specified configuration file.
+
+        Parameters:
+            config_file (str): Path to the configuration file.
+
+        Returns:
+            object: An initialized queueing environment object.
+        """
         return create_queueing_env(config_file)
                 
     def reset(self, qn_net = None): 
+        """
+        Resets the queue network to an initial state or re-initializes it with a new configuration.
+
+        Parameters:
+            qn_net (object, optional): An existing queue network object. If None, a new network is created
+                                    from a configuration file.
+
+        No return value; modifies instance attributes directly.
+        """
         self.net.clear_data()
         if qn_net is None:
             qn_net = self.create_queueing_env(config_file = 'user_config/configuration.yml')

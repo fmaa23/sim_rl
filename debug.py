@@ -16,6 +16,9 @@ image_filename = 'output_plots'
 function = 'train'
 tuner = 'ray_tune'
 
+save_file = True
+plot_curves = True
+
 if __name__ == "__main__":
 
     if function == 'tune':
@@ -29,4 +32,5 @@ if __name__ == "__main__":
                      tuner = tuner)
     
     if function == 'train':
-        start_train(config_param_filepath, eval_param_filepath, data_filename=data_filename, image_filename=image_filename)
+        start_train(config_param_filepath, eval_param_filepath, data_filename=data_filename, image_filename=image_filename,
+                    save_file = save_file, plot_curves = plot_curves)

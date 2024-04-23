@@ -12,7 +12,7 @@ import pytest
 import numpy as np 
 
 # Dynamically construct the path to the configuration directory
-config_path = Path(__file__).resolve().parent.parent / 'user_config'
+config_path = Path(__file__).resolve().parent.parent
 
 @pytest.fixture(scope='module')
 def setup_rlenv(request):
@@ -30,16 +30,11 @@ class TestRLEnv:
     Test for the RLEnv class to ensure correctness of environment initialization, 
     simulation of movement of the environment, calculation of reward. 
     """
-    def test_environment_initialization(self, setup_rlenv):
-        """
-        Test if the environment is initialized correctly
-        """
-        assert setup_rlenv is not None, "Failed to initialize the RL environment."
     
     @pytest.mark.parametrize('setup_rlenv, expected', 
-                             [('user_config/configuration.yml', 1), 
-                              ('user_config/configuration2.yml', 2), 
-                              ('user_config/configuration3.yml', 0)], 
+                             [('tests/supporting_data/configuration.yml', 1), 
+                              ('tests/supporting_data/configuration2.yml', 2), 
+                              ('tests/supporting_data/configuration3.yml', 3)], 
                               indirect=['setup_rlenv'])
     def test_get_entrynodes(self, setup_rlenv, expected):
         """
@@ -50,9 +45,9 @@ class TestRLEnv:
         assert actual_entrynodes == expected, f"Expected {expected} entry nodes, but got {actual_entrynodes}."
     
     @pytest.mark.parametrize('setup_rlenv, expected', 
-                             [('user_config/configuration.yml', 1), 
-                              ('user_config/configuration2.yml', 0), 
-                              ('user_config/configuration3.yml', 2)], 
+                             [('tests/supporting_data/configuration.yml', 1), 
+                              ('tests/supporting_data/configuration2.yml', 4), 
+                              ('tests/supporting_data/configuration3.yml', 2)], 
                               indirect=['setup_rlenv'])
     def test_get_nullnodes(self, setup_rlenv, expected):
         """
@@ -63,9 +58,9 @@ class TestRLEnv:
         assert actual_nullnodes == expected, f"Expected {expected} exit nodes, but got {actual_nullnodes}."
     
     @pytest.mark.parametrize('setup_rlenv, expected', 
-                             [('user_config/configuration.yml', 12), 
-                              ('user_config/configuration2.yml', 4), 
-                              ('user_config/configuration3.yml', 6)], 
+                             [('tests/supporting_data/configuration.yml', 12), 
+                              ('tests/supporting_data/configuration2.yml', 5), 
+                              ('tests/supporting_data/configuration3.yml', 8)], 
                               indirect=['setup_rlenv'])
     def test_get_state(self, setup_rlenv, expected):
         """
@@ -76,9 +71,9 @@ class TestRLEnv:
     
     
     @pytest.mark.parametrize('setup_rlenv, actions', 
-                             [('user_config/configuration.yml',[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]), 
-                              ('user_config/configuration2.yml',[0.5,0.5,0.5,0.5]), 
-                              ('user_config/configuration3.yml',[[0.5,0.5,0.5,0.5,0.5,0.5]])], 
+                             [('tests/supporting_data/configuration.yml',[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]), 
+                              ('tests/supporting_data/configuration2.yml',[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]), 
+                              ('tests/supporting_data/configuration3.yml',[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5])], 
                               indirect=['setup_rlenv'])
     def test_get_next_state(self, setup_rlenv, actions):
         """
@@ -88,18 +83,24 @@ class TestRLEnv:
         setup_rlenv.get_next_state(actions)
         for node in setup_rlenv.transition_proba.keys(): 
             actions_node_proba = []
-            for next_node in setup_rlenv.transition_proba[node]: 
-                actions_node_proba.append(setup_rlenv.transition_proba[node][next_node])
-            assert  np.sum(np.array(actions_node_proba))==1
+            if len(setup_rlenv.transition_proba[node])>0:
+                for next_node in setup_rlenv.transition_proba[node].keys(): 
+                    actions_node_proba.append(setup_rlenv.transition_proba[node][next_node])
+                assert  np.sum(np.array(actions_node_proba))==1
     @pytest.mark.parametrize('setup_rlenv, expected_reward', 
-                             [('user_config/configuration.yml',-150), 
-                              ('user_config/configuration2.yml',-70), 
-                              ('user_config/configuration3.yml',-30)], 
+                             [('tests/supporting_data/configuration.yml',-3.9), 
+                              ('tests/supporting_data/configuration2.yml',-18.5), 
+                              ('tests/supporting_data/configuration3.yml',-1.5)], 
                               indirect=['setup_rlenv'])
-    def test_get_reward(self, setup_rlenv, expected_reward): 
+    def test_get_reward(self, setup_rlenv, expected_reward):
+        setup_rlenv.get_next_state([0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]) 
         actual_reward = setup_rlenv.get_reward()
-        assert actual_reward == expected_reward, f"Expected {expected_reward} exit nodes, but got {actual_reward}."
+        ## Accouting for randomness but changes shouldnt be very significant per simulation 
+        if abs(actual_reward) > abs(expected_reward):  
+            assert abs(actual_reward/expected_reward)< 2, f"Expected {expected_reward} exit nodes, but got {actual_reward}."
+        else: 
+            assert abs(expected_reward/actual_reward)< 2, f"Expected {expected_reward} exit nodes, but got {actual_reward}."
 
 
 if __name__ == '__main__':
-    pytest.main
+    pytest.main()

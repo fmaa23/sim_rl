@@ -128,7 +128,7 @@ The simulation environment requires the following parameters to be defined in th
 
 #### **RL Environment Parameters**
 
-Set up the RL environment parameters in `rl_env_params.yml`:
+Set up the RL environment parameters in `eval_hyperparams.yml`:
 
 - `num_episodes`: The number of episodes to run the simulation.
 - `num_epochs`: The number of epochs for training.
@@ -217,8 +217,8 @@ Set up the hyperparameter tuning ranges in `tuning_params.yml`:
 
    Example:
    ```yaml
-   lr_max: 0.1
-   lr_min: 0.001
+   learning_rate_max: 0.1
+   learning_rate_min: 0.001
 
    epochs_list:
    - 10
@@ -264,7 +264,7 @@ Set up the hyperparameter tuning ranges in `tuning_params.yml`:
 This command starts training the agent within the simulated queueing environment. Results are saved in `/foundations/output_csv` and `/foundations/output_plots`.
 
 ```bash
-python main_eval.py --config /user_config/queueing_configuration.yaml --params /user_config/eval_hyperparameters.yaml
+python main.py --function train --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True
 ```
 
 ### Hyperparameter Tuning
@@ -276,7 +276,7 @@ Below provides users two types of tuning strategies that feature different funct
 A machine learning development platform that allows users to track and visualize varou aspects of their model training process in real-time, including loss and accuracy charts, parameter distributions, gradient histograms and system metrics. To run wandb:
 
 ```bash
-python main_tune.py --project_name DataSparq_Project --num_runs 100 --tune_param_filepath /user_config/tuning_hyperparams.yaml --plot_best_param True --param_filepath /user_config/eval_hyperparameters.yaml
+python main.py --function tune --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True --tuner wandb 
 ```
 
 #### **Ray Tuning**
@@ -284,7 +284,7 @@ python main_tune.py --project_name DataSparq_Project --num_runs 100 --tune_param
 An industry standard tool for distributed hyperparameter tuning which integrates with TensorBoard and extensive analysis libraries. It also allows users to leverage cutting edge optimization algorithms at scale, including Bayesian Optimization, Population Based Training and HyperBand. To run ray tuning:
 
 ```bash
-python main_tune.py --project_name DataSparq_Project --num_runs 100 --tune_param_filepath /user_config/tuning_hyperparams.yaml --tuner ray --param_filepath /user_config/eval_hyperparameters.yaml
+python main.py --function tune --config_file user_config/configuration.yml --param_file user_config/eval_hyperparams.yml --data_file output_csv --image_file output_plots --plot_curves True --save_file True --tuner ray_tune
 ```
 
 ## Step 3: Explore Features
@@ -304,26 +304,7 @@ Set up the parameters in `user_config\features_params\bloackage_explore_params.y
 - `output_histogram`: A bool value that determines whether to output the histogram that shows the rewards and visits of the top and least states.
 - `output_coverage_metric`: A bool value that determines whether to output the current coverage metric.
 
-   Example:
-   ```yaml
-   w1: 0.5
-
-   w2: 0.5
-
-   reset: False
-
-   reset_frequency: 2
-
-   num_output: 5
-
-   output_json: True
-
-   output_histogram: False
-
-   output_coverage_metric: True
-   ```
-
-To run this feature, navigate to `/features/breakdown_exploration` and run:
+To run this feature, navigate to `/evaluation/breakdown_exploration` and run:
    ```bash
    python breakdown_exploration.py
    ```
@@ -339,18 +320,7 @@ Set up the parameters in `user_config\features_params\blockage_demonstration_par
 - `queue_index`: Defines the queue index that record the metrics for.
 - `metric`: Defines the metric to be reported for the selected queue.
 
-   Example:
-   ```yaml
-   num_sim: 100
-
-   time_steps: 100
-
-   queue_index: 2
-
-   metric: throughput
-   ```
-
-To use this feature, navigate to `/features/blockage_demonstration` and run:
+To use this feature, navigate to `/evaluation/blockage_demonstration` and run:
    ```bash
    python demonstrations.py
    ```
@@ -359,85 +329,45 @@ To use this feature, navigate to `/features/blockage_demonstration` and run:
 
 This feature allows the user to visualize when the burn-in periods end on the learning curve. 
 
-Set up the parameters in `user_config\features_params\startup_behavior_params.yml`:
+Set up the parameters in the script:
 
-- `window_size`: 
-- `threshold`:
-- `consecutive_points`:
+- `window_size`: Specifies the number of data points used to compute the moving average of the rewards.
+- `threshold`: Defines the maximum acceptable absolute value of the derivative of the smoothed rewards below which a reward is considered stable. 
+- `consecutive_points`: The number of consecutive data points that must all be below the threshold for the rewards to be considered as having stabilized. 
+- `episode`: Specify which episode's rewards to analyze from a dataset.
 
-   Example:
-   ```yaml
-   window_size: 5
-
-   threshold: 0.01
-
-   consecutive_points: 5
-   ```
-
-To perform the feature, navigate to `/features/startup_behavior` and run:
+To perform the feature, navigate to `/evaluation/startup_behavior` and run:
    ```bash
    python startup.py
    ```
 
 ### 4. **Confidence Evaluation** (need clarification from Josh)
 
-This feature allows the user ______________________ (need clarification about the functionality of this feature)
+This feature allows the user train multiple versions of the agent for different numbers of training episodes and then evaluate the performance of each agent on the simulation environment.
 
-Set up the parameters in `user_config\features_params\startup_behavior_params.yml`:
-(need explanation for each parameter)
+Set up the parameters in the script:
 
-- `num_episodes_list`: 
-- `timesteps`:
+- `num_episodes_list`: A list that contains different numbers of episodes to train the agents.
+- `timesteps`: A value that defines the number of timesteps to train the agent during each episode.
 
-   Example:
-   ```yaml
-   num_episodes: 
-   - 100
-   - 200
-   - 300
-   - 400
-   - 500
-   - 600
-   - 700
-   - 800
-   - 900
-   - 1000
-
-   timesteps: 1000
-   ```
-
-To run this feature, navigate to `/features/confidence_evaluation` and run:
+To run this feature, navigate to `/evaluation/confidence_evaluation` and run:
    ```bash
    python confidence.py
    ```
 
-### 5. **Num Runs** (need clarification from Fatima)
+### 5. **Robustness Evaluation** (need clarification from Fatima)
 
-This feature allows the user (need clarification of the functionality of this feature).
+This feature allows the user to train multiple agents, analyze their behavior, and calculate statistical metrics based on their performance.
 
-Set up the parameters in `user_config\features_params\startup_behavior_params.yml`:
-(fillout the explanation for each parameter)
+Set up the parameters in the script:
 
-- `confidence_level`: 
-- `desired_error`:
-- `num_runs`:
-- `time_steps`:
-- `num_sim`:
+- `confidence_level`: The statistical confidence level for calculations.
+- `desired_error`: The target error margin for estimating statistical requirements.
+- `num_runs`: Number of times to train agents.
+- `time_steps`: Number of time steps each agent runs in the simulation environment.
+- `num_sim`: Number of simulations to run in the environment.
 
-   Example:
-   ```yaml
-   confidence_level: 0.95
-
-   desired_error: 1
-
-   num_runs: 10
-
-   time_steps: 100
-
-   nums_sim: 100
-   ```
-
-To run this feature, navigate to `/features/num_runs` and run:
+To run this feature, navigate to `/evaluation/robustness_evaluation` and run:
    ```bash
    python runs.py
    ```
@@ -446,13 +376,13 @@ To run this feature, navigate to `/features/num_runs` and run:
 
 This feature allows the user to evaluate the effect of environmental noise on the performance of the agent. (how is env noise defined here?) 
 
-Set up the parameters in `user_config\features_params\startup_behavior_params.yml`:
-(complete explanation for each parameter):
+Set up the parameters in the script:
 
-- `param_1`:
-- `param_2`:
+- `frequency `: The likelihood or frequency at which noise is introduced to the system. It must be a value between 0 and 1. This parameter determines how often, proportionally, noise will be added during the simulation. 
+- `mean`: The mean of the normal distribution from which the noise values are sampled. This represents the average value of the noise that will be introduced.
+- `variance`: The variance of the normal distribution from which the noise values are sampled. This parameter indicates the spread or dispersion of the noise around the mean.
 
-To run the feature, navigate to `/features/noise_evaluation` and run:
+To run the feature, navigate to `/evaluation/noise_evaluation` and run:
    ```bash
    python noise_evaluation.py
    ```

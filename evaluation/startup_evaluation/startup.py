@@ -11,10 +11,17 @@ class StartupBehavior:
         self.consecutive_points = consecutive_points
         self.episode = episode
 
-    def load_json_data(self, filepath):
-        """Load data from a JSON file at the given filepath."""
+
+
+    def load_json_data(self):
+        # Current directory
+        current_dir = os.path.dirname(os.path.dirname(os.getcwd()))
+
+        # Construct the relative path to the target JSON file
+        relative_path = os.path.join(current_dir, 'foundations', 'output_csv', 'reward_dict.json')
+
         # Normalize the path to avoid any cross-platform issues
-        normalized_path = os.path.normpath(filepath)
+        normalized_path = os.path.normpath(relative_path)
 
         # Load the JSON file using a context manager
         with open(normalized_path, 'r') as file:
@@ -31,7 +38,8 @@ class StartupBehavior:
         return np.diff(data)
 
     def find_stabilization_point(self, derivatives):
-        """Find the first point where data derivative stabilizes according to defined threshold and consecutive points."""
+
+
         abs_derivatives = np.abs(derivatives)
         count = 0  # Counter for consecutive points under threshold
         for i in range(len(abs_derivatives)):
@@ -71,7 +79,7 @@ if __name__ == "__main__":
     smoothed_rewards = startup_engine.moving_average(rewards)
     derivatives = startup_engine.calculate_derivative(smoothed_rewards)
     
-    stabilization_point = startup_engine.find_stabilization_point()
+    stabilization_point = startup_engine.find_stabilization_point(derivatives)
     
     print(f"Stabilization occurs at timestep: {stabilization_point}")
 

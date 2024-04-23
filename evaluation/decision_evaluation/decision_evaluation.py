@@ -47,6 +47,7 @@ class save_plots:
         save_filepath = os.path.join(current_dir, features_dir, data_filename)
         plt.savefig(save_filepath)
 
+
 class ControlEvaluation(Engine):
     """
     This class contains all the methods needed for the agent to control the network 
@@ -54,7 +55,9 @@ class ControlEvaluation(Engine):
     - environment - testing RL Environment 
     - agent - trained agent with the learnt policy 
     """
+
     def __init__(self, queue_index, metric='throughput'):
+
         """
             Initiates the class with the environment and the agent 
         """
@@ -67,6 +70,7 @@ class ControlEvaluation(Engine):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.queue_index = queue_index
         self.queue_metrics = [] 
+
         self.call_plot_num = 0
         plt.ion()
         self.fig, self.ax = plt.subplots()
@@ -141,8 +145,9 @@ class DisruptionEvaluation(ControlEvaluation):
                                                            disrupt_case = True, disrupt = True, queue_index = self.queue_index)
         self.environment = self.disrupted_environment
 
-    def plot_queue(self, labels, *queue_metrics_lists):
+    def plot_queue(self, *queue_metrics_lists):
         """Plotting function that supports a variable number of queue metrics lists and labels.""" 
+        labels = ['Normal', 'Disrupted']
         self.fig, self.ax = plt.subplots()
         self.ax.clear()  # Clear previous plots
         for queue_metrics, label in zip(queue_metrics_lists, labels):
@@ -177,9 +182,7 @@ class DisruptionEvaluation(ControlEvaluation):
                                          agent=self.agent, time_steps=self.time_steps, 
                                          queue_index=self.queue_index, metric=self.metric)
         
-        self.plot_queue(normal_metrics, disrupted_metrics, labels=['Normal', 'Disrupted'])
-        
-        
+        self.plot_queue(normal_metrics, disrupted_metrics)
 
 if __name__=="__main__": 
 

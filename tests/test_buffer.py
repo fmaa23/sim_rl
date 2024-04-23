@@ -10,22 +10,23 @@ from foundations.buffer import ReplayBuffer
 import pytest
 import torch
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def test_replay_buffer_capacity_handling():
     max_size = 5
-    buffer = ReplayBuffer(max_size=max_size)
+    buffer = ReplayBuffer(max_size=max_size, device = device)
 
     # Add more transitions than max_size
     for i in range(max_size + 3):
         transition = tuple([torch.tensor(i) for _ in range(4)])
         buffer.push(transition)
 
-    assert len(buffer) == max_size
+    assert buffer.get_current_size() == max_size
     assert buffer.buffer[0] == tuple([torch.tensor(3) for _ in range(4)]), "Oldest transitions should be discarded."
 
 
 def test_replay_buffer_sampling():
-    buffer = ReplayBuffer(max_size=10)
+    buffer = ReplayBuffer(max_size=10, device = device)
 
     # Populate buffer
     for i in range(10):
@@ -41,7 +42,7 @@ def test_replay_buffer_sampling():
 
 
 def test_replay_buffer_edge_cases():
-    buffer = ReplayBuffer(max_size=10)
+    buffer = ReplayBuffer(max_size=10, device = device)
 
     # Test sampling from an empty buffer
     with pytest.raises(ValueError):
@@ -54,9 +55,6 @@ def test_replay_buffer_edge_cases():
     with pytest.raises(ValueError):
         buffer.sample(4), "Sampling more items than there are in the buffer should raise a ValueError."
 
-
-if __name__=="__main__":
-    test_replay_buffer_capacity_handling()
-    test_replay_buffer_sampling()
-    test_replay_buffer_edge_cases()
-    print("All tests passed")
+# Use this to run tests if you're executing the script directly
+if __name__ == "__main__":
+    pytest.main()

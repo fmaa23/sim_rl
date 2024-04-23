@@ -6,9 +6,18 @@ import numpy as np
 
 
 def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'):
+    """
+    Plots the gradient evolution of a specified layer in a neural network.
 
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'gradient_dict.json'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+    - layer_name (str): The specific layer name to plot gradients for.
+
+    The function saves the plot as 'Gradient.png' in the specified images directory.
+    """
     plt.figure()
-    filename = data_filepath + '/gradient_dict.json'
+    filename = os.path.join(data_filepath, 'gradient_dict.json')
 
     with open(filename, 'r') as f:
         gradient_dict_loaded = json.load(f)
@@ -33,7 +42,17 @@ def plot_gradient(data_filepath, images_filepath, layer_name = 'layers.0.weight'
     plt.close()
 
 def plot_actor(data_filepath, images_filepath):
-    actor_loss = pd.read_csv(data_filepath + '/actor_loss.csv', index_col=0)
+    """
+    Plots the loss evolution of an actor model from training data.
+
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'actor_loss.csv'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+
+    The function saves the plot as 'Actor_loss.png' in the specified images directory.
+    """
+    pathname = os.path.join(data_filepath, 'actor_loss.csv')
+    actor_loss = pd.read_csv(pathname, index_col=0)
 
     plt.figure()
     plt.plot(actor_loss)
@@ -44,7 +63,17 @@ def plot_actor(data_filepath, images_filepath):
     plt.close()
 
 def plot_critic(data_filepath, images_filepath):
-    critic_loss = pd.read_csv(data_filepath + '/critic_loss.csv', index_col=0)
+    """
+    Plots the loss evolution of a critic model from training data.
+
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'critic_loss.csv'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+
+    The function saves the plot as 'Critic_loss.png' in the specified images directory.
+    """
+    pathname = os.path.join(data_filepath, "critic_loss.csv")
+    critic_loss = pd.read_csv(pathname, index_col=0)
 
     plt.figure()
     plt.plot(critic_loss)
@@ -55,8 +84,17 @@ def plot_critic(data_filepath, images_filepath):
     plt.close()
 
 def plot_reward(data_filepath, images_filepath):
+    """
+    Plots the rewards obtained per episode and the average reward over all episodes.
+
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'reward_dict.json'.
+    - images_filepath (str): The path to the directory where the plots will be saved.
+
+    The function saves the plots as 'Reward.png' and 'Average_reward.png' in the specified images directory.
+    """
     plt.figure()
-    filename = data_filepath + '/reward_dict.json'
+    filename = os.path.join(data_filepath, 'reward_dict.json')
 
     with open(filename, 'r') as f:
         reward_data = json.load(f)
@@ -76,8 +114,17 @@ def plot_reward(data_filepath, images_filepath):
     plt.close()
 
 def plot_average_reward_episode(data_filepath, images_filepath): 
+    """
+    Plots the average reward per episode over the course of training.
+
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'reward_dict.json'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+
+    The function saves the plot as 'Reward_Avg_Per_Episode.png' in the specified images directory.
+    """
     plt.figure()
-    filename = data_filepath + '/reward_dict.json'
+    filename = os.path.join(data_filepath, 'reward_dict.json')
 
     with open(filename, 'r') as f:
         reward_data = json.load(f)
@@ -90,9 +137,18 @@ def plot_average_reward_episode(data_filepath, images_filepath):
     plt.close()
 
 def plot_actor_vector(data_filepath, images_filepath):
-    plt.figure()
+    """
+    Plots the evolution of action vectors produced by an actor model during training.
 
-    action_vector = pd.read_csv(data_filepath + "/action_dict.csv", index_col=0)
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'action_dict.csv'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+
+    The function saves the plot as 'Actor_space.png' in the specified images directory.
+    """
+    plt.figure()
+    pathname = os.path.join(data_filepath, "action_dict.csv")
+    action_vector = pd.read_csv(pathname, index_col=0)
     for column in action_vector.columns:
         plt.plot(action_vector.index, action_vector[column], label=column)
 
@@ -105,8 +161,19 @@ def plot_actor_vector(data_filepath, images_filepath):
     plt.close()
 
 def plot_transition_proba(data_filepath, images_filepath, transition_proba_dict, node = 1):
+    """
+    Plots the transition probabilities for a specified node based on training data.
 
-    df = pd.read_csv(data_filepath + '/transition_proba.csv', index_col = 0)
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'transition_proba.csv'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+    - transition_proba_dict (dict): A dictionary containing transition probabilities.
+    - node (int): The node for which to plot the transition probabilities.
+
+    The function saves the plot as 'transition_probas.png' in the specified images directory.
+    """
+    pathname = os.path.join(data_filepath, "transition_proba.csv")
+    df = pd.read_csv(pathname, index_col = 0)
 
     num_col = [int(index) for index in list(df.columns)]
     df.columns = num_col
@@ -129,7 +196,17 @@ def plot_transition_proba(data_filepath, images_filepath, transition_proba_dict,
 
 
 def plot_reward_model_loss(data_filepath, images_filepath):
-    reward_model_loss_new = pd.read_csv(data_filepath + '/reward_model_loss.csv', index_col=0)
+    """
+    Plots the loss of the reward model during training.
+
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'reward_model_loss.csv'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+
+    The function saves the plot as 'Reward_model_loss.png' in the specified images directory.
+    """
+    pathname = os.path.join(data_filepath, "reward_model_loss.csv")
+    reward_model_loss_new = pd.read_csv(pathname, index_col=0)
     
     plt.figure()
     plt.plot(reward_model_loss_new.rolling(window=12).mean())
@@ -140,7 +217,17 @@ def plot_reward_model_loss(data_filepath, images_filepath):
     plt.close()
 
 def plot_next_state_model_loss(data_filepath, images_filepath):
-    next_state_model = pd.read_csv(data_filepath + '/next_state_model_loss.csv', index_col=0)
+    """
+    Plots the loss of the next state prediction model during training.
+
+    Parameters:
+    - data_filepath (str): The path to the directory containing 'next_state_model_loss.csv'.
+    - images_filepath (str): The path to the directory where the plot will be saved.
+
+    The function saves the plot as 'Next_model_loss.png' in the specified images directory.
+    """
+    pathname = os.path.join(data_filepath, "next_state_model_loss.csv")
+    next_state_model = pd.read_csv(pathname, index_col=0)
     
     plt.figure()
     plt.plot(next_state_model)
@@ -151,7 +238,17 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
     plt.close()
 
 def plot(data_filepath, images_filepath, transition_probas = None):
-    filepath = os.getcwd() + '/foundations' + '/output_plots'
+    """
+    Central function to execute all individual plot functions for model training evaluation.
+
+    Parameters:
+    - data_filepath (str): The base path to the directory containing all required data files.
+    - images_filepath (str): The base path to the directory where all plots will be saved.
+    - transition_probas (dict, optional): Dictionary containing transition probabilities, required for plotting transition probabilities.
+
+    This function calls all individual plotting functions and saves their outputs in the specified directory.
+    """
+    filepath = os.path.join(os.getcwd(), 'foundations', 'output_plots')
 
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)

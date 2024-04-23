@@ -17,9 +17,6 @@ import os
 from queue_env.queueing_network import Queue_network
 from foundations.wandb_base_functions import * 
 
-
-        
-
 # Definition of the NoiseEvaluator class
 class NoiseEvaluator(Engine):
     def __init__(self,frequency,mean,variance):
@@ -112,13 +109,16 @@ class Queue_network:
             arrival_f = lambda t, rate=rate: poisson_random_measure(t, lambda t: 2 + np.sin(2 * np.pi * t) + self.noise_evaluator.compute_increment(), rate)
             self.arrivals_f.append(arrival_f)
             
-        
- 
-        
 # Running the code for the noise evaluation        
 if __name__ == "__main__":
+
+    frequency = 0.5
+    mean = 0
+    variance = 1
+    timesteps = 100
+
     # Define the object of the NoiseEvaluator class
-    noise_evaluator = NoiseEvaluator(0.5,0,1)
+    noise_evaluator = NoiseEvaluator(frequency, mean, variance)
     
     # Define the agent and the environment configuration files
     agent = 'user_config/eval_hyperparams.yml'
@@ -128,9 +128,6 @@ if __name__ == "__main__":
     noise_evaluator.start_train(eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
     
     # When introducing noise in the the control of the control of the environment we first define the agent 
-    timesteps = 100
     path_to_saved_agent = 'Agent/trained_agent.pt'
     saved_agent = torch.load(path_to_saved_agent)
     noise_evaluator.start_evaluation(eval_env , saved_agent,timesteps)
-    
-    

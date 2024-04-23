@@ -241,6 +241,18 @@ def create_q_classes(edge_list):
     return q_classes
 
 def get_node_tuple_from_edgetype(edge_list):
+    """
+    Creates a dictionary mapping each edge type to a list of tuples, where each tuple represents an edge
+    from a source node to an end node.
+
+    Parameters:
+    - edge_list (dict): A dictionary where each key is a source node and its value is another dictionary. 
+      The nested dictionary's key is the end node and its value is the edge type.
+
+    Returns:
+    - dict: A dictionary where keys are edge types and values are lists of tuples (source_node, end_node) 
+      representing the edges of that type.
+    """
     node_tuple_dict = {}
 
     for source_node, endnode_type_dict in edge_list.items():
@@ -255,6 +267,17 @@ def get_node_tuple_from_edgetype(edge_list):
 
 
 def get_node_id(edge_type, edge_type_info):
+    """
+    Finds and returns the node ID associated with a specific edge type.
+
+    Parameters:
+    - edge_type (any): The type of the edge for which the node ID is to be found.
+    - edge_type_info (dict): A dictionary where each key is a node ID and its value is a list of edge types
+      associated with that node.
+
+    Returns:
+    - any: The node ID for the specified edge type if found; otherwise, None if no node has the specified edge type.
+    """
     for node in edge_type_info.keys():
         if edge_type in edge_type_info[node]:
             return node
@@ -411,6 +434,18 @@ def get_params_for_train(params):
     return num_episodes, batch_size, num_epochs, time_steps, target_update_frequency, num_train_AC
 
 def init_transition_proba(env):
+    """
+    Initializes a dictionary to hold transition probabilities for each start node that has multiple
+    possible next nodes.
+
+    Parameters:
+    - env (object): An environment object that includes a 'qn_net' attribute. This 'qn_net' attribute
+      should have an 'adja_list' which is a dictionary mapping each node to its adjacent nodes.
+
+    Returns:
+    - dict: A dictionary with start nodes as keys. Each key maps to another dictionary, which will
+      eventually hold transition probabilities to possible next nodes.
+    """
     transition_proba = {}
     adjacent_lists = env.qn_net.adja_list 
 
@@ -421,6 +456,18 @@ def init_transition_proba(env):
     return transition_proba
 
 def update_transition_probas(transition_probas, env):
+    """
+    Updates a given dictionary of transition probabilities with new transition data from the environment.
+
+    Parameters:
+    - transition_probas (dict): The dictionary containing transition probabilities for nodes.
+    - env (object): An environment object that includes both 'transition_proba' and 'qn_net' attributes.
+      The 'qn_net' attribute should contain a 'transition_proba' dictionary detailing probabilities
+      of transitioning from one node to another.
+
+    Returns:
+    - dict: The updated transition probabilities dictionary.
+    """
     for start_node in transition_probas.keys():
         next_nodes = env.transition_proba[start_node].keys()
         next_proba_dict = transition_probas[start_node]
@@ -436,6 +483,15 @@ def update_transition_probas(transition_probas, env):
     return transition_probas
 
 def convert_format(state):
+    """
+    Converts a list of numerical state values into a dictionary mapping each index to its respective value.
+
+    Parameters:
+    - state (list): A list of numerical values representing a state.
+
+    Returns:
+    - dict: A dictionary with indices as keys and the corresponding state values as values.
+    """
     initial_states = {}
 
     for index, num in enumerate(state):
@@ -449,7 +505,7 @@ def save_agent(agent):
     This function creates a directory named 'Agent' in the current working directory if it doesn't exist,
     and saves the given agent model to a file named 'tensor.pt' within this directory.
     """
-    base_path = os.getcwd() + "MScDataSparqProject\\"
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     agent_dir = os.path.join(base_path, 'agents')
 
     # Create the directory if it does not exist
@@ -472,7 +528,7 @@ def train(params, agent, env, best_params = None, blockage_qn_net = None):
     Returns:
     - Multiple values including lists that track various metrics through training.
     """
-
+    save_agent(agent)
     if best_params is not None:
         for key in params.keys():
             if key not in best_params.keys():
@@ -567,6 +623,20 @@ def create_ddpg_agent(environment, params, hidden):
     return agent
 
 def get_transition_proba_df(transition_probas):
+    """
+    Converts a nested dictionary of transition probabilities into a pandas DataFrame.
+
+    The function assumes a structure for `transition_probas` where each key is a start node and 
+    its value is another dictionary mapping end nodes to their respective transition probabilities.
+
+    Parameters:
+    - transition_probas (dict): A dictionary where each key is a start node and its value is another 
+      dictionary mapping end nodes to their respective list of transition probabilities.
+
+    Returns:
+    - pd.DataFrame: A DataFrame where each column corresponds to an end node and rows are the 
+      probabilities of transitioning to these end nodes from the start nodes.
+    """
     flatten_dict = {}
 
     for start_node in transition_probas.keys():
@@ -618,8 +688,9 @@ def save_all(next_state_model_list_all, critic_loss_list,\
 
     print(f"CSVs have been saved at {output_dir}")
 
-def start_train(config_file, param_file, save_file = True, 
-                data_filename = 'data', image_filename = 'images', plot_curves = True):
+def start_train(config_file, param_file, 
+                data_filename, image_filename, 
+                plot_curves, save_file):
     """
     Starts the training process for a reinforcement learning environment and agent.
 
@@ -749,7 +820,6 @@ def start_evaluation(environment, agent, time_steps):
             total_reward += reward
         return total_reward
     
-        
 
 # Converting this folder into a class
 class Engine():
@@ -890,7 +960,7 @@ class Engine():
         This function creates a directory named 'Agent' in the current working directory if it doesn't exist,
         and saves the given agent model to a file named 'tensor.pt' within this directory.
         """
-        base_path = os.getcwd() + "MScDataSparqProject\\"
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         agent_dir = os.path.join(base_path, 'agents')
 
         # Create the directory if it does not exist
