@@ -92,3 +92,4 @@ if __name__=="__main__":
     nr = NumRuns()
     std = nr.get_std(config_param_filepath=config_param_filepath,
                      eval_param_filepath=eval_param_filepath)
+    nr.get_req_runs()
