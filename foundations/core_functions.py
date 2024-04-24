@@ -295,7 +295,7 @@ def save_agent(agent):
     torch.save(agent, file_path)
     print(f"Agent saved successfully at {file_path}")
 
-def train(self, params, agent, env, best_params = None, blockage_qn_net = None):
+def train(params, agent, env, best_params=None, blockage_qn_net=None):
     """
     Conduct training sessions for a given agent and environment.
 
