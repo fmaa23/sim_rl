@@ -237,7 +237,7 @@ def plot_next_state_model_loss(data_filepath, images_filepath):
     plt.savefig(save_path)
     plt.close()
 
-def plot(data_filepath, images_filepath, transition_probas = None):
+def plot(data_filepath, images_filepath, transition_probas = None, filepath=None):
     """
     Central function to execute all individual plot functions for model training evaluation.
 
@@ -248,7 +248,8 @@ def plot(data_filepath, images_filepath, transition_probas = None):
 
     This function calls all individual plotting functions and saves their outputs in the specified directory.
     """
-    filepath = os.path.join(os.getcwd(), 'foundations', 'output_plots')
+    if filepath is None: 
+        filepath = os.path.join(os.getcwd(), 'foundations', 'output_plots')
 
     # Create the directory if it doesn't exist
     os.makedirs(filepath, exist_ok=True)

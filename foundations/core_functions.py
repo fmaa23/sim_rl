@@ -429,7 +429,7 @@ def get_transition_proba_df(transition_probas):
 
 
 def save_all(next_state_model_list_all, critic_loss_list,\
-          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, base_path = None):
+          actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, base_path = None, output_dir =None):
     """
     Save all relevant data from the training process.
 
@@ -450,7 +450,8 @@ def save_all(next_state_model_list_all, critic_loss_list,\
     if base_path is None:
         base_path = os.getcwd()
         
-    output_dir = os.path.join(base_path, "foundations", "output_csv")
+    if output_dir is None: 
+        output_dir = os.path.join(base_path, "foundations", "output_csv")
     os.makedirs(output_dir, exist_ok=True)
     pd.DataFrame(actor_loss_list).to_csv(os.path.join(output_dir, 'actor_loss.csv'), index=False)
     pd.DataFrame(critic_loss_list).to_csv(os.path.join(output_dir, 'critic_loss.csv'), index=False)

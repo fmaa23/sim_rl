@@ -56,7 +56,7 @@ class NoisyNetwork():
                 rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2
                 # the noise is added to the arrival rate here
                 q_args[edge_type]['arrival_f'] = lambda t, rate=rate: poisson_random_measure(t, rate , max_arrival_rate) + self.compute_increment()
-                q_args[edge_type]['noise'] = self.compute_increment() 
+                q_args[edge_type]['noise'] = lambda: self.compute_increment() 
                 entry_node_encountered +=1
         
         org_net = self.environment.qn_net
@@ -68,32 +68,31 @@ class NoisyNetwork():
         return noisy_environment
     
     def train(self, params, agent, env, save_file = True, 
-              data_filename = 'data', image_filename = 'images', plot_curves = True): 
+              data_filename = 'output_csv_noisy'): 
 
         next_state_model_list_all, critic_loss_list,\
         actor_loss_list, reward_by_episode, action_dict, \
         gradient_dict, transition_probas = train(params, agent, env)
         
-        current_dir = os.getcwd()
         evaluation_dir = 'evaluation'
         noise_dir = 'noise_evaluation'
-        csv_filepath = os.path.join(current_dir, evaluation_dir, noise_dir, data_filename)
-        image_filepath = os.path.join(current_dir, evaluation_dir, noise_dir, image_filename)
+        csv_filepath = os.path.join(root_dir, evaluation_dir, noise_dir, data_filename)
 
         if save_file:
             save_all(next_state_model_list_all, critic_loss_list,\
-            actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
-        
-        if plot_curves:
-            plot(csv_filepath, image_filepath, transition_probas)
+            actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, output_dir=csv_filepath)
 
     def start_evaluation(self, noisy_env=None, agent=None, time_steps=100): 
         if noisy_env is None: 
             noisy_env=self.get_noisy_env()
         if agent is None: 
-                path_to_saved_agent = 'Agent/trained_agent.pt'
-                agent = torch.load(path_to_saved_agent)
-        start_evaluation(noisy_env, agent, time_steps)
+            agent_path = 'agents'
+            agent = 'trained_agent.pt'
+            path_to_saved_agent = os.path.join(root_dir, agent_path, agent)
+            agent = torch.load(path_to_saved_agent)
+        reward = start_evaluation(noisy_env, agent, time_steps)
+        print(f'Total reward on environment with external noise is:{reward}')
+        return reward
     
             
 # Running the code for the noise evaluation        
@@ -117,7 +116,9 @@ if __name__ == "__main__":
     # noise_evaluator.start_train(eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
     
     # # When introducing noise in the the control of the control of the environment we first define the agent 
-    path_to_saved_agent = 'Agent/trained_agent.pt'
+    agent_path = 'agents'
+    agent = 'trained_agent.pt'
+    path_to_saved_agent = os.path.join(root_dir, agent_path, agent)
     saved_agent = torch.load(path_to_saved_agent)
     noisy_net.start_evaluation(noisy_env, saved_agent, time_steps=100)
     # noise_evaluator.start_evaluation(eval_env , saved_agent,timesteps)
