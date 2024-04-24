@@ -15,6 +15,7 @@ import copy
 import os 
 
 # Required file paths
+agent_filepath = os.path.join(root_dir, 'agents/trained_agent.pt')
 config_param_filepath = 'user_config/configuration.yml'
 eval_param_filepath = 'user_config/eval_hyperparams.yml'
 data_filename = 'output_csv'
@@ -43,9 +44,9 @@ class NumRuns:
                         plot_curves=False)
             if self.agents==None: 
                 self.agents = [] 
-                self.agents.append(torch.load('Agent/trained_agent.pt'))
+                self.agents.append(torch.load(agent_filepath))
             else: 
-                self.agents.append(torch.load('Agent/trained_agent.pt'))
+                self.agents.append(torch.load(agent_filepath))
         
         agents_transition_proba = [] 
         
