@@ -1,6 +1,6 @@
 ---
-learning_rate_min: 0.1
-learning_rate_max: 0.001
+learning_rate_min: 0.0001
+learning_rate_max: 0.1
 
 epochs_list:
   - 10
@@ -41,3 +41,6 @@ time_steps:
 
 epsilon_state_exploration:
   - 0.5
+
+target_update_frequency:
+  - 10

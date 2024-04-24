@@ -14,7 +14,7 @@ data_filename = 'output_csv'
 image_filename = 'output_plots' 
 
 function = 'train'
-tuner = 'ray_tune'
+tuner = 'wandb'
 
 save_file = True
 plot_curves = True
