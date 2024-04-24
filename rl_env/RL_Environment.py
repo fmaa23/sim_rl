@@ -53,6 +53,7 @@ class RLEnv:
 
         self.temperature = 0.1
         self.growth_factor = (0.5/self.temperature)**(1/10)
+        self.previous_reward = -np.sum(self.get_state())
     
     def get_num_nodes(self):
         """
@@ -234,8 +235,14 @@ class RLEnv:
             if isinstance(self.net.edge2queue[i], NullQueue): 
                 num_exits += len(self.net.get_queue_data(queues=i))
         
-        throughput_ratio = num_exits / len(self.net.get_queue_data(queues=0)) # hard-coded
+        throughput_ratio = num_exits / len(self.net.get_queue_data(edge=self.entry_nodes))
+        
+        reward = -np.mean(avg_delay) / throughput_ratio
 
+        if np.isnan(reward): 
+            return self.previous_reward 
+        else: 
+            self.previous_reward = reward 
         return -np.mean(avg_delay) / throughput_ratio
 
     def record_sim_data(self):
@@ -278,6 +285,7 @@ class RLEnv:
 
         self.net.set_transitions(self.transition_proba)
         current_state = self.simulate()
+        self.previous_reward = -np.sum(self.get_state())
 
         return current_state
     
