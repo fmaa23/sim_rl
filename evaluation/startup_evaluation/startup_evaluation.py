@@ -18,8 +18,6 @@ os.chdir(parent_dir)
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
     
-
-
 class StartupBehavior(Engine):
     def __init__(self, window_size, threshold, consecutive_points, episode):
         """Initialize parameters for the startup behavior analysis."""
@@ -29,6 +27,7 @@ class StartupBehavior(Engine):
         self.episode = episode
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.reward_data_from_json = self.load_json_data()
+        self.commence_analysis = 10 # The variable controls when the analysis should commence
 
     def load_json_data(self):
         # Current directory
@@ -65,7 +64,7 @@ class StartupBehavior(Engine):
                 count = 0  # Reset counter if the point is above the threshold
         return -1  # Returns -1 if no stabilization point is found
 
-    def evaluate(self, reward_data = None):
+    def evaluate_convergence(self, reward_data = None):
         """Evaluate the startup behavior of the agent."""
         if reward_data is None:
             reward_data = self.reward_data_from_json
@@ -74,7 +73,7 @@ class StartupBehavior(Engine):
         derivatives = self.calculate_derivative(self.smoothed_rewards)
         self.stabilization_point = self.find_stabilization_point(derivatives)
         #self.plot_results()
-        return stabilization_point
+        return self.stabilization_point
             
     def train(self, params, agent, env, best_params=None, blockage_qn_net=None):
         """
@@ -157,12 +156,13 @@ class StartupBehavior(Engine):
             reward_by_episode[episode] = reward_list
             latest_transition_proba = env.transition_proba
 
-            # Additonal logic for handling the stabilization point 
-            self.episode = episode
-            stabilization_point = self.evaluate(reward_by_episode) # Evalaute whether the stabilization point has been reached
-            if stabilization_point != -1:
-                print(f"Stabilization point found at episode: {episode} and timestep: {stabilization_point}")
-                break  # Exit the training loop as stabilization point is found
+            # Additonal logic for handling the stabilization evaluation
+            if episode > self.commence_analysis:
+                self.episode = episode
+                stabilization_point = self.evaluate_convergence(reward_by_episode) # Evalaute whether the stabilization point has been reached
+                if stabilization_point != -1:
+                    print(f"Stabilization point found at episode: {episode} and timestep: {stabilization_point}")
+                    break  # Exit the training loop as stabilization point is found
 
         self.save_agent(agent)
         # Return all the collected data
@@ -175,7 +175,7 @@ class StartupBehavior(Engine):
         plt.plot(range(len(self.smoothed_rewards)), self.smoothed_rewards, label='Smoothed Rewards', color='red')
         if self.stabilization_point != -1:
             plt.axvline(x=self.stabilization_point, color='green', label='Stabilization Point')
-        plt.title('Reward Stabilization Analysis - Episode ' + str(self.episode) + ' - Window Size ' + str(self.window_size))
+        plt.title('Burn in Period Analysis - Episode ' + str(self.episode))
         plt.xlabel('Timestep')
         plt.ylabel('Reward')
         plt.legend()
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     startup_evaluation = StartupBehavior(window_size, threshold, consecutive_points, episode)
     
     # Implement the original evaluation process on saved data from a json file 
-    stabilization_point = startup_evaluation.evaluate()
+    stabilization_point = startup_evaluation.evaluate_convergence()
     
     # Automatically run the training process and stop when the stabilization point is reached
     agent = 'user_config/eval_hyperparams.yml'

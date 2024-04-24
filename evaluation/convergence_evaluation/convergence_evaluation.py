@@ -23,7 +23,7 @@ import os
 
 
 class ConvergenceEvaluation(Engine):
-    def __init__(self, num_episodes, timesteps , num_sim = 100):
+    def __init__(self, window_size, threshold, consecutive_points , timesteps = 100 , num_sim = 100):
         """_summary_
 
         Args:
@@ -31,14 +31,88 @@ class ConvergenceEvaluation(Engine):
             timesteps (_type_): _description_
             num_sim (int, optional): _description_. Defaults to 100.
         """
-        self.num_episodes = num_episodes
         self.timesteps = timesteps 
         self.total_rewards = []
-        self.num_sim = num_sim        
+        self.num_sim = num_sim  
+        self.window_size = window_size
+        self.threshold = threshold
+        self.consecutive_points = consecutive_points
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.reward_data_from_json = self.load_json_data()      
+        self.commence_analysis = 10 # The variable controls when the analysis should commence
+        self.eval_interval = 10  # Interval for evaluating the agent during training
+        self.episode_rewards = {
+            'episodes': [],
+            'rewards': []
+        }
+        
+    def load_json_data(self):
+        # Current directory
+        current_dir = os.path.dirname(os.path.dirname(os.getcwd()))
 
-    def train(self,params, agent, env, num_episodes, best_params = None , blockage_qn_net = None):
+        # Construct the relative path to the target JSON file
+        relative_path = os.path.join(current_dir, 'foundations', 'output_csv', 'reward_dict.json')
+
+        # Normalize the path to avoid any cross-platform issues
+        normalized_path = os.path.normpath(relative_path)
+
+        # Load the JSON file using a context manager
+        with open(normalized_path, 'r') as file:
+            data = json.load(file)
+        return data
+
+    def moving_average(self, data):
+        """Calculate moving average of the data using the defined window size."""
+        return np.convolve(data, np.ones(self.window_size) / self.window_size, mode='valid')
+
+    def calculate_derivative(self, data):
+        """Calculate the first derivative of the data."""
+        return np.diff(data)
+
+    def find_stabilization_point(self, derivatives):
+        abs_derivatives = np.abs(derivatives)
+        count = 0  # Counter for consecutive points under threshold
+        for i in range(len(abs_derivatives)):
+            if abs_derivatives[i] < self.threshold:
+                count += 1
+                if count >= self.consecutive_points:
+                    return i - self.consecutive_points + 2  # Adjust for the window of points
+            else:
+                count = 0  # Reset counter if the point is above the threshold
+        return -1  # Returns -1 if no stabilization point is found
+    
+    def compute_episode_rewards(data_dict):
+        """This function calculates the sum of the the rewards for each episode in the dictionary.
+
+        Args:
+            data_dict (dictionary): dictionary of lists of rewards for each episode
+
+        Returns:
+            list: list of the sum of rewards for each episode
         """
-        This is a modified version of the standard train function which takes the number of episodes as the argument 
+        sums_list = []
+        for values in data_dict.values():
+            total_sum = sum(values)
+            sums_list.append(total_sum)
+        return sums_list
+    
+    
+    
+    def evaluate_convergence(self, reward_data = None):
+        """Evaluate the startup behavior of the agent."""
+        if reward_data is None:
+            reward_data = self.reward_data_from_json
+        
+        self.rewards = self.compute_episode_rewards(reward_data)
+        self.smoothed_rewards = self.moving_average(self.rewards)
+        derivatives = self.calculate_derivative(self.smoothed_rewards)
+        self.stabilization_point = self.find_stabilization_point(derivatives)
+        #self.plot_results()
+        return self.stabilization_point
+
+    def train(self, params, agent, env, best_params=None, blockage_qn_net=None):
+        """
+        Modified training function to include the logic for stopping the training process when the stabilization point is reached.
 
         Parameters:
         - params (dict): Hyperparameters for training.
@@ -48,7 +122,7 @@ class ConvergenceEvaluation(Engine):
         Returns:
         - Multiple values including lists that track various metrics through training.
         """
-
+        self.save_agent(agent)
         if best_params is not None:
             for key in params.keys():
                 if key not in best_params.keys():
@@ -56,19 +130,17 @@ class ConvergenceEvaluation(Engine):
             params = best_params
 
         next_state_model_list_all = []
-        reward_model_list_all =[]
+        reward_model_list_all = []
         gradient_dict_all = {}
         action_dict = {}
-        gradient_dict_all = {}
-        transition_probas = init_transition_proba(env)
-        actor_loss_list= []
+        transition_probas = self.init_transition_proba(env)
+        actor_loss_list = []
         critic_loss_list = []
-        reward_list = []
         reward_by_episode = {}
-        _, _, num_epochs, time_steps, _, num_train_AC = get_params_for_train(params)
+        num_episodes, _, num_epochs, time_steps, _, num_train_AC = self.get_params_for_train(params)
         latest_transition_proba = None
 
-        for episode in tqdm(range(num_episodes), desc="Episode Progress"): 
+        for episode in tqdm(range(num_episodes), desc="Episode Progress"):
             agent.train()
             if blockage_qn_net is None:
                 env.reset()
@@ -82,12 +154,10 @@ class ConvergenceEvaluation(Engine):
             update = 0
             reward_list = []
 
-            for _ in tqdm(range(time_steps), desc="Time Steps Progress"): 
-
+            for _ in tqdm(range(time_steps), desc="Time Steps Progress"):
                 state = env.get_state()
-                
                 state_tensor = torch.tensor(state)
-                action = agent.select_action(state_tensor).to(device) 
+                action = agent.select_action(state_tensor).to(self.device)
                 action_list = action.cpu().numpy().tolist()
 
                 for index, value in enumerate(action_list):
@@ -95,22 +165,21 @@ class ConvergenceEvaluation(Engine):
                     node_list.append(value)
                     action_dict[index] = node_list
 
-                next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(device)
+                next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(self.device)
                 reward = env.get_reward()
-                reward_list.append(reward)                               
-                experience = (state_tensor, action, reward, next_state_tensor) 
-                agent.store_experience(experience)                             
+                reward_list.append(reward)
+                experience = (state_tensor, action, reward, next_state_tensor)
+                agent.store_experience(experience)
 
             reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=time_steps, epochs=num_epochs)
             next_state_model_list_all += next_state_loss_list
             reward_model_list_all += reward_model_loss_list
-            transition_probas = update_transition_probas(transition_probas, env)
+            transition_probas = self.update_transition_probas(transition_probas, env)
 
-            for _ in tqdm(range(num_train_AC), desc="Train Agent"): 
-
+            for _ in tqdm(range(num_train_AC), desc="Train Agent"):
                 batch = agent.buffer.sample(batch_size=time_steps)
-                critic_loss = agent.update_critic_network(batch)                   
-                actor_loss, gradient_dict = agent.update_actor_network(batch)    
+                critic_loss = agent.update_critic_network(batch)
+                actor_loss, gradient_dict = agent.update_actor_network(batch)
                 actor_loss_list.append(actor_loss)
                 critic_loss_list.append(critic_loss)
 
@@ -119,81 +188,65 @@ class ConvergenceEvaluation(Engine):
             agent.soft_update(network="actor")
             gradient_dict_all[update] = gradient_dict
             agent.buffer.clear()
-            reward_by_episode[episode] = reward_list 
+            reward_by_episode[episode] = reward_list
             latest_transition_proba = env.transition_proba
-        
-        save_agent(agent)
+
+            # Logic for handling periodic evaluation of the agent
+            if episode % self.eval_interval == 0:
+                episode_reward = self.start_evaluation(env, agent, time_steps, num_simulations=self.num_sim)
+                self.episode_rewards['episodes'].append(episode)
+                self.episode_rewards['rewards'].append(episode_reward)
+                
+            # Logic for handling the stabilization evaluation 
+            if episode > self.commence_analysis:
+                stabilization_point = self.evaluate_convergence(self.episode_rewards['rewards']) # Evalaute whether the stabilization point has been reached
+                if stabilization_point != -1:
+                    print(f"Stabilization point found at episode {episode}")
+                    break  # Exit the training loop as stabilization point is found
+
+        self.save_agent(agent)
+        # Return all the collected data
         return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
             
 
-    def save_reward_plot(self, file_path,filename='reward_plot.png'):
-        plt.plot(self.num_episodes, self.total_rewards)
-        plt.xlabel('Number of Episodes')
-        plt.ylabel('Total Reward')
-        plt.title('Total Reward vs Number of Episodes trained')
-        file_save=os.path.join(file_path, filename)
-        plt.savefig(file_save, dpi=1000)  # Save the plot with a resolution of 1000 DPI
-      
+    def plot_results(self):
+        """Plot the original and smoothed rewards with stabilization point."""
+        plt.figure(figsize=(10, 5))
+        episodes = self.episode_rewards['episodes']
+        if len(episodes) != len(self.rewards):
+            raise ValueError("The length of episodes list and rewards list must be the same.")
+
+        plt.plot(episodes, self.rewards, label='Original Rewards', alpha=0.5)
+        plt.plot(episodes, self.smoothed_rewards, label='Smoothed Rewards', color='red')
+
+        # Plot the stabilization point if it exists
+        if self.stabilization_point != -1:
+            # Find the episode corresponding to the stabilization point index
+            if self.stabilization_point < len(episodes):
+                stabilization_episode = episodes[self.stabilization_point]
+                plt.axvline(x=stabilization_episode, color='green', label='Stabilization Point')
+            else:
+                print("Stabilization point is out of the episode range.")
         
-        
-    def start_train(self, config_file, eval_config_file, param_file, save_file = True, 
-                data_filename = 'data', image_filename = 'images', plot_curves = True ):
-        """
-        This is a modified version of the stanadard start train function that is used to train the agent for a given number of episodes and then evaluate the agent on the environment.
+        plt.title('Reward Stabilization Analysis - Cutoff Episode ' + str(self.episode))
+        plt.xlabel('Episodes')
+        plt.ylabel('Reward per Episode')
+        plt.legend()
+        plt.savefig('reward_plot.png', dpi=1000)
+        plt.close()
+        print("Plot saved as 'reward_plot.png'.")
 
-        Parameters:
-        - config_file (str, optional): The file path to the environment configuration file. Defaults to "configuration_file.yaml".
-        - param_file (str, optional): The file path to the hyperparameters file. Defaults to "hyperparameter_file.yaml".
-        - save_file (bool, optional): Flag indicating whether to save the training results to files. Defaults to True.
-
-        This function orchestrates the loading of configurations, creation of environments and agents, and the training process.
-        """
-        for num_episode in self.num_episodes:
-            # Load the hyperparameters and initialize the simulation environment and agent
-            print(f"------ Initializing the {num_episode} episode agent ------")
-            params, hidden = load_hyperparams(param_file)
-            sim_environment = create_simulation_env(params, config_file)
-            eval_environment = create_simulation_env(params, eval_config_file)
-            agent = create_ddpg_agent(sim_environment, params, hidden)
-            
-            # Train the agent for the specified number of episodes
-            print(f"------ Training the agent for {num_episode} episodes ------") 
-            print(num_episode)
-
-            next_state_model_list_all, critic_loss_list,\
-            actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas = self.train(params, agent, sim_environment,num_episode)
-           
-            current_dir = os.getcwd()
-            foundations_dir = 'foundations'
-            csv_filepath = os.path.join(current_dir, foundations_dir, data_filename)
-            image_filepath = os.path.join(current_dir, foundations_dir, image_filename)
-
-            if save_file:
-                save_all(next_state_model_list_all, critic_loss_list,\
-                actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
-            
-            if plot_curves:
-                plot(csv_filepath, image_filepath, transition_probas)
-                    
-            # Saving a copy of the trained agent in the current directory
-            trained_agent = copy.deepcopy(agent)                                                  
-            # Evaluate the agent on the environment
-            print(f"------ Evaluating the {num_episode} episode agent  ------")
-            total_reward = self.start_evaluation(eval_config_file, trained_agent, self.timesteps, self.num_sim)
-            self.total_rewards.append(total_reward)
-        confidence_dir = os.path.join(os.getcwd(), 'features', 'confidence_evaluation') # evaluate 
-        os.makedirs(confidence_dir, exist_ok=True)
-        self.save_reward_plot(confidence_dir)
-    
          
         
         
 # Logic for using this class 
+# Define the parameters for the startup behavior analysis
+window_size = 5
+threshold = 0.01
+consecutive_points = 5
 
-# 1. Specify the data structures that will be needed to configre the class 
-num_episodes = [100,300,500,700,900] # this list contains the number of episodes that the agent will be trained for 
-timesteps = 600 # this is the number of timesteps that the agent will be evaluated for
-
+# Create the startup behavior analysis engine and evaluate the stabilization point
+convergence_eval = ConvergenceEvaluation(window_size, threshold, consecutive_points)
 
 # 2. Specify the file path to the agent's configuration yaml file 
 agent = 'user_config/eval_hyperparams.yml'
@@ -201,17 +254,8 @@ agent = 'user_config/eval_hyperparams.yml'
 # 3. Speficy the file path for the training and evaluation environment's configuration yaml file
 env = 'user_config/configuration.yml'
 
-# 4. Intiialze the confidence class with the agent , environement and the number of episodes 
-confidence = ConvergenceEvaluation(num_episodes, timesteps)
+# 4. Initialize the training and evaluation process 
+convergence_eval.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
 
-# 5. Initialize the training and evaluation process 
-confidence.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
-
-
-### CHANGES ###
-# 1. Separate the training and evaluation process into two separate functions 
-# 2. Make the mirror version that accepts the objects as opposed to the congiguration files - the rationale is that you want to completely decouple 
-# the training and evaluation process from the configuration files which are used to create the objects inside the functions 
-# 3. Change so that the evaluation to a gradient based approach 
 
 
