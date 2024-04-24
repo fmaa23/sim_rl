@@ -17,9 +17,9 @@ import os
 from queue_env.queueing_network import Queue_network
 from queue_env.queue_base_functions import * 
 
-# Definition of the NoiseEvaluator class
-class NoiseEvaluator(Engine):
-    def __init__(self,frequency,mean,variance):
+# Definition of the Noisy Network class variant 
+class NoisyNetwork(Queue_network):
+    def __init__(self, frequency ,mean , variance):
         """
         Args:
             frequency(float ): the frequency at which noise is added to the environment - enforce that its between 0 and 1
@@ -28,8 +28,8 @@ class NoiseEvaluator(Engine):
         """
         self.frequency = frequency
         self.mean = mean 
-        self.variance = variance  
-
+        self.variance = variance
+        
     def compute_increment(self): 
         """This function is main entry point for adding noise to the environment. This function samples from a normal distribution with mean and variance specified in the constructor and
         returns the noise increment to be added to the environment with a probability specified by the frequency parameter.
@@ -43,7 +43,6 @@ class NoiseEvaluator(Engine):
         else:
             return 0
     
-    # Change this when have the queueing network class properly configured so it just imports the queueing network and works with a modified version of it  
     def create_q_args(self,edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes):
         """
         Constructs arguments for queue initialization based on the network configuration.
@@ -79,7 +78,7 @@ class NoiseEvaluator(Engine):
                     max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
                     rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2 
                     q_args[edge_type] = {
-                    'arrival_f': lambda t, rate=rate: poisson_random_measure(t, rate , max_arrival_rate) + self.noise_evaluator.compute_increment(),
+                    'arrival_f': lambda t, rate=rate: poisson_random_measure(t, rate , max_arrival_rate) + self.compute_increment(), # the noise is added to the arrival rate here 
                     'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
                     'qbuffer': buffer_size_for_each_queue[edge_type],
                     'service_rate': service_rate,
@@ -94,20 +93,25 @@ class NoiseEvaluator(Engine):
                     'service_rate': service_rate,
                     'active_cap':float('inf'),
                     'active_status' : False
-                    }
-
+                }
         return q_args
+    
+# Definition of the NoiseEvaluator class
+class NoiseEvaluator(Engine):
+    def __init__(self,frequency,mean,variance):
+        """
+        Args:
+            frequency(float ): the frequency at which noise is added to the environment - enforce that its between 0 and 1
+            mean (float): Mean of the distribution from which the noise is sampled
+            variance (float): Variance of the distribution from which the noise is sampled
+        """
+        self.frequency = frequency
+        self.mean = mean 
+        self.variance = variance  
+        
+        
 
-# Monkey patching for the Queue_network class
-class Queue_network:
-    def __init__(self, noise_evaluator):
-        self.noise_evaluator = noise_evaluator
-
-    def get_arrival_f(self, max_rate_list):
-        self.arrivals_f = []
-        for rate in max_rate_list:
-            arrival_f = lambda t, rate=rate: poisson_random_measure(t, lambda t: 2 + np.sin(2 * np.pi * t) + self.noise_evaluator.compute_increment(), rate)
-            self.arrivals_f.append(arrival_f)
+    
             
 # Running the code for the noise evaluation        
 if __name__ == "__main__":
