@@ -8,16 +8,22 @@ import torch
 import matplotlib.pyplot as plt
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
-from foundations.supporting_functions import *
+from foundations.core_functions import *
 from scipy.stats import norm
 import numpy as np
 import copy
 import os 
 
-# Training Multiple Agents   
+# Required file paths
+agent_filepath = os.path.join(root_dir, 'agents/trained_agent.pt')
+config_param_filepath = 'user_config/configuration.yml'
+eval_param_filepath = 'user_config/eval_hyperparams.yml'
+data_filename = 'output_csv'
+image_filename = 'output_plots'  
 
+# Training Multiple Agents
 class NumRuns: 
-    def __init__(self, confidence_level=0.95, desired_error = 1, num_runs = 10, time_steps = 100, num_sim = 100): 
+    def __init__(self, confidence_level=0.95, desired_error=1, num_runs=10, time_steps=100, num_sim=100): 
         self.agents = None 
         self.num_runs = num_runs
         self.time_steps = time_steps 
@@ -26,15 +32,21 @@ class NumRuns:
         self.desired_error = desired_error 
         self.num_sim = num_sim
 
+
     def train_multi_agents(self, config_param_filepath, eval_param_filepath): 
-        
-        for run in range(self.num_runs): 
-            start_train(config_param_filepath, eval_param_filepath, save_file=False, plot_curves= False)
+
+        for run in range(self.num_runs):
+            start_train(config_file=config_param_filepath,
+                        param_file=eval_param_filepath, 
+                        data_filename=data_filename, 
+                        image_filename=image_filename,
+                        save_file=False,
+                        plot_curves=False)
             if self.agents==None: 
                 self.agents = [] 
-                self.agents.append(torch.load('Agent/trained_agent.pt'))
+                self.agents.append(torch.load(agent_filepath))
             else: 
-                self.agents.append(torch.load('Agent/trained_agent.pt'))
+                self.agents.append(torch.load(agent_filepath))
         
         agents_transition_proba = [] 
         
@@ -46,7 +58,8 @@ class NumRuns:
                 state = env.get_next_state(action)[0]
             agents_transition_proba.append(env.transition_proba)
         return agents_transition_proba
-    
+
+
     def get_std(self, config_param_filepath, eval_param_filepath):
         
         agents_transition_proba = self.train_multi_agents(config_param_filepath, eval_param_filepath)
@@ -60,13 +73,13 @@ class NumRuns:
         std_devs = np.std(transition_proba_all_flattened, axis=0)
         self.std_devs = std_devs 
         return std_devs
-              
+
+
     def get_req_runs(self): 
         self.estimated_std_dev = np.max(self.std_devs)
         required_n = (self.z_value * self.estimated_std_dev / self.desired_error) ** 2
         print("Required number of runs:", round(1+required_n))
         return required_n
-
 
 
 if __name__=="__main__": 
@@ -76,5 +89,7 @@ if __name__=="__main__":
     time_steps = 100
     num_sim = 100
 
-    nr=NumRuns()
-    std= nr.get_std(config_param_filepath = 'user_config/configuration.yml',eval_param_filepath = 'user_config/eval_hyperparams.yml')
+    nr = NumRuns()
+    std = nr.get_std(config_param_filepath=config_param_filepath,
+                     eval_param_filepath=eval_param_filepath)
+    nr.get_req_runs()

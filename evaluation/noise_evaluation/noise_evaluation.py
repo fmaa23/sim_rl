@@ -9,17 +9,17 @@ import torch
 import matplotlib.pyplot as plt
 from rl_env.RL_Environment import *
 from queue_env.queueing_network import * 
-from foundations.supporting_functions import *
-from foundations.supporting_functions import CoreFunctions
+from foundations.core_functions import *
+from foundations.core_functions import Engine
 import numpy as np
 import copy
 import os 
 from queue_env.queueing_network import Queue_network
-from foundations.wandb_base_functions import * 
+from queue_env.queue_base_functions import * 
 
-# Definition of the NoiseEvaluator class
-class NoiseEvaluator(CoreFunctions):
-    def __init__(self,frequency,mean,variance):
+# Definition of the Noisy Network class variant 
+class NoisyNetwork():
+    def __init__(self, config_file, frequency ,mean , variance, num_sim=100):
         """
         Args:
             frequency(float ): the frequency at which noise is added to the environment - enforce that its between 0 and 1
@@ -28,8 +28,11 @@ class NoiseEvaluator(CoreFunctions):
         """
         self.frequency = frequency
         self.mean = mean 
-        self.variance = variance  
-
+        self.variance = variance
+        self.num_sim = num_sim
+        self.environment = create_simulation_env({'num_sim':self.num_sim}, config_file)
+        self.config_params = load_config(config_file)
+        
     def compute_increment(self): 
         """This function is main entry point for adding noise to the environment. This function samples from a normal distribution with mean and variance specified in the constructor and
         returns the noise increment to be added to the environment with a probability specified by the frequency parameter.
@@ -42,71 +45,55 @@ class NoiseEvaluator(CoreFunctions):
             return noise
         else:
             return 0
+    
+    def get_noisy_env(self): 
+ 
+        q_args = self.environment.qn_net.q_args   
+        entry_node_encountered = 0 
+        for edge_type in q_args.keys(): 
+            if 'arrival_f' in q_args[edge_type].keys(): 
+                max_arrival_rate = self.config_params['arrival_rate'][entry_node_encountered]
+                rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2
+                # the noise is added to the arrival rate here
+                q_args[edge_type]['arrival_f'] = lambda t, rate=rate: poisson_random_measure(t, rate , max_arrival_rate) + self.compute_increment()
+                q_args[edge_type]['noise'] = lambda: self.compute_increment() 
+                entry_node_encountered +=1
         
-    def create_q_args(self,edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes, edge_list, q_classes):
-        """
-        Constructs arguments for queue initialization based on the network configuration.
+        org_net = self.environment.qn_net
+        new_net = copy.copy(org_net)
+        new_net.process_input(org_net.lamda, org_net.miu, org_net.q_classes, q_args, org_net.adja_list, 
+                        org_net.edge_list, org_net.transition_proba, org_net.max_agents, org_net.sim_jobs)
+        new_net.create_env()
+        noisy_environment = RLEnv(qn_net=new_net, num_sim=5000)
+        return noisy_environment
+    
+    def train(self, params, agent, env, save_file = True, 
+              data_filename = 'output_csv_noisy'): 
 
-        Parameters:
-        - edge_type_info (dict): Information about edge types for each node.
-        - config_params (dict): Configuration parameters including service rates and buffer sizes.
-        - miu_dict (dict): A dictionary mapping nodes to their service rates.
-        - buffer_size_for_each_queue (dict): A dictionary mapping queue identifiers to their buffer sizes.
-        - exit_nodes (list): A list of nodes identified as exit points in the network.
+        next_state_model_list_all, critic_loss_list,\
+        actor_loss_list, reward_by_episode, action_dict, \
+        gradient_dict, transition_probas = train(params, agent, env)
+        
+        evaluation_dir = 'evaluation'
+        noise_dir = 'noise_evaluation'
+        csv_filepath = os.path.join(root_dir, evaluation_dir, noise_dir, data_filename)
 
-        Returns:
-        - dict: A dictionary of queue arguments where keys are queue identifiers, and values are dictionaries of arguments needed for initializing each queue.
-        """
-        q_args = {}
-        edge_type_lists = []
-        for key in edge_type_info.keys():
-            if key not in exit_nodes:
-                values = edge_type_info[key]
-                edge_type_lists += values
+        if save_file:
+            save_all(next_state_model_list_all, critic_loss_list,\
+            actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas, output_dir=csv_filepath)
 
-        node_tuple_by_edgetype=get_node_tuple_from_edgetype(edge_list)
-        entry_node_encountered = 0
-        env_entry_nodes = [tuple(item) for item in config_params['entry_nodes']]
-
-        for edge_type in edge_type_lists:
-            queue_type = q_classes[edge_type]
-            node_id = get_node_id(edge_type, edge_type_info) 
-            service_rate = miu_dict[node_id]
-
-            if queue_type == LossQueue:
-                if node_tuple_by_edgetype[edge_type][0] in config_params['entry_nodes']:
-                    max_arrival_rate = config_params['arrival_rate'][entry_node_encountered]
-                    rate = lambda t: 0.1*(max_arrival_rate) + (1-0.1)*(max_arrival_rate) * np.sin(np.pi * t / 2)**2 
-                    q_args[edge_type] = {
-                    'arrival_f': lambda t, rate=rate: poisson_random_measure(t, rate , max_arrival_rate) + self.noise_evaluator.compute_increment(),
-                    'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
-                    'qbuffer': buffer_size_for_each_queue[edge_type],
-                    'service_rate': service_rate,
-                    'active_cap': float('inf'), 
-                    'active_status' : True
-                    }
-                    entry_node_encountered+=1
-                else:
-                    q_args[edge_type] = {
-                    'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
-                    'qbuffer':buffer_size_for_each_queue[edge_type],
-                    'service_rate': service_rate,
-                    'active_cap':float('inf'),
-                    'active_status' : False
-                    }
-
-        return q_args
-
-# Monkey patching for the Queue_network class
-class Queue_network:
-    def __init__(self, noise_evaluator):
-        self.noise_evaluator = noise_evaluator
-
-    def get_arrival_f(self, max_rate_list):
-        self.arrivals_f = []
-        for rate in max_rate_list:
-            arrival_f = lambda t, rate=rate: poisson_random_measure(t, lambda t: 2 + np.sin(2 * np.pi * t) + self.noise_evaluator.compute_increment(), rate)
-            self.arrivals_f.append(arrival_f)
+    def start_evaluation(self, noisy_env=None, agent=None, time_steps=100): 
+        if noisy_env is None: 
+            noisy_env=self.get_noisy_env()
+        if agent is None: 
+            agent_path = 'agents'
+            agent = 'trained_agent.pt'
+            path_to_saved_agent = os.path.join(root_dir, agent_path, agent)
+            agent = torch.load(path_to_saved_agent)
+        reward = start_evaluation(noisy_env, agent, time_steps)
+        print(f'Total reward on environment with external noise is:{reward}')
+        return reward
+    
             
 # Running the code for the noise evaluation        
 if __name__ == "__main__":
@@ -116,17 +103,22 @@ if __name__ == "__main__":
     variance = 1
     timesteps = 100
 
-    # Define the object of the NoiseEvaluator class
-    noise_evaluator = NoiseEvaluator(frequency, mean, variance)
+    # # Define the object of the NoiseEvaluator class
+    config_file = 'user_config/configuration.yml' 
+    eval_file = 'user_config/eval_hyperparams.yml'
+    noisy_net = NoisyNetwork(config_file, frequency, mean, variance)
+    noisy_env = noisy_net.get_noisy_env() 
     
-    # Define the agent and the environment configuration files
-    agent = 'user_config/eval_hyperparams.yml'
-    eval_env = 'user_config/configuration.yml' 
+    # # When introducing noise in the training we call the start_train method of the NoiseEvaluator object 
+    params,hidden = load_hyperparams(eval_file)
+    agent = create_ddpg_agent(noisy_env, params, hidden)
+    noisy_net.train(params, agent, noisy_env)
+    # noise_evaluator.start_train(eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
     
-    # When introducing noise in the training we call the start_train method of the NoiseEvaluator object 
-    noise_evaluator.start_train(eval_env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
-    
-    # When introducing noise in the the control of the control of the environment we first define the agent 
-    path_to_saved_agent = 'Agent/trained_agent.pt'
+    # # When introducing noise in the the control of the control of the environment we first define the agent 
+    agent_path = 'agents'
+    agent = 'trained_agent.pt'
+    path_to_saved_agent = os.path.join(root_dir, agent_path, agent)
     saved_agent = torch.load(path_to_saved_agent)
-    noise_evaluator.start_evaluation(eval_env , saved_agent,timesteps)
+    noisy_net.start_evaluation(noisy_env, saved_agent, time_steps=100)
+    # noise_evaluator.start_evaluation(eval_env , saved_agent,timesteps)

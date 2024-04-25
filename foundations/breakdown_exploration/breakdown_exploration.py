@@ -13,7 +13,7 @@ import numpy as np
 from agents.ddpg_agent import DDPGAgent
 import torch
 from queue_env.queueing_network import Queue_network
-from foundations.supporting_functions import *
+from foundations.core_functions import *
 import json
 import matplotlib.pyplot as plt
 import yaml

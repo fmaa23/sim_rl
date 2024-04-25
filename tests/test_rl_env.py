@@ -7,7 +7,7 @@ sys.path.append(str(root_dir))
 
 # Now you can do an absolute import
 from rl_env.RL_Environment import RLEnv
-from foundations.supporting_functions import * 
+from foundations.core_functions import * 
 import pytest
 import numpy as np 
 

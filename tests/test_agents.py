@@ -8,7 +8,7 @@ sys.path.append(str(root_dir))
 from collections import OrderedDict
 from unittest.mock import MagicMock, patch
 import pytest
-from foundations.model import Actor, Critic, RewardModel, NextStateModel
+from agents.model import Actor, Critic, RewardModel, NextStateModel
 from agents.ddpg_agent import DDPGAgent
 import torch.nn as nn
 import torch

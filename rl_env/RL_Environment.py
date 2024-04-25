@@ -6,7 +6,7 @@ sys.path.append(str(root_dir))
 import numpy as np
 # from features.state_exploration.state_exploration import *
 from queue_env.queueing_network import *
-from foundations.wandb_base_functions import * 
+from queue_env.queue_base_functions import * 
 from queueing_tool.queues.queue_servers import *
 
 
@@ -52,6 +52,7 @@ class RLEnv:
         self.record_delay = {}
 
         self.temperature = temperature
+        self.previous_reward = -np.sum(self.get_state())
     
     def get_num_nodes(self):
         """
@@ -233,11 +234,15 @@ class RLEnv:
         for i in range(self.net.num_edges):
             if isinstance(self.net.edge2queue[i], NullQueue): 
                 num_exits += len(self.net.get_queue_data(queues=i))
-            if self.net.edge2queue[i]._oArrivals > 0:
-                num_arrivals += self.net.edge2queue[i]._num_arrivals
+        
+        throughput_ratio = num_exits / len(self.net.get_queue_data(edge=self.entry_nodes))
+        
+        reward = -np.mean(avg_delay) / throughput_ratio
 
-        throughput_ratio = num_exits / num_arrivals
-
+        if np.isnan(reward): 
+            return self.previous_reward 
+        else: 
+            self.previous_reward = reward 
         return -np.mean(avg_delay) / throughput_ratio
 
     def record_sim_data(self):
@@ -280,6 +285,7 @@ class RLEnv:
 
         self.net.set_transitions(self.transition_proba)
         current_state = self.simulate()
+        self.previous_reward = -np.sum(self.get_state())
 
         return current_state
         
@@ -446,5 +452,5 @@ class RLEnv:
 if __name__=="__main__": 
     config_param_filepath = 'user_config/configuration.yml'
     eval_param_filepath = 'user_config/eval_hyperparams.yml'
-    from foundations.supporting_functions import create_simulation_env
+    from foundations.core_functions import create_simulation_env
     env = create_simulation_env({'num_sim':5000, 'entry_nodes': [(0,1)]}, config_param_filepath)

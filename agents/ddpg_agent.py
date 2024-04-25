@@ -4,8 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from foundations.model import Actor, Critic, RewardModel, NextStateModel
-from foundations.buffer import ReplayBuffer
+from agents.model import Actor, Critic, RewardModel, NextStateModel
+from agents.buffer import ReplayBuffer
 torch.autograd.set_detect_anomaly(True)
 
 gradient_dict = {} 

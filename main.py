@@ -1,4 +1,4 @@
-from foundations.supporting_functions import start_train, start_tuning
+from foundations.core_functions import start_train, start_tuning
 import argparse
 
 def main(args):

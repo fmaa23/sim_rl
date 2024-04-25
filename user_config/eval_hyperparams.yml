@@ -1,15 +1,15 @@
 ---
 rl_params:
 
-  num_episodes: 50
+  num_episodes: 5
   
   threshold: 10
 
   num_epochs: 100
 
-  time_steps: 100
+  time_steps: 30
 
-  batch_size: 100
+  batch_size: 30
   
   target_update_frequency: 100
   

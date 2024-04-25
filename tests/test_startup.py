@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import patch, MagicMock, mock_open
 import numpy as np
 
-from evaluation.startup_evaluation.startup import *
+from evaluation.startup_evaluation.startup_evaluation import *
 
 from unittest.mock import patch, MagicMock
 import numpy as np
