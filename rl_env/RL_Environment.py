@@ -13,7 +13,7 @@ from queueing_tool.queues.queue_servers import *
 transition_proba = {}
 
 class RLEnv: 
-    def __init__(self, qn_net, num_sim = 5000, entry_nodes=[(0,1)], start_state = None): 
+    def __init__(self, qn_net, num_sim = 5000, entry_nodes=[(0,1)], start_state = None, temperature = 0.1): 
         """
         Initializes the reinforcement learning environment.
 
@@ -51,8 +51,7 @@ class RLEnv:
         self.num_entries = []
         self.record_delay = {}
 
-        self.temperature = 0.1
-        self.growth_factor = (0.5/self.temperature)**(1/10)
+        self.temperature = temperature
     
     def get_num_nodes(self):
         """
@@ -190,7 +189,7 @@ class RLEnv:
         for i in range(self.net.num_edges): 
             if isinstance(self.net.edge2queue[i], LossQueue):
                 if len(self.num_entries) > 0:
-                    queue_data=self.net.get_queue_data(queues=i)# [self.num_entries[i]:]
+                    queue_data=self.net.get_queue_data(queues=i)
                 else:
                     queue_data=self.net.get_queue_data(queues=i)
 
@@ -220,7 +219,7 @@ class RLEnv:
 
         for i in range(self.net.num_edges):
             if isinstance(self.net.edge2queue[i], LossQueue): 
-                queue_data=self.net.get_queue_data(queues=i)[self.num_entries[i]:]
+                queue_data=self.net.get_queue_data(queues=i)
                 ind_serviced = np.where(queue_data[:,2]!=0)[0]
 
                 if len(ind_serviced)>0:
@@ -230,11 +229,14 @@ class RLEnv:
                     avg_delay.append(tot_EtE_delay / throughput)
 
         num_exits = 0
+        num_arrivals = 0
         for i in range(self.net.num_edges):
             if isinstance(self.net.edge2queue[i], NullQueue): 
                 num_exits += len(self.net.get_queue_data(queues=i))
-        
-        throughput_ratio = num_exits / len(self.net.get_queue_data(queues=0)) # hard-coded
+            if self.net.edge2queue[i]._oArrivals > 0:
+                num_arrivals += self.net.edge2queue[i]._num_arrivals
+
+        throughput_ratio = num_exits / num_arrivals
 
         return -np.mean(avg_delay) / throughput_ratio
 
@@ -280,14 +282,6 @@ class RLEnv:
         current_state = self.simulate()
 
         return current_state
-    
-    def update_temperature(self):
-        """
-        Updates the temperature parameter and caps it at 0.5 if it exceeds this value.
-        """
-        self.temperature *= self.growth_factor
-        if self.temperature >= 0.5:
-            self.temperature = 0.5
         
     def test_actions_equal_nodes(self, action):
         """

@@ -1,5 +1,4 @@
 from foundations.supporting_functions import start_train, start_tuning
-import time
 import os
 
 # Folder name for configuration

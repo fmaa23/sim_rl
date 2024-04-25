@@ -320,7 +320,7 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
                 q_args[edge_type] = {
                 'arrival_f': lambda t, rate=rate: poisson_random_measure(t, rate, max_arrival_rate),
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
-                'qbuffer': buffer_size_for_each_queue[edge_type],
+                'qbuffer': float('inf'),# buffer_size_for_each_queue[edge_type],
                 'service_rate': service_rate,
                 'active_cap': float('inf'), 
                 'active_status' : True
@@ -329,7 +329,7 @@ def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_
             else:
                 q_args[edge_type] = {
                 'service_f': lambda t, en=node_id:t+np.exp(miu_dict[en]),
-                'qbuffer':buffer_size_for_each_queue[edge_type],
+                'qbuffer':float('inf'),# buffer_size_for_each_queue[edge_type],
                 'service_rate': service_rate,
                 'active_cap':float('inf'),
                 'active_status' : False
@@ -371,7 +371,7 @@ def create_RL_env(q_net, params, entry_nodes):
     Returns:
     - RLEnv: An instance of the RL environment.
     """
-    env = RLEnv(q_net, num_sim = params['num_sim'], entry_nodes=entry_nodes)
+    env = RLEnv(q_net, num_sim = params['num_sim'], entry_nodes=entry_nodes, temperature = params['temperature'])
     return env
 
 def create_simulation_env(params, config_file, disrupt_case = False, disrupt = False, queue_index = 2):
@@ -602,7 +602,7 @@ def train(params, agent, env, best_params = None, blockage_qn_net = None):
         reward_by_episode[episode] = reward_list 
         latest_transition_proba = env.transition_proba
     
-    save_agent(agent)
+    # save_agent(agent)
     return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
 
 def create_ddpg_agent(environment, params, hidden):
@@ -618,7 +618,7 @@ def create_ddpg_agent(environment, params, hidden):
     - DDPGAgent: An instance of the DDPG agent.
     """
     n_states = (environment.net.num_edges - environment.num_nullnodes)
-    n_actions = environment.net.num_nodes
+    n_actions = environment.net.num_edges
     agent = DDPGAgent(n_states, n_actions, hidden, params, device)
     return agent
 
@@ -668,8 +668,9 @@ def save_all(next_state_model_list_all, critic_loss_list,\
     """
     import json
     # Create the directory if it doesn't exist
+    script_path = os.path.abspath(__file__)
     if base_path is None:
-        base_path = os.getcwd()
+        base_path = os.path.dirname(os.path.dirname(script_path))
         
     output_dir = os.path.join(base_path, "foundations", "output_csv")
     os.makedirs(output_dir, exist_ok=True)
@@ -710,7 +711,8 @@ def start_train(config_file, param_file,
     actor_loss_list, reward_by_episode, action_dict, \
     gradient_dict, transition_probas = train(params, agent, sim_environment)
     
-    current_dir = os.getcwd()
+    script_path = os.path.abspath(__file__)
+    current_dir = os.path.dirname(os.path.dirname(script_path))
     foundations_dir = 'foundations'
     csv_filepath = os.path.join(current_dir, foundations_dir, data_filename)
     image_filepath = os.path.join(current_dir, foundations_dir, image_filename)

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -218,6 +219,8 @@ class DDPGAgent():
                 pred_reward = self.reward_model([state.to(torch.float32), action.to(torch.float32)])
                 # self.reward_model.zero_grad()
                 loss1 = nn.MSELoss()(pred_reward.to(torch.float32), reward.to(torch.float32))
+                if torch.isnan(loss1):
+                    print()
                 reward_loss_list.append(loss1.item())
                 loss1=loss1.to(torch.float32)
                 
