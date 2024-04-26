@@ -10,7 +10,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import numpy as np
 
-from evaluation.blockage_demonstrations.demonstrations import (
+from evaluation.decision_evaluation.decision_evaluation import (
     ControlEvalaution,
     DisruptionEvaluation,
 )

@@ -9,7 +9,7 @@ sys.path.append(str(root_dir))
 import pytest
 from unittest.mock import patch, MagicMock
 
-from evaluation.convergence_evaluation.confidence import Confidence
+from evaluation.convergence_evaluation.convergence_evaluation import Confidence
 
 
 @pytest.fixture
