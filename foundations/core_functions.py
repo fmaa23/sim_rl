@@ -479,6 +479,7 @@ def start_train(config_file, param_file,
     params, hidden = load_hyperparams(param_file)
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
+    account_for_blockage = params['account_for_blockage']
     
     next_state_model_list_all, critic_loss_list,\
     actor_loss_list, reward_by_episode, action_dict, \
@@ -496,7 +497,11 @@ def start_train(config_file, param_file,
     
     if plot_curves:
         plot(csv_filepath, image_filepath, transition_probas)
-
+    
+    if account_for_blockage: 
+        from foundations.breakdown_exploration.breakdown_exploration import BreakdownEngine
+        Engine = BreakdownEngine(sim_environment)
+        Engine.run(agent, params=params)
 
 def plot_best(data_filepath, images_filepath):
     plot(data_filepath, images_filepath)
@@ -895,6 +900,7 @@ class Engine():
         params, hidden = self.load_hyperparams(param_file)
         sim_environment = create_simulation_env(params, config_file)
         agent = create_ddpg_agent(sim_environment, params, hidden)
+        account_for_blockage = params['account_for_blockage']
         
         next_state_model_list_all, critic_loss_list,\
         actor_loss_list, reward_by_episode, action_dict, \
@@ -912,7 +918,6 @@ class Engine():
         
         if plot_curves:
             plot(csv_filepath, image_filepath, transition_probas)
-
 
     def plot_best(self, data_filepath, images_filepath):
         plot(data_filepath, images_filepath)

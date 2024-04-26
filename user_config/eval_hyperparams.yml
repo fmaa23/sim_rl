@@ -33,6 +33,8 @@ rl_params:
   
   planning_std: 0.1
 
+  account_for_blockage: False
+
 state_exploration_params:
 
   num_sample: 100

@@ -167,7 +167,6 @@ def plot_actor_vector(data_filepath, images_filepath):
 
     plt.title("Action Vector")
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))  # Coordinates for the legend box
-    plt.show()
     actor_space_path = os.path.join(images_filepath, 'Actor_Space Plots')
     os.makedirs(actor_space_path, exist_ok=True)
     save_path = os.path.join(images_filepath, 'Actor_Space Plots','Actor_space.png')
