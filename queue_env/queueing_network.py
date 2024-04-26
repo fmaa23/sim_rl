@@ -22,16 +22,19 @@ class Queue_network:
     
     def process_config(self, filename):
         """
-            This function accepts the name of the yaml file as the input and returns the variables for the process_input function
-            
-            Input : filename (str) : Name of the yaml file
-            Output : lamda_list (list) : List of arrival rates for each queue
-                     miu_list (list) : List of service rates for each queue
-                     active_cap (int) : Active capacity of the server
-                     deactive_t (float) : Deactivation time
-                     adjacent_list (dict) : Adjacency list of the network
-                     buffer_size_for_each_queue (list) : List of buffer sizes for each queue
-                     transition_proba (dict) : Transition probability matrix
+        This function accepts the name of the yaml file as the input and returns the variables for the process_input function.
+        
+        Parameters:
+        - filename (str) : Name of the yaml file
+        
+        Returns:
+        - lambda_list (list) : List of arrival rates for each queue
+        - miu_list (list) : List of service rates for each queue
+        - active_cap (int) : Active capacity of the server
+        - deactive_t (float) : Deactivation time
+        - adjacent_list (dict) : Adjacency list of the network
+        - buffer_size_for_each_queue (list) : List of buffer sizes for each queue
+        - transition_proba (dict) : Transition probability matrix
         """
         parameters = (open(filename, 'r'))
         parameter_dictionary = yaml.load(parameters, Loader=yaml.FullLoader)
@@ -59,17 +62,15 @@ class Queue_network:
         Configures the queue network simulation environment with provided inputs.
 
         Parameters:
-            arrival_rate (float): The overall rate at which jobs arrive at the queue network.
-            miu_list (list): List of service rates for each queue.
-            q_classes (dict): Mapping of queue identifiers to their respective queue class types.
-            q_args (dict): Additional arguments specific to each queue class.
-            adjacent_list (dict): Adjacency list representing the connections between queues.
-            edge_list (dict): Detailed edge list providing specific connections and identifiers.
-            transition_proba (dict): Probabilities of transitioning from one queue to another.
-            max_agents (int): Maximum number of concurrent agents in the network.
-            sim_jobs (int): Total number of jobs to simulate.
-
-        No return value; configures instance variables directly.
+        - arrival_rate (float): The overall rate at which jobs arrive at the queue network.
+        - miu_list (list): List of service rates for each queue.
+        - q_classes (dict): Mapping of queue identifiers to their respective queue class types.
+        - q_args (dict): Additional arguments specific to each queue class.
+        - adjacent_list (dict): Adjacency list representing the connections between queues.
+        - edge_list (dict): Detailed edge list providing specific connections and identifiers.
+        - transition_proba (dict): Probabilities of transitioning from one queue to another.
+        - max_agents (int): Maximum number of concurrent agents in the network.
+        - sim_jobs (int): Total number of jobs to simulate.
         """
         # param for first server
         self.lamda = arrival_rate
@@ -100,11 +101,11 @@ class Queue_network:
         Runs the simulation of the queue network for a given number of events.
 
         Parameters:
-            num_events (int): The number of events to simulate.
-            collect_data (bool): Specifies whether to collect and store data during simulation.
+        - num_events (int): The number of events to simulate.
+        - collect_data (bool): Specifies whether to collect and store data during simulation.
 
         Returns:
-            dict: Collected data about agents if data collection is enabled; otherwise, None.
+        - dict: Collected data about agents if data collection is enabled; otherwise, None.
         """
         self.queueing_network.initial()
         if collect_data:

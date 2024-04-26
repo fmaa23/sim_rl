@@ -17,11 +17,11 @@ class RLEnv:
         """
         Initializes the reinforcement learning environment.
 
-        Args:
-            qn_net: The queueing network object.
-            num_sim (int): The number of simulations to run. Defaults to 5000.
-            entry_nodes (tuple): Source and target node for the queue that accepts external arrivals. 
-            start_state: The initial state of the environment. If None, a default state is used.
+        Parameters:
+        - qn_net: The queueing network object.
+        - num_sim (int): The number of simulations to run. Defaults to 5000.
+        - entry_nodes (tuple): Source and target node for the queue that accepts external arrivals. 
+        - start_state: The initial state of the environment. If None, a default state is used.
 
         Initializes the queueing network parameters and starts the simulation.
         """
@@ -59,7 +59,7 @@ class RLEnv:
         Counts the unique nodes that are present as next nodes in the adjacency list.
 
         Returns:
-            int: The total number of unique nodes present in the adjacency list.
+        - int: The total number of unique nodes present in the adjacency list.
         """
         num_nodes_list = []
         for key in self.adja_list.keys():
@@ -75,7 +75,7 @@ class RLEnv:
         Returns the number of entry nodes in the network.
 
         Returns:
-            int: The number of entry nodes.
+        - int: The number of entry nodes.
         """
         return len(self.entry_nodes)
 
@@ -86,7 +86,7 @@ class RLEnv:
         Null nodes are defined as nodes with a specific edge type, indicating a specific condition in the network.
 
         Returns:
-            int: The number of null nodes.
+        - int: The number of null nodes.
         """
         num_nullnodes = 0
         edge_list = self.qn_net.edge_list
@@ -104,7 +104,7 @@ class RLEnv:
         Retrieves indices of entry edges based on predefined entry nodes.
 
         Returns:
-            list: A list of indices corresponding to the edges that are considered entry points.
+        - list: A list of indices corresponding to the edges that are considered entry points.
         """
         entry_edge_indices=[] 
         for i in range(self.net.num_edges): 
@@ -130,7 +130,7 @@ class RLEnv:
         Returns the transition probabilities of the network.
 
         Returns:
-            A data structure representing the transition probabilities between nodes in the network.
+        - A data structure representing the transition probabilities between nodes in the network.
         """
         self.transition_proba = self.net.transitions(False)
         self.adja_list= self.qn_net.adja_list
@@ -147,7 +147,7 @@ class RLEnv:
         Validates the start state and initializes it if None is provided.
 
         Parameters:
-            start_state (array-like or None): Initial state of the system.
+        - start_state (array-like or None): Initial state of the system.
         """
         if start_state is None: 
             self._state = np.zeros(self.net.num_edges-self.num_nullnodes)
@@ -157,7 +157,7 @@ class RLEnv:
         Returns the current transition probabilities of the network.
 
         Returns:
-            dict: A dictionary representing the transition probabilities.
+        - dict: A dictionary representing the transition probabilities.
         """
         return self.transition_proba
 
@@ -165,17 +165,17 @@ class RLEnv:
         """
         Explores the state of the environment using the provided agent.
 
-        Args:
-            agent: The agent exploring the environment.
-            env: The environment being explored.
-            num_sample (int): The number of samples to take in exploration.
-            device: The device to run the exploration on.
-            w1 (float): Weight parameter for exploration.
-            w2 (float): Another weight parameter for exploration.
-            epsilon (float): The exploration rate.
+        Parameters:
+        - agent: The agent exploring the environment.
+        - env: The environment being explored.
+        - num_sample (int): The number of samples to take in exploration.
+        - device: The device to run the exploration on.
+        - w1 (float): Weight parameter for exploration.
+        - w2 (float): Another weight parameter for exploration.
+        - epsilon (float): The exploration rate.
 
         Returns:
-            The result of exploring the state.
+        - The result of exploring the state.
         """
         return self.ExploreStateEngine.explore_state(agent, env, episode)
 
@@ -184,7 +184,7 @@ class RLEnv:
         Retrieves the current state of the environment.
 
         Returns:
-            The current state of the environment, represented as an array or a suitable data structure.
+        - The current state of the environment, represented as an array or a suitable data structure.
         """
         state = []
         for i in range(self.net.num_edges): 
@@ -213,7 +213,7 @@ class RLEnv:
         The reward calculation is based on the throughput and end-to-end delay of the queues.
 
         Returns:
-            float: The calculated reward.
+        - float: The calculated reward.
         """
 
         avg_delay = []
@@ -256,11 +256,11 @@ class RLEnv:
         """
         Computes and returns the next state of the environment given an action.
 
-        Args:
-            action: The action taken in the current state.
+        Parameters:
+        - action: The action taken in the current state.
 
         Returns:
-            tuple: A tuple containing the next state and the transition probabilities.
+        - tuple: A tuple containing the next state and the transition probabilities.
         """
         # self.test_action_equal_nodes(action)
         action = self.get_correct_action_format(action)
@@ -293,11 +293,11 @@ class RLEnv:
         """
         Tests if the length of the action array is equal to the expected number of nodes minus null nodes.
 
-        Args:
-            action: The action array to test.
+        Parameters:
+        - action: The action array to test.
 
         Raises:
-            ValueError: If the action space is incompatible with the dimensions expected.
+        - ValueError: If the action space is incompatible with the dimensions expected.
         """
         if len(action) != self.net.num_envnodes -  self.num_nullnodes:
             raise ValueError('The action space is incomatible with the dimensions')
@@ -306,11 +306,11 @@ class RLEnv:
         """
         Tests if the provided element is NaN (Not a Number).
 
-        Args:
-            element: The element to check.
+        Parameters:
+        - element: The element to check.
 
         Raises:
-            TypeError: If the element is NaN.
+        - TypeError: If the element is NaN.
         """
         if np.isnan(element):
             TypeError("Encounter NaN")
@@ -319,11 +319,11 @@ class RLEnv:
         """
         Converts the action to the correct format for processing.
 
-        Args:
-            action: The action to format, which can be a list, NumPy array, or PyTorch tensor.
+        Parameters:
+        - action: The action to format, which can be a list, NumPy array, or PyTorch tensor.
 
         Returns:
-            The action formatted as a NumPy array.
+        - The action formatted as a NumPy array.
         """
         if isinstance(action, list):
             action = np.array(action)
@@ -337,10 +337,10 @@ class RLEnv:
         Converts a list of numerical state values into a dictionary mapping each index to its respective value.
 
         Parameters:
-            state (list): A list of numerical values representing a state.
+        - state (list): A list of numerical values representing a state.
 
         Returns:
-            dict: A dictionary with indices as keys and the corresponding state values as values.
+        - dict: A dictionary with indices as keys and the corresponding state values as values.
         """
         initial_states = {}
         for index, num in enumerate(state):
@@ -355,7 +355,7 @@ class RLEnv:
         Simulates the queueing network for a number of events determined by the initialized simulation parameters.
 
         Returns:
-            The state of the environment after the simulation.
+        - The state of the environment after the simulation.
         """
         self.net.initialize(edge_type=1)
         self.net.start_collecting_data()
@@ -368,10 +368,10 @@ class RLEnv:
         Creates an inverted adjacency list where each node points back to its predecessors.
 
         Parameters:
-            adjacency (dict): A dictionary representing the adjacency list to be inverted.
+        - adjacency (dict): A dictionary representing the adjacency list to be inverted.
 
         Returns:
-            dict: The inverted adjacency list.
+        - dict: The inverted adjacency list.
         """
         inverted_dict = {}
 
@@ -389,10 +389,10 @@ class RLEnv:
         Creates a queueing environment based on a specified configuration file.
 
         Parameters:
-            config_file (str): Path to the configuration file.
+        - config_file (str): Path to the configuration file.
 
         Returns:
-            object: An initialized queueing environment object.
+        - object: An initialized queueing environment object.
         """
         return create_queueing_env(config_file)
                 
@@ -401,8 +401,8 @@ class RLEnv:
         Resets the queue network to an initial state or re-initializes it with a new configuration.
 
         Parameters:
-            qn_net (object, optional): An existing queue network object. If None, a new network is created
-                                    from a configuration file.
+        - qn_net (object, optional): An existing queue network object. If None, a new network is created
+                                     from a configuration file.
 
         No return value; modifies instance attributes directly.
         """
@@ -422,14 +422,11 @@ class RLEnv:
         Returns a specific metric for a given queue in the environment.
 
         Parameters:
-        - queue_index: int
-            The index of the queue to retrieve the metric for.
-        - metric: str
-            The metric to retrieve, either "waiting_time" or "throughput".
+        - queue_index (int): The index of the queue to retrieve the metric for.
+        - metric (str):The metric to retrieve, either "waiting_time" or "throughput".
 
         Returns:
-        float
-            The value of the specified metric for the given queue.
+        - float: The value of the specified metric for the given queue.
         """
         if metric != "waiting_time" and metric != "throughput": 
             raise ValueError('Invalid metric...Try "waiting_time" or "throughput":') 
