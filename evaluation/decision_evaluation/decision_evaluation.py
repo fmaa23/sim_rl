@@ -50,10 +50,7 @@ class ControlEvaluation(Engine):
         self.queue_metrics = [] 
 
         self.call_plot_num = 0
-        plt.ion()
-        self.fig, self.ax = plt.subplots()
-        self.ax.set(xlabel='Time Steps', ylabel = self.metric, title= self.metric + ' vs Time Steps for Queue' + str(self.queue_index))
-    
+        self.case = 'Normal'
     def load_hyperparams(self, eval_param_filepath):
         """
         Load hyperparameters from a YAML file.
@@ -84,13 +81,12 @@ class ControlEvaluation(Engine):
         self.ax.plot(transition_proba_lists)
         self.ax.set(xlabel='Time Steps', ylabel='Transition Probability',
                 title=f'Transition Probability vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_transition_proba.png'
+        figure_name = f'{self.case}_transition_proba_plot.png'
 
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        features_dir = 'features/blockage_demonstrations/output_plots'
+        evaluation_dir = 'evaluation/decision_evaluation/output_plots'
 
-        full_path = os.path.join(script_dir, features_dir)
+        full_path = os.path.join(script_dir, evaluation_dir)
 
         # Check if the directory exists, and create it if it doesn't
         if not os.path.exists(full_path):
@@ -110,13 +106,12 @@ class ControlEvaluation(Engine):
             self.ax.plot(range(len(queue_metrics)), queue_metrics, label=label)
         self.ax.set(xlabel='Time Steps', ylabel=self.metric,
                 title=self.metric + f' vs Time Steps for Queue {self.queue_index}')
-        self.ax.legend()  # Add a legend to differentiate the lines
-        figure_name = f'{self.call_plot_num}_plot_queue.png'
+        figure_name = f'{self.case}_{self.metric}_plot.png'
 
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        features_dir = 'features/blockage_demonstrations/output_plots'
+        evaluation_dir = 'evaluation/decision_evaluation/output_plots'
 
-        full_path = os.path.join(script_dir, features_dir)
+        full_path = os.path.join(script_dir, evaluation_dir)
 
         # Check if the directory exists, and create it if it doesn't
         if not os.path.exists(full_path):
@@ -165,21 +160,22 @@ class DisruptionEvaluation(ControlEvaluation):
         
         self.queue_index = queue_index
         self.metric = metric
+        self.case='Blocked'
 
         
     def plot_transition_proba_changes(self, queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt):
-        self.param_file = "user_config\\features_params\\blockage_demonstration_params.yml"
-        self.save_file = "features\\blockage_demonstrations\output_plots"
+        self.param_file = "user_config\\evaluation_params\\blockage_demonstration_params.yml"
+        self.save_file = "evaluation\\decision_evaluation\output_plots"
         trans_proba_changes = queue_transition_proba_before_disrupt + queue_transition_proba_after_disrupt
         plt.figure()
         plt.plot(trans_proba_changes)
         plt.title(f"Routing Proba Changes Before/After Disruption for Queue_{queue_index}")
 
         script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        features_dir = 'features/blockage_demonstrations/output_plots'
+        evaluation_dir = 'evaluation/decision_evaluation/output_plots'
         figure_name = "Transition_Proba_BeforeAfter_Blockage.png"
 
-        full_path = os.path.join(script_dir, features_dir)
+        full_path = os.path.join(script_dir, evaluation_dir)
 
         # Check if the directory exists, and create it if it doesn't
         if not os.path.exists(full_path):
