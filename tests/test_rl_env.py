@@ -21,7 +21,7 @@ def setup_rlenv(request):
     This setup runs before each test within the module that requests it.
     """
     configuration_file = config_path / request.param
-    params = {'num_sim': 5000}
+    params = {'num_sim': 5000, 'temperature': 0.15}
     env = create_simulation_env(params, config_file=configuration_file)
     yield env
 
@@ -89,8 +89,8 @@ class TestRLEnv:
                 assert  np.sum(np.array(actions_node_proba))==1
     @pytest.mark.parametrize('setup_rlenv, expected_reward', 
                              [('tests/supporting_data/configuration.yml',-3.9), 
-                              ('tests/supporting_data/configuration2.yml',-18.5), 
-                              ('tests/supporting_data/configuration3.yml',-1.5)], 
+                              ('tests/supporting_data/configuration2.yml',-37), 
+                              ('tests/supporting_data/configuration3.yml',-8)], 
                               indirect=['setup_rlenv'])
     def test_get_reward(self, setup_rlenv, expected_reward):
         setup_rlenv.get_next_state([0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]) 
