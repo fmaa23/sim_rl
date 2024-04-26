@@ -62,6 +62,7 @@ class ReplayBuffer():
         """
         state = torch.stack([item[0] for item in self.buffer], dim=0).to(self.device)
         action = torch.stack([item[1] for item in self.buffer], dim=0).to(self.device)
+        #reward = torch.stack([item[2].view(-1) for item in self.buffer], dim=0).to(self.device)
         reward = torch.stack([torch.tensor(item[2]).view(-1) for item in self.buffer], dim=0).to(self.device)
         next_state = torch.stack([item[3] for item in self.buffer], dim=0).to(self.device)
         return TensorDataset(state, action, reward, next_state)

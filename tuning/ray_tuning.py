@@ -203,8 +203,8 @@ def ray_tune():
     param_space={
 
             "num_workers": 10, 
-            "num_cpus": 1,  # number of CPUs to use per trial
-            "num_gpus": 0,  # number of GPUs to use per trial
+            "num_cpus": 0,  # number of CPUs to use per trial
+            "num_gpus": 1,  # number of GPUs to use per trial
 
             # These params are tuned from a fixed starting value.
             "learning_rate": 1e-4,
