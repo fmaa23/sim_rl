@@ -152,7 +152,7 @@ class BreakdownEngine:
 
         blockage_cases = {}
         for key in miu_dict.keys():
-            new_miu_dict = {key: abs(np.random.normal(scale=self.std)) for key in miu_dict.keys()}
+            new_miu_dict = {key: miu_dict[key] for key in miu_dict.keys()}
             if key != 1:
                 new_miu_dict[key] = float('inf')
 

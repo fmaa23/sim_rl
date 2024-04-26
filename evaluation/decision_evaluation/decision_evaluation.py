@@ -163,7 +163,9 @@ class DisruptionEvaluation(ControlEvaluation):
         self.queue_index = queue_index
         self.metric = metric
         self.case ='Blocked'
-        self.environment = create_simulation_env(params, self.config_param_filepath, disrupt_case=True, disrupt=True, queue_index=self.queue_index)
+        self.standard_environment = create_simulation_env(params, self.config_param_filepath, disrupt_case = False)
+        self.deactivate_node = self.standard_environment.net.edge2queue[self.queue_index].edge[1]
+        self.environment = create_simulation_env(params, self.config_param_filepath, disrupt_case=True, disrupt=True, queue_index=self.queue_index, deactivate_node=self.deactivate_node)
 
     
     def plot_transition_proba_changes(self, queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt):
@@ -201,16 +203,16 @@ if __name__=="__main__":
     time_steps = 100
     sim_jobs = 100
     env  = 'user_config/configuration.yml'
-    #env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath, disrupt_case=False)
     agent = nc.load_agent()
-    nc.evaluation(agent=agent, time_steps=time_steps)
+    _, queue_transition_proba_before_disrupt = nc.evaluation(agent=agent, time_steps=time_steps)
 
     ## Static Disruption 
     queue_index = 2
     metric = 'throughput'
     sd = DisruptionEvaluation(queue_index, metric)
-    #nv = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath, disrupt_case=True)
-    sd.evaluation(agent= agent, time_steps=time_steps)
+    _, queue_transition_proba_after_disrupt=sd.evaluation(agent= agent, time_steps=time_steps)
 
-    # Save Plot
-    queue_metrics, queue_transition_proba_before_disrupt = None , None
+    # Changes in transition proba
+    # _, queue_transition_proba_before_disrupt = nc.evaluation(agent=agent, time_steps=time_steps)
+    # _, queue_transition_proba_after_disrupt = sd.evaluation(agent= agent, time_steps=time_steps)
+    sd.plot_transition_proba_changes(queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt)

@@ -69,7 +69,7 @@ def load_hyperparams(eval_param_filepath):
 
     return params, hidden
 
-def create_params(config_file, disrupt_case = False, disrupt = False, queue_index = 2):
+def create_params(config_file, disrupt_case = False, disrupt = False, queue_index = 2, deactivate_node=None):
     """
     Generate parameters for the queueing environment based on a configuration file.
 
@@ -87,17 +87,10 @@ def create_params(config_file, disrupt_case = False, disrupt = False, queue_inde
     entry_nodes = config_params['entry_nodes']
     exit_nodes = get_num_connections(adjacent_list)
     edge_list = make_edge_list(adjacent_list, exit_nodes)
-
-    for source_node in edge_list.keys():
-        for target_node in edge_list[source_node]:
-            queue_type = edge_list[source_node][target_node]
-
-            if queue_type == queue_index:
-                deactivate_node = target_node + 1
     
     if disrupt_case:
         std = 0.1
-        miu_dict = {key: abs(np.random.normal(scale=std)) for key in miu_dict.keys()}
+        miu_dict = {key: miu_dict[key] for key in miu_dict.keys()}
 
         if disrupt:
             miu_dict[deactivate_node] = float('inf')
@@ -112,7 +105,7 @@ def create_params(config_file, disrupt_case = False, disrupt = False, queue_inde
     transition_proba_all = config_params['transition_proba_all']
     return arrival_rate, miu_dict, q_classes, q_args, adjacent_list, edge_list, transition_proba_all, max_agents, sim_jobs, entry_nodes
 
-def create_queueing_env(config_file, disrupt_case = False, disrupt = False, queue_index = 2):
+def create_queueing_env(config_file, disrupt_case = False, disrupt = False, queue_index = 2, deactivate_node= None):
     """
     Create and configure a queueing environment based on a given configuration file.
 
@@ -126,7 +119,7 @@ def create_queueing_env(config_file, disrupt_case = False, disrupt = False, queu
     transition_proba_all, max_agents, sim_jobs, entry_nodes = create_params(config_file, 
                                                                                              disrupt_case = disrupt_case, 
                                                                                              disrupt = disrupt, 
-                                                                                             queue_index = queue_index)
+                                                                                             queue_index = queue_index, deactivate_node=deactivate_node)
     
 
     q_net = Queue_network()
@@ -150,7 +143,7 @@ def create_RL_env(q_net, params, entry_nodes):
     env = RLEnv(q_net, num_sim = params['num_sim'], entry_nodes=entry_nodes, temperature = params['temperature'])
     return env
 
-def create_simulation_env(params, config_file, disrupt_case = False, disrupt = False, queue_index = 2):
+def create_simulation_env(params, config_file, disrupt_case = False, disrupt = False, queue_index = 2, deactivate_node=None):
     """
     Create a simulation environment for reinforcement learning based on given parameters and a configuration file.
 
@@ -162,7 +155,7 @@ def create_simulation_env(params, config_file, disrupt_case = False, disrupt = F
     Returns:
     - RLEnv: The RL environment ready for simulation.
     """
-    q_net = create_queueing_env(config_file, disrupt_case, disrupt = disrupt, queue_index = queue_index)
+    q_net = create_queueing_env(config_file, disrupt_case, disrupt = disrupt, queue_index = queue_index, deactivate_node=deactivate_node)
     entry_nodes = get_entry_nodes(config_file)
     RL_env = create_RL_env(q_net, params, entry_nodes)
 
