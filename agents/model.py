@@ -97,11 +97,10 @@ class Critic(nn.Module):
         state-action pair.
 
         Parameters:
-            n_states (int)  : Number of nodes in the system. Represents the size of the state vector.
-            n_actions (int) : Number of nodes in the system. Represents the size of the action vector.
-            hidden (list of ints):  Number of neurons in each hidden layer. len(hidden) = number of 
+        - n_states (int)  : Number of nodes in the system. Represents the size of the state vector.
+        - n_actions (int) : Number of nodes in the system. Represents the size of the action vector.
+        - hidden (list of ints):  Number of neurons in each hidden layer. len(hidden) = number of 
                                     hidden layers within the network.
-
         """
         super(Critic, self).__init__()
         check_validity(hidden)
@@ -126,7 +125,6 @@ class Critic(nn.Module):
 
         Returns:
         - torch.Tensor: Output Q value.
-
         """
         x, a = xa
         if type(x) == np.ndarray: 
@@ -153,11 +151,10 @@ class RewardModel(nn.Module):
         of this state-action pair.
 
         Parameters:
-            n_states (int)  : Number of nodes in the system. Represents the size of the state vector.
-            n_actions (int) : Number of nodes in the system. Represents the size of the action vector.
-            hidden (list of ints):  Number of neurons in each hidden layer. len(hidden) = number of 
+        - n_states (int)  : Number of nodes in the system. Represents the size of the state vector.
+        - n_actions (int) : Number of nodes in the system. Represents the size of the action vector.
+        - hidden (list of ints):    Number of neurons in each hidden layer. len(hidden) = number of 
                                     hidden layers within the network.
-
         """
         super().__init__()
         check_validity(hidden)
@@ -178,12 +175,11 @@ class RewardModel(nn.Module):
     def forward(self,xa):
         """
         Parameters:
-            xa (list) : [state vector, action vector] where both vectors have
+        - xa (list):    [state vector, action vector] where both vectors have
                         shape (N,1)
 
         Returns:
-            torch.Tensor : predicted reward of state-action pair
-
+        - torch.Tensor : predicted reward of state-action pair
         """
         x, a = xa
         if type(x) == np.ndarray: 
@@ -209,11 +205,10 @@ class NextStateModel(nn.Module):
         state of this state-action pair.
 
         Parameters:
-            n_states (int)  : Number of nodes in the system. Represents the size of the state vector.
-            n_actions (int) : Number of nodes in the system. Represents the size of the action vector.
-            hidden (list of ints):  Number of neurons in each hidden layer. len(hidden) = number of 
+        - n_states (int)  : Number of nodes in the system. Represents the size of the state vector.
+        - n_actions (int) : Number of nodes in the system. Represents the size of the action vector.
+        - hidden (list of ints):    Number of neurons in each hidden layer. len(hidden) = number of 
                                     hidden layers within the network.
-
         """
         super().__init__()
         self.device = device
@@ -234,12 +229,11 @@ class NextStateModel(nn.Module):
     def forward(self,xa):
         """
         Parameters:
-            xa (list) : [state vector, action vector] where both vectors have 
+        - xa (list):    [state vector, action vector] where both vectors have 
                         shape (N,1)
 
         Returns:
-            torch.Tensor (n_states,) : predicted next state
-
+        - torch.Tensor (n_states,) : predicted next state
         """
         x, a = xa
         if type(x) == np.ndarray: 
@@ -261,7 +255,6 @@ def check_validity(hidden):
     """
     Helper function that checks the validity of the input 'hidden' to the 
     constructors of the neural networks
-
     """
     if type(hidden) != list or not all(isinstance(x,int) for x in hidden):
         raise Exception("The argument 'hidden' should be a list of integers.")

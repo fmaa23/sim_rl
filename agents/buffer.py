@@ -8,8 +8,8 @@ class ReplayBuffer():
         """
         Replay buffer initialisation
 
-        Args:
-            max_size (int): maximum numbers of objects stored by replay buffer
+        Parameters:
+        - max_size (int): maximum numbers of objects stored by replay buffer
         """
         self.max_size = max_size
         self.device = device
@@ -22,13 +22,13 @@ class ReplayBuffer():
         """
         Push a transition to the buffer. If the buffer is full, the oldest transition will be removed.
 
-        Args:
-            transition (4-tuple):   object to be stored in replay buffer. Should be a tuple of (state, action, reward, next_state),
-                                    each item in the tuple should be a torch.Tensor.
+        Parameters:
+        - transition (4-tuple): object to be stored in replay buffer. Should be a tuple of (state, action, reward, next_state),
+                                each item in the tuple should be a torch.Tensor.
 
         Raises:
-            TypeError: If transition is not a tuple.
-            ValueError: If transition is not a 4-tuple.
+        - TypeError: If transition is not a tuple.
+        - ValueError: If transition is not a 4-tuple.
         """
         if not isinstance(transition, tuple):
             raise TypeError("Transition should be a tuple.")
@@ -41,14 +41,14 @@ class ReplayBuffer():
         """
         Get {batch_size} number of random samples from the replay buffer.
         
-        Args:
-            batch_size (int): Number of samples to be drawn from the buffer.
+        Parameters:
+        - batch_size (int): Number of samples to be drawn from the buffer.
 
         Returns:
-            iterable (list): A list of objects sampled from the buffer without replacement.
+        - iterable (list): A list of objects sampled from the buffer without replacement.
 
         Raises:
-            ValueError: If the buffer is empty, or the sample size is greater than the number of items in the buffer.
+        - ValueError: If the buffer is empty, or the sample size is greater than the number of items in the buffer.
         """
         if len(self.buffer) == 0:
             raise ValueError("Cannot sample from an empty buffer!")
