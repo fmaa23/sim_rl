@@ -904,7 +904,8 @@ class Engine():
         actor_loss_list, reward_by_episode, action_dict, \
         gradient_dict, transition_probas = train(params, agent, sim_environment)
         
-        current_dir = os.getcwd()
+        script_path = os.path.abspath(__file__)
+        current_dir = os.path.dirname(os.path.dirname(script_path))
         foundations_dir = 'foundations'
         csv_filepath = os.path.join(current_dir, foundations_dir, data_filename)
         image_filepath = os.path.join(current_dir, foundations_dir, image_filename)
@@ -914,11 +915,11 @@ class Engine():
             actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas)
         
         if plot_curves:
-            self.plot(csv_filepath, image_filepath, transition_probas)
+            plot(csv_filepath, image_filepath, transition_probas)
 
 
     def plot_best(self, data_filepath, images_filepath):
-        self.plot(data_filepath, images_filepath)
+        plot(data_filepath, images_filepath)
 
 
     def start_tuning(self, project_name, num_runs, tune_param_filepath, config_param_filepath, eval_param_filepath, api_key, 
