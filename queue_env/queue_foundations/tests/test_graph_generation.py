@@ -18,20 +18,20 @@ def generate_adjacency(a=3, b=25, c=6, n=12):
 @pytest.fixture(name="expected_response0")
 def fixture_expected_response0():
     return {
-        0: {1: {'edge_type': 5}},
-        1: {2: {'edge_type': 9}, 3: {'edge_type': 14}},
-        2: {0: {'edge_type': 1}},
-        3: {3: {'edge_type': 0}}
+        0: {1: {"edge_type": 5}},
+        1: {2: {"edge_type": 9}, 3: {"edge_type": 14}},
+        2: {0: {"edge_type": 1}},
+        3: {3: {"edge_type": 0}},
     }
 
 
 @pytest.fixture(name="expected_response1")
 def fixture_expected_response1():
     return {
-        0: {1: {'edge_type': 5}},
-        1: {2: {'edge_type': 9}, 3: {'edge_type': 0}},
-        2: {0: {'edge_type': 1}},
-        3: {}
+        0: {1: {"edge_type": 5}},
+        1: {2: {"edge_type": 9}, 3: {"edge_type": 0}},
+        2: {0: {"edge_type": 1}},
+        3: {},
     }
 
 
@@ -53,7 +53,7 @@ class TestGraphFunctions:
         for key in g2.edge_properties():
             edge_props.add(key)
 
-        assert 'edge_length' in edge_props
+        assert "edge_length" in edge_props
 
     @staticmethod
     def test_generate_transition():
@@ -71,10 +71,7 @@ class TestGraphFunctions:
     def test_adjacency2graph_matrix_adjacency(expected_response1):
 
         # Test adjacency argument using ndarray work
-        adj = np.array([[0, 1, 0, 0],
-                        [0, 0, 1, 1],
-                        [1, 0, 0, 0],
-                        [0, 0, 0, 0]])
+        adj = np.array([[0, 1, 0, 0], [0, 0, 1, 1], [1, 0, 0, 0], [0, 0, 0, 0]])
         ety = {0: {1: 5}, 1: {2: 9, 3: 14}}
 
         g = qt.adjacency2graph(adj, edge_type=ety, adjust=2)
@@ -86,10 +83,7 @@ class TestGraphFunctions:
     def test_adjacency2graph_matrix_etype(expected_response0):
         # Test adjacency argument using ndarrays work
         adj = {0: {1: {}}, 1: {2: {}, 3: {}}, 2: {0: {}}, 3: {}}
-        ety = np.array([[0, 5, 0, 0],
-                        [0, 0, 9, 14],
-                        [0, 0, 0, 0],
-                        [0, 0, 0, 0]])
+        ety = np.array([[0, 5, 0, 0], [0, 0, 9, 14], [0, 0, 0, 0], [0, 0, 0, 0]])
 
         g = qt.adjacency2graph(adj, edge_type=ety, adjust=1)
         ans = qt.graph2dict(g)
@@ -115,7 +109,7 @@ class TestGraphFunctions:
         g = qt.set_types_random(g, proportions=pType)
 
         non_loops = [e for e in g.edges() if e[0] != e[1]]
-        mat = [[g.ep(e, 'edge_type') == k for e in non_loops] for k in eType]
+        mat = [[g.ep(e, "edge_type") == k for e in non_loops] for k in eType]
         props = (np.array(mat).sum(1) + 0.0) / len(non_loops)
         ps = np.array([pType[k] for k in eType])
 

@@ -42,7 +42,7 @@ def generate_transition_matrix(g, seed=None):
         if deg == 1:
             mat[v, ind] = 1
         elif deg > 1:
-            probs = np.ceil(np.random.rand(deg) * 100) / 100.
+            probs = np.ceil(np.random.rand(deg) * 100) / 100.0
             if np.isclose(np.sum(probs), 0):
                 probs[np.random.randint(deg)] = 1
 
@@ -171,7 +171,7 @@ def generate_pagerank_graph(num_vertices=250, **kwargs):
                 page_rank = nx.pagerank_numpy(g)
             except:
                 raise exe
- 
+
     for k, pr in page_rank.items():
         r[k] = pr
     g = set_types_rank(g, rank=r, **kwargs)
@@ -214,11 +214,11 @@ def minimal_random_graph(num_vertices, seed=None, **kwargs):
     for k in range(num_vertices - 1):
         for j in range(k + 1, num_vertices):
             v = points[k] - points[j]
-            edges.append((k, j, v[0]**2 + v[1]**2))
+            edges.append((k, j, v[0] ** 2 + v[1] ** 2))
 
-    mytype = [('n1', int), ('n2', int), ('distance', float)]
+    mytype = [("n1", int), ("n2", int), ("distance", float)]
     edges = np.array(edges, dtype=mytype)
-    edges = np.sort(edges, order='distance')
+    edges = np.sort(edges, order="distance")
     unionF = UnionFind([k for k in range(num_vertices)])
 
     g = nx.Graph()
@@ -235,8 +235,7 @@ def minimal_random_graph(num_vertices, seed=None, **kwargs):
     return g
 
 
-def set_types_random(g, proportions=None, loop_proportions=None, seed=None,
-                     **kwargs):
+def set_types_random(g, proportions=None, loop_proportions=None, seed=None, **kwargs):
     """Randomly sets ``edge_type`` (edge type) properties of the graph.
 
     This function randomly assigns each edge a type. The probability of
@@ -291,10 +290,10 @@ def set_types_random(g, proportions=None, loop_proportions=None, seed=None,
         np.random.seed(seed)
 
     if proportions is None:
-        proportions = {k: 1. / 3 for k in range(1, 4)}
+        proportions = {k: 1.0 / 3 for k in range(1, 4)}
 
     if loop_proportions is None:
-        loop_proportions = {k: 1. / 4 for k in range(4)}
+        loop_proportions = {k: 1.0 / 4 for k in range(4)}
 
     edges = [e for e in g.edges() if e[0] != e[1]]
     loops = [e for e in g.edges() if e[0] == e[1]]
@@ -319,9 +318,9 @@ def set_types_random(g, proportions=None, loop_proportions=None, seed=None,
     for k, e in enumerate(loops):
         eTypes[e] = values[k]
 
-    g.new_edge_property('edge_type')
+    g.new_edge_property("edge_type")
     for e in g.edges():
-        g.set_ep(e, 'edge_type', eTypes[e])
+        g.set_ep(e, "edge_type", eTypes[e])
 
     return g
 
@@ -378,49 +377,51 @@ def set_types_rank(g, rank, pType2=0.1, pType3=0.1, seed=None, **kwargs):
     nDests = int(np.ceil(g.number_of_nodes() * pType2))
     dests = np.where(rank >= tmp[-nDests])[0]
 
-    if 'pos' not in g.vertex_properties():
+    if "pos" not in g.vertex_properties():
         g.set_pos()
 
-    dest_pos = np.array([g.vp(v, 'pos') for v in dests])
+    dest_pos = np.array([g.vp(v, "pos") for v in dests])
     nFCQ = int(pType3 * g.number_of_nodes())
     min_g_dist = np.ones(nFCQ) * np.infty
     ind_g_dist = np.ones(nFCQ, int)
 
-    r, theta = np.random.random(nFCQ) / 500., np.random.random(nFCQ) * 360.
+    r, theta = np.random.random(nFCQ) / 500.0, np.random.random(nFCQ) * 360.0
     xy_pos = np.array([r * np.cos(theta), r * np.sin(theta)]).transpose()
     g_pos = xy_pos + dest_pos[np.array(np.mod(np.arange(nFCQ), nDests), int)]
 
     for v in g.nodes():
         if v not in dests:
-            tmp = np.array([_calculate_distance(g.vp(v, 'pos'), g_pos[k, :]) for k in range(nFCQ)])
+            tmp = np.array(
+                [_calculate_distance(g.vp(v, "pos"), g_pos[k, :]) for k in range(nFCQ)]
+            )
             min_g_dist = np.min((tmp, min_g_dist), 0)
             ind_g_dist[min_g_dist == tmp] = v
 
     ind_g_dist = np.unique(ind_g_dist)
-    fcqs = set(ind_g_dist[:min(nFCQ, len(ind_g_dist))])
+    fcqs = set(ind_g_dist[: min(nFCQ, len(ind_g_dist))])
     dests = set(dests)
-    g.new_vertex_property('loop_type')
+    g.new_vertex_property("loop_type")
 
     for v in g.nodes():
         if v in dests:
-            g.set_vp(v, 'loop_type', 3)
+            g.set_vp(v, "loop_type", 3)
             if not g.is_edge((v, v)):
                 g.add_edge(v, v)
         elif v in fcqs:
-            g.set_vp(v, 'loop_type', 2)
+            g.set_vp(v, "loop_type", 2)
             if not g.is_edge((v, v)):
                 g.add_edge(v, v)
 
-    g.new_edge_property('edge_type')
+    g.new_edge_property("edge_type")
     for e in g.edges():
-        g.set_ep(e, 'edge_type', 1)
+        g.set_ep(e, "edge_type", 1)
 
     for v in g.nodes():
-        if g.vp(v, 'loop_type') in [2, 3]:
+        if g.vp(v, "loop_type") in [2, 3]:
             e = (v, v)
-            if g.vp(v, 'loop_type') == 2:
-                g.set_ep(e, 'edge_type', 2)
+            if g.vp(v, "loop_type") == 2:
+                g.set_ep(e, "edge_type", 2)
             else:
-                g.set_ep(e, 'edge_type', 3)
+                g.set_ep(e, "edge_type", 3)
 
     return g

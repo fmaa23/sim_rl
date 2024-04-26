@@ -35,13 +35,16 @@ class Agent(object):
         Specifies how many times an agent has been blocked by a finite
         capacity queue.
     """
+
     def __init__(self, agent_id=(0, 0), **kwargs):
         self.agent_id = agent_id
         self.blocked = 0
         self._time = 0  # The agents arrival or departure time
 
     def __repr__(self):
-        return "Agent; agent_id:{0}. time: {1}".format(self.agent_id, round(self._time, 3))
+        return "Agent; agent_id:{0}. time: {1}".format(
+            self.agent_id, round(self._time, 3)
+        )
 
     def __lt__(self, b):
         return self._time < b._time
@@ -130,6 +133,7 @@ class GreedyAgent(Agent):
     with the shortest line (where the ordering is given by
     :class:`QueueNetwork's<.QueueNetwork>` ``out_edges`` attribute).
     """
+
     def __init__(self, agent_id=(0, 0)):
         Agent.__init__(self, agent_id)
 
@@ -173,6 +177,7 @@ class InftyAgent(object):
 
     This agent never interacts with the :class:`.QueueNetwork`.
     """
+
     def __init__(self):
         self._time = infty
 

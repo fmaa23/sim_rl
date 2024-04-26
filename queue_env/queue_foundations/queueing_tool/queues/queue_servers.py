@@ -269,17 +269,28 @@ class QueueServer(object):
     """
 
     _default_colors = {
-        'edge_loop_color': [0, 0, 0, 0],
-        'edge_color': [0.9, 0.9, 0.9, 0.5],
-        'vertex_fill_color': [1.0, 1.0, 1.0, 1.0],
-        'vertex_color': [0.0, 0.5, 1.0, 1.0]
+        "edge_loop_color": [0, 0, 0, 0],
+        "edge_color": [0.9, 0.9, 0.9, 0.5],
+        "vertex_fill_color": [1.0, 1.0, 1.0, 1.0],
+        "vertex_color": [0.0, 0.5, 1.0, 1.0],
     }
 
-    def __init__(self, num_servers=1, arrival_f=None,
-                 service_f=None, edge=(0, 0, 0, 1),
-                 AgentFactory=Agent, collect_data=False, active_cap=infty,
-                 deactive_t=infty, colors=None, seed=None,
-                 coloring_sensitivity=2, active_status = True,**kwargs):
+    def __init__(
+        self,
+        num_servers=1,
+        arrival_f=None,
+        service_f=None,
+        edge=(0, 0, 0, 1),
+        AgentFactory=Agent,
+        collect_data=False,
+        active_cap=infty,
+        deactive_t=infty,
+        colors=None,
+        seed=None,
+        coloring_sensitivity=2,
+        active_status=True,
+        **kwargs,
+    ):
 
         if not isinstance(num_servers, numbers.Integral) and num_servers is not infty:
             msg = "num_servers must be an integer or infinity."
@@ -289,17 +300,19 @@ class QueueServer(object):
             raise ValueError(msg)
 
         self.edge = edge
-        self.num_servers = kwargs.get('nServers', num_servers)
+        self.num_servers = kwargs.get("nServers", num_servers)
         self.num_departures = 0
         self.num_system = 0
-        self.data = {}   # times; agent_id : [arrival, service start, departure]
+        self.data = {}  # times; agent_id : [arrival, service start, departure]
         self.queue = collections.deque()
 
         if arrival_f is None:
+
             def arrival_f(t):
                 return t + exponential(1.0)
 
         if service_f is None:
+
             def service_f(t):
                 return t + exponential(0.9)
 
@@ -311,15 +324,17 @@ class QueueServer(object):
         self.deactive_t = deactive_t
 
         inftyAgent = InftyAgent()
-        self._arrivals = [inftyAgent]    # A list of arriving agents.
-        self._departures = [inftyAgent]    # A list of departing agents.
+        self._arrivals = [inftyAgent]  # A list of arriving agents.
+        self._departures = [inftyAgent]  # A list of departing agents.
         self._num_arrivals = 0
         self._oArrivals = 0
-        self._num_total = 0       # The number of agents scheduled to arrive + num_system
+        self._num_total = 0  # The number of agents scheduled to arrive + num_system
         self._active = active_status
-        self._current_t = 0       # The time of the last event.
-        self._time = infty   # The time of the next event.
-        self._next_ct = 0       # The next time an arrival from outside the network can arrive.
+        self._current_t = 0  # The time of the last event.
+        self._time = infty  # The time of the next event.
+        self._next_ct = (
+            0  # The next time an arrival from outside the network can arrive.
+        )
         self.coloring_sensitivity = coloring_sensitivity
 
         if isinstance(seed, numbers.Integral):
@@ -349,10 +364,18 @@ class QueueServer(object):
         return [self._num_arrivals, self._oArrivals]
 
     def __repr__(self):
-        my_str = ("QueueServer:{0}. Servers: {1}, queued: {2}, arrivals: {3}, "
-                  "departures: {4}, next time: {5}")
-        arg = (self.edge[2], self.num_servers, len(self.queue), self.num_arrivals,
-               self.num_departures, round(self._time, 3))
+        my_str = (
+            "QueueServer:{0}. Servers: {1}, queued: {2}, arrivals: {3}, "
+            "departures: {4}, next time: {5}"
+        )
+        arg = (
+            self.edge[2],
+            self.num_servers,
+            len(self.queue),
+            self.num_arrivals,
+            self.num_departures,
+            round(self._time, 3),
+        )
         return my_str.format(*arg)
 
     def set_queue(self, num_jobs):
@@ -377,7 +400,7 @@ class QueueServer(object):
                 new_agent._time = self._next_ct
                 heappush(self._arrivals, new_agent)
 
-                if self.active_cap > 0: # modify
+                if self.active_cap > 0:  # modify
                     self._oArrivals += 1
 
                 if self._oArrivals >= self.active_cap:
@@ -454,21 +477,21 @@ class QueueServer(object):
               loop, and ``colors['edge_color']`` otherwise.
         """
         if which == 1:
-            color = self.colors['edge_loop_color']
+            color = self.colors["edge_loop_color"]
 
         elif which == 2:
-            color = self.colors['vertex_color']
+            color = self.colors["vertex_color"]
 
         else:
-            div = self.coloring_sensitivity * self.num_servers + 1.
-            tmp = 1. - min(self.num_system / div, 1)
+            div = self.coloring_sensitivity * self.num_servers + 1.0
+            tmp = 1.0 - min(self.num_system / div, 1)
 
             if self.edge[0] == self.edge[1]:
-                color = [i * tmp for i in self.colors['vertex_fill_color']]
+                color = [i * tmp for i in self.colors["vertex_fill_color"]]
                 color[3] = 1.0
             else:
-                color = [i * tmp for i in self.colors['edge_color']]
-                color[3] = 1 / 2.
+                color = [i * tmp for i in self.colors["edge_color"]]
+                color[3] = 1 / 2.0
 
         return color
 
@@ -540,19 +563,19 @@ class QueueServer(object):
             dat[:, 5] = self.edge[2]
 
             dType = [
-                ('a', float),
-                ('s', float),
-                ('d', float),
-                ('q', float),
-                ('n', float),
-                ('id', float)
+                ("a", float),
+                ("s", float),
+                ("d", float),
+                ("q", float),
+                ("n", float),
+                ("id", float),
             ]
             dat = np.array([tuple(d) for d in dat], dtype=dType)
-            dat = np.sort(dat, order='a')
+            dat = np.sort(dat, order="a")
             dat = np.array([tuple(d) for d in dat])
 
         if return_header:
-            return dat, 'arrival,service,departure,num_queued,num_total,q_id'
+            return dat, "arrival,service,departure,num_queued,num_total,q_id"
 
         return dat
 
@@ -596,7 +619,7 @@ class QueueServer(object):
 
             num_queued = len(self.queue)
             # This is the number of agents currently being serviced by
-            # the QueueServer. This number need not be equal to 
+            # the QueueServer. This number need not be equal to
             # num_servers - 1 (although it typically is), since there
             # can be a change to the number of servers after the queue was
             # created.
@@ -621,11 +644,13 @@ class QueueServer(object):
             if self.collect_data:
                 b = 0 if self.num_system <= self.num_servers else 1
                 if arrival.agent_id not in self.data:
-                    self.data[arrival.agent_id] = \
-                        [[arrival._time, 0, 0, len(self.queue) + b, self.num_system]]
+                    self.data[arrival.agent_id] = [
+                        [arrival._time, 0, 0, len(self.queue) + b, self.num_system]
+                    ]
                 else:
-                    self.data[arrival.agent_id]\
-                        .append([arrival._time, 0, 0, len(self.queue) + b, self.num_system])
+                    self.data[arrival.agent_id].append(
+                        [arrival._time, 0, 0, len(self.queue) + b, self.num_system]
+                    )
 
             arrival.queue_action(self, 0)
 
@@ -825,10 +850,10 @@ class LossQueue(QueueServer):
     """
 
     _default_colors = {
-        'edge_loop_color': [0, 0, 0, 0],
-        'edge_color': [0.7, 0.7, 0.7, 0.5],
-        'vertex_fill_color': [1.0, 1.0, 1.0, 1.0],
-        'vertex_color': [0.133, 0.545, 0.133, 1.0]
+        "edge_loop_color": [0, 0, 0, 0],
+        "edge_color": [0.7, 0.7, 0.7, 0.5],
+        "vertex_fill_color": [1.0, 1.0, 1.0, 1.0],
+        "vertex_color": [0.133, 0.545, 0.133, 1.0],
     }
 
     def __init__(self, qbuffer=0, **kwargs):
@@ -838,10 +863,18 @@ class LossQueue(QueueServer):
         self.buffer = qbuffer
 
     def __repr__(self):
-        tmp = ("LossQueue:{0}. Servers: {1}, queued: {2}, arrivals: {3}, "
-               "departures: {4}, next time: {5}")
-        arg = (self.edge[2], self.num_servers, len(self.queue), self.num_arrivals,
-               self.num_departures, round(self._time, 3))
+        tmp = (
+            "LossQueue:{0}. Servers: {1}, queued: {2}, arrivals: {3}, "
+            "departures: {4}, next time: {5}"
+        )
+        arg = (
+            self.edge[2],
+            self.num_servers,
+            len(self.queue),
+            self.num_arrivals,
+            self.num_departures,
+            round(self._time, 3),
+        )
         return tmp.format(*arg)
 
     def at_capacity(self):
@@ -881,9 +914,13 @@ class LossQueue(QueueServer):
 
                 if self.collect_data:
                     if arrival.agent_id in self.data:
-                        self.data[arrival.agent_id].append([arrival._time, 0, 0, len(self.queue), self.num_system])
+                        self.data[arrival.agent_id].append(
+                            [arrival._time, 0, 0, len(self.queue), self.num_system]
+                        )
                     else:
-                        self.data[arrival.agent_id] = [[arrival._time, 0, 0, len(self.queue), self.num_system]]
+                        self.data[arrival.agent_id] = [
+                            [arrival._time, 0, 0, len(self.queue), self.num_system]
+                        ]
 
                 if self._arrivals[0]._time < self._departures[0]._time:
                     self._time = self._arrivals[0]._time
@@ -908,15 +945,15 @@ class NullQueue(QueueServer):
     """
 
     _default_colors = {
-        'edge_loop_color': [0, 0, 0, 0],
-        'edge_color': [0.7, 0.7, 0.7, 0.5],
-        'vertex_fill_color': [1.0, 1.0, 1.0, 1.0],
-        'vertex_color': [0.5, 0.5, 0.5, 0.5]
+        "edge_loop_color": [0, 0, 0, 0],
+        "edge_color": [0.7, 0.7, 0.7, 0.5],
+        "vertex_fill_color": [1.0, 1.0, 1.0, 1.0],
+        "vertex_color": [0.5, 0.5, 0.5, 0.5],
     }
 
     def __init__(self, *args, **kwargs):
-        if 'edge' not in kwargs:
-            kwargs['edge'] = (0, 0, 0, 0)
+        if "edge" not in kwargs:
+            kwargs["edge"] = (0, 0, 0, 0)
 
         super(NullQueue, self).__init__(**kwargs)
         self.num_servers = 0
@@ -951,14 +988,14 @@ class NullQueue(QueueServer):
 
     def _current_color(self, which=0):
         if which == 1:
-            color = self.colors['edge_loop_color']
+            color = self.colors["edge_loop_color"]
         elif which == 2:
-            color = self.colors['vertex_color']
+            color = self.colors["vertex_color"]
         else:
             if self.edge[0] == self.edge[1]:
-                color = self.colors['vertex_fill_color']
+                color = self.colors["vertex_fill_color"]
             else:
-                color = self.colors['edge_color']
+                color = self.colors["edge_color"]
         return color
 
     def clear(self):

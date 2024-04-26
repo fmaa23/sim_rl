@@ -18,7 +18,7 @@ def departure_rate():
 
 
 class TestQueueServers:
-    @staticmethod    
+    @staticmethod
     def test_QueueServer_init_errors():
         with pytest.raises(TypeError):
             qt.QueueServer(num_servers=3.0)
@@ -226,10 +226,8 @@ class TestQueueServers:
     @staticmethod
     def test_NullQueue_data_collection():
         adj = {
-            0: {1: {'edge_type': 1}},
-            1: {2: {'edge_type': 2},
-                3: {'edge_type': 2},
-                4: {'edge_type': 2}}
+            0: {1: {"edge_type": 1}},
+            1: {2: {"edge_type": 2}, 3: {"edge_type": 2}, 4: {"edge_type": 2}},
         }
         g = qt.adjacency2graph(adj)
 
@@ -251,7 +249,7 @@ class TestQueueServers:
     def test_ResourceQueue_network():
         g = nx.random_geometric_graph(100, 0.2).to_directed()
         q_cls = {1: qt.ResourceQueue, 2: qt.ResourceQueue}
-        q_arg = {1: {'num_servers': 50}, 2: {'num_servers': 500}}
+        q_arg = {1: {"num_servers": 50}, 2: {"num_servers": 500}}
 
         qn = qt.QueueNetwork(g, q_classes=q_cls, q_args=q_arg)
         qn.max_agents = 400000
@@ -266,9 +264,10 @@ class TestQueueServers:
     def test_ResourceQueue_network_data_collection():
         g = qt.generate_random_graph(100)
         q_cls = {1: qt.ResourceQueue, 2: qt.ResourceQueue}
-        q_arg = {1: {'num_servers': 500},
-                 2: {'num_servers': 500,
-                     'AgentFactory': qt.Agent}}
+        q_arg = {
+            1: {"num_servers": 500},
+            2: {"num_servers": 500, "AgentFactory": qt.Agent},
+        }
 
         qn = qt.QueueNetwork(g, q_classes=q_cls, q_args=q_arg)
         qn.max_agents = 40000
@@ -283,19 +282,19 @@ class TestQueueServers:
     def test_ResourceQueue_network_current_color():
         q = qt.ResourceQueue(num_servers=50)
         ans = q._current_color(0)
-        col = q.colors['vertex_fill_color']
-        col = [i * (0.9 - 1. / 6) / 0.9 for i in col]
+        col = q.colors["vertex_fill_color"]
+        col = [i * (0.9 - 1.0 / 6) / 0.9 for i in col]
         col[3] = 1.0
         assert ans == col
 
         ans = q._current_color(1)
-        col = q.colors['edge_loop_color']
-        col = [i * (0.9 - 1. / 6) / 0.9 for i in col]
+        col = q.colors["edge_loop_color"]
+        col = [i * (0.9 - 1.0 / 6) / 0.9 for i in col]
         col[3] = 0
         assert ans == col
 
         ans = q._current_color(2)
-        col = q.colors['vertex_pen_color']
+        col = q.colors["vertex_pen_color"]
         assert ans == col
 
     @staticmethod
@@ -303,7 +302,7 @@ class TestQueueServers:
 
         g = nx.random_geometric_graph(100, 0.2).to_directed()
         q_cls = {1: qt.InfoQueue}
-        q_arg = {1: {'net_size': g.number_of_edges()}}
+        q_arg = {1: {"net_size": g.number_of_edges()}}
 
         qn = qt.QueueNetwork(g, q_classes=q_cls, q_args=q_arg, seed=17)
         qn.max_agents = 40000
@@ -367,7 +366,7 @@ class TestQueueServers:
         queue.collect_data = True
         queue.set_active()
 
-        # We want 7 agents in the system. After the 
+        # We want 7 agents in the system. After the
         queue.simulate(nA=6)
         queue.set_inactive()
         queue.next_event()

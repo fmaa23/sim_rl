@@ -3,7 +3,8 @@ import random
 import torch
 from torch.utils.data import TensorDataset
 
-class ReplayBuffer():
+
+class ReplayBuffer:
     def __init__(self, max_size, device):
         """
         Replay buffer initialisation
@@ -36,11 +37,10 @@ class ReplayBuffer():
             raise ValueError("Transition should be a 4-tuple.")
         self.buffer.append(transition)
 
-        
     def sample(self, batch_size):
         """
         Get {batch_size} number of random samples from the replay buffer.
-        
+
         Parameters:
         - batch_size (int): Number of samples to be drawn from the buffer.
 
@@ -53,7 +53,9 @@ class ReplayBuffer():
         if len(self.buffer) == 0:
             raise ValueError("Cannot sample from an empty buffer!")
         if len(self.buffer) < batch_size:
-            raise ValueError("Sample size cannot be greater than the number of items contained in the buffer.")
+            raise ValueError(
+                "Sample size cannot be greater than the number of items contained in the buffer."
+            )
         return random.sample(self.buffer, batch_size)
 
     def get_items(self):
@@ -62,11 +64,14 @@ class ReplayBuffer():
         """
         state = torch.stack([item[0] for item in self.buffer], dim=0).to(self.device)
         action = torch.stack([item[1] for item in self.buffer], dim=0).to(self.device)
-        #reward = torch.stack([item[2].view(-1) for item in self.buffer], dim=0).to(self.device)
-        reward = torch.stack([torch.tensor(item[2]).view(-1) for item in self.buffer], dim=0).to(self.device)
-        next_state = torch.stack([item[3] for item in self.buffer], dim=0).to(self.device)
+        # reward = torch.stack([item[2].view(-1) for item in self.buffer], dim=0).to(self.device)
+        reward = torch.stack(
+            [torch.tensor(item[2]).view(-1) for item in self.buffer], dim=0
+        ).to(self.device)
+        next_state = torch.stack([item[3] for item in self.buffer], dim=0).to(
+            self.device
+        )
         return TensorDataset(state, action, reward, next_state)
-
 
     def clear(self):
         """

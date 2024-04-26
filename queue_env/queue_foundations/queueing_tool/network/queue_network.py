@@ -14,24 +14,22 @@ try:
     from matplotlib.animation import FuncAnimation
     from matplotlib.collections import LineCollection
 
-    plt.style.use('ggplot')
+    plt.style.use("ggplot")
     HAS_MATPLOTLIB = True
 
 except ImportError:
     HAS_MATPLOTLIB = False
 
 from queueing_tool.graph import _prepare_graph
-from queueing_tool.queues import (
-    NullQueue,
-    QueueServer,
-    LossQueue
-)
+from queueing_tool.queues import NullQueue, QueueServer, LossQueue
 from queueing_tool.network.priority_queue import PriorityQueue
 from queueing_tool.graph.graph_wrapper import adjacency2graph
 from queueing_tool.queues.queue_servers import *
 
+
 class QueueingToolError(Exception):
     """Base class for exceptions in Queueing-tool."""
+
     pass
 
 
@@ -42,8 +40,9 @@ v_pens = [
     [0, 0.5, 1, 1],
     [0.133, 0.545, 0.133, 1],
     [0.282, 0.239, 0.545, 1],
-    [1, 0.135, 0, 1]
+    [1, 0.135, 0, 1],
 ]
+
 
 class QueueNetwork(object):
     """A class that simulates a network of queues.
@@ -280,15 +279,15 @@ class QueueNetwork(object):
     """
 
     default_colors = {
-        'vertex_fill_color': [0.95, 0.95, 0.95, 1.0],
-        'vertex_color': [0.0, 0.5, 1.0, 1.0],
-        'vertex_highlight': [0.5, 0.5, 0.5, 1.0],
-        'edge_departure': [0, 0, 0, 1],
-        'vertex_active': [0.1, 1.0, 0.5, 1.0],
-        'vertex_inactive': [0.95, 0.95, 0.95, 1.0],
-        'edge_active': [0.1, 0.1, 0.1, 1.0],
-        'edge_inactive': [0.8, 0.8, 0.8, 0.3],
-        'bgcolor': [1, 1, 1, 1]
+        "vertex_fill_color": [0.95, 0.95, 0.95, 1.0],
+        "vertex_color": [0.0, 0.5, 1.0, 1.0],
+        "vertex_highlight": [0.5, 0.5, 0.5, 1.0],
+        "edge_departure": [0, 0, 0, 1],
+        "vertex_active": [0.1, 1.0, 0.5, 1.0],
+        "vertex_inactive": [0.95, 0.95, 0.95, 1.0],
+        "edge_active": [0.1, 0.1, 0.1, 1.0],
+        "edge_inactive": [0.8, 0.8, 0.8, 0.3],
+        "bgcolor": [1, 1, 1, 1],
     }
 
     default_classes = {
@@ -296,19 +295,30 @@ class QueueNetwork(object):
         1: QueueServer,
         2: LossQueue,
         3: LossQueue,
-        4: LossQueue
+        4: LossQueue,
     }
 
     default_q_colors = {
-        k: {'edge_loop_color': [0, 0, 0, 0],
-            'edge_color': [0.8, 0.8, 0.8, 1.0],
-            'vertex_fill_color': [0.95, 0.95, 0.95, 1.0],
-            'vertex_color': v_pens[k]}
+        k: {
+            "edge_loop_color": [0, 0, 0, 0],
+            "edge_color": [0.8, 0.8, 0.8, 1.0],
+            "vertex_fill_color": [0.95, 0.95, 0.95, 1.0],
+            "vertex_color": v_pens[k],
+        }
         for k in range(5)
     }
 
-    def __init__(self, g, q_classes=None, q_args=None, seed=None, colors=None,
-                 max_agents=1000, blocking='BAS', adjust_graph=True):
+    def __init__(
+        self,
+        g,
+        q_classes=None,
+        q_args=None,
+        seed=None,
+        colors=None,
+        max_agents=1000,
+        blocking="BAS",
+        adjust_graph=True,
+    ):
 
         if not isinstance(blocking, str):
             raise TypeError("blocking must be a string")
@@ -320,7 +330,7 @@ class QueueNetwork(object):
         self._initialized = False
         self._prev_edge = None
         self._fancy_heap = PriorityQueue()
-        self._blocking = True if blocking.lower() != 'rs' else False
+        self._blocking = True if blocking.lower() != "rs" else False
 
         if colors is None:
             colors = {}
@@ -344,8 +354,10 @@ class QueueNetwork(object):
                 q_args[k] = {}
 
         for key, args in q_args.items():
-            if 'colors' not in args:
-                args['colors'] = self.default_q_colors.get(key, self.default_q_colors[1])
+            if "colors" not in args:
+                args["colors"] = self.default_q_colors.get(
+                    key, self.default_q_colors[1]
+                )
 
         if isinstance(seed, numbers.Integral):
             np.random.seed(seed)
@@ -364,29 +376,29 @@ class QueueNetwork(object):
 
             for v in g.nodes():
                 vod = g.out_degree(v)
-                probs = array.array('d', [1. / vod for i in range(vod)])
+                probs = array.array("d", [1.0 / vod for i in range(vod)])
                 self.out_edges[v] = [g.edge_index[e] for e in sorted(g.out_edges(v))]
                 self.in_edges[v] = [g.edge_index[e] for e in sorted(g.in_edges(v))]
                 self._route_probs[v] = probs
 
             g.freeze()
             self.g = g
-        
+
         self.number_sims = 0
 
     def __repr__(self):
-        the_string = 'QueueNetwork. # nodes: {0}, edges: {1}, agents: {2}'
+        the_string = "QueueNetwork. # nodes: {0}, edges: {1}, agents: {2}"
         return the_string.format(self.nV, self.nE, np.sum(self.num_agents))
 
     @property
     def blocking(self):
-        return 'BAS' if self._blocking else 'RS'
+        return "BAS" if self._blocking else "RS"
 
     @blocking.setter
     def blocking(self, tmp):
         if not isinstance(tmp, str):
             raise TypeError("blocking must be a string")
-        self._blocking = True if tmp.lower() != 'rs' else False
+        self._blocking = True if tmp.lower() != "rs" else False
 
     @property
     def num_vertices(self):
@@ -413,8 +425,9 @@ class QueueNetwork(object):
             t = np.infty
         return t
 
-    def animate(self, out=None, t=None, line_kwargs=None,
-                scatter_kwargs=None, **kwargs):
+    def animate(
+        self, out=None, t=None, line_kwargs=None, scatter_kwargs=None, **kwargs
+    ):
         """Animates the network as it's simulating.
 
         The animations can be saved to disk or viewed in interactive
@@ -505,8 +518,7 @@ class QueueNetwork(object):
         """
 
         if not self._initialized:
-            msg = ("Network has not been initialized. "
-                   "Call '.initialize()' first.")
+            msg = "Network has not been initialized. " "Call '.initialize()' first."
             raise QueueingToolError(msg)
 
         if not HAS_MATPLOTLIB:
@@ -514,15 +526,15 @@ class QueueNetwork(object):
             raise ImportError(msg)
 
         self._update_all_colors()
-        kwargs.setdefault('bgcolor', self.colors['bgcolor'])
+        kwargs.setdefault("bgcolor", self.colors["bgcolor"])
 
-        fig = plt.figure(figsize=kwargs.get('figsize', (7, 7)))
+        fig = plt.figure(figsize=kwargs.get("figsize", (7, 7)))
         ax = fig.gca()
 
         mpl_kwargs = {
-            'line_kwargs': line_kwargs,
-            'scatter_kwargs': scatter_kwargs,
-            'pos': kwargs.get('pos')
+            "line_kwargs": line_kwargs,
+            "scatter_kwargs": scatter_kwargs,
+            "pos": kwargs.get("pos"),
         }
 
         line_args, scat_args = self.g.lines_scatter_args(**mpl_kwargs)
@@ -539,51 +551,51 @@ class QueueNetwork(object):
                 if self._t > now + t:
                     return False
             self._simulate_next_event(slow=True)
-            lines.set_color(line_args['colors'])
-            scatt.set_edgecolors(scat_args['edgecolors'])
-            scatt.set_facecolor(scat_args['c'])
+            lines.set_color(line_args["colors"])
+            scatt.set_edgecolors(scat_args["edgecolors"])
+            scatt.set_facecolor(scat_args["c"])
 
-        if hasattr(ax, 'set_facecolor'):
-            ax.set_facecolor(kwargs['bgcolor'])
+        if hasattr(ax, "set_facecolor"):
+            ax.set_facecolor(kwargs["bgcolor"])
         else:
-            ax.set_axis_bgcolor(kwargs['bgcolor'])
+            ax.set_axis_bgcolor(kwargs["bgcolor"])
 
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
         animation_args = {
-            'fargs': None,
-            'event_source': None,
-            'init_func': None,
-            'frames': None,
-            'blit': False,
-            'interval': 10,
-            'repeat': None,
-            'func': update,
-            'repeat_delay': None,
-            'fig': fig,
-            'save_count': None,
+            "fargs": None,
+            "event_source": None,
+            "init_func": None,
+            "frames": None,
+            "blit": False,
+            "interval": 10,
+            "repeat": None,
+            "func": update,
+            "repeat_delay": None,
+            "fig": fig,
+            "save_count": None,
         }
         for key, value in kwargs.items():
             if key in animation_args:
                 animation_args[key] = value
 
         animation = FuncAnimation(**animation_args)
-        if 'filename' not in kwargs:
+        if "filename" not in kwargs:
             plt.ioff()
             plt.show()
         else:
             save_args = {
-                'filename': None,
-                'writer': None,
-                'fps': None,
-                'dpi': None,
-                'codec': None,
-                'bitrate': None,
-                'extra_args': None,
-                'metadata': None,
-                'extra_anim': None,
-                'savefig_kwargs': None
+                "filename": None,
+                "writer": None,
+                "fps": None,
+                "dpi": None,
+                "codec": None,
+                "bitrate": None,
+                "extra_args": None,
+                "metadata": None,
+                "extra_anim": None,
+                "savefig_kwargs": None,
             }
             for key, value in kwargs.items():
                 if key in save_args:
@@ -669,8 +681,7 @@ class QueueNetwork(object):
 
         return net
 
-    def draw(self, update_colors=True, line_kwargs=None,
-             scatter_kwargs=None, **kwargs):
+    def draw(self, update_colors=True, line_kwargs=None, scatter_kwargs=None, **kwargs):
         """Draws the network. The coloring of the network corresponds
         to the number of agents at each queue.
 
@@ -739,13 +750,16 @@ class QueueNetwork(object):
         if update_colors:
             self._update_all_colors()
 
-        if 'bgcolor' not in kwargs:
-            kwargs['bgcolor'] = self.colors['bgcolor']
+        if "bgcolor" not in kwargs:
+            kwargs["bgcolor"] = self.colors["bgcolor"]
 
-        self.g.draw_graph(line_kwargs=line_kwargs,
-                          scatter_kwargs=scatter_kwargs, **kwargs)
+        self.g.draw_graph(
+            line_kwargs=line_kwargs, scatter_kwargs=scatter_kwargs, **kwargs
+        )
 
-    def get_agent_data(self, queues=None, edge=None, edge_type=None, return_header=False):
+    def get_agent_data(
+        self, queues=None, edge=None, edge_type=None, return_header=False
+    ):
         """Gets data from queues and organizes it by agent.
 
         If none of the parameters are given then data from every
@@ -808,24 +822,26 @@ class QueueNetwork(object):
                     data[agent_id] = datum
 
         dType = [
-            ('a', float),
-            ('s', float),
-            ('d', float),
-            ('q', float),
-            ('n', float),
-            ('id', float)
+            ("a", float),
+            ("s", float),
+            ("d", float),
+            ("q", float),
+            ("n", float),
+            ("id", float),
         ]
         for agent_id, dat in data.items():
             datum = np.array([tuple(d) for d in dat.tolist()], dtype=dType)
-            datum = np.sort(datum, order='a')
+            datum = np.sort(datum, order="a")
             data[agent_id] = np.array([tuple(d) for d in datum])
 
         if return_header:
-            return data, 'arrival,service,departure,num_queued,num_total,q_id'
+            return data, "arrival,service,departure,num_queued,num_total,q_id"
 
         return data
 
-    def get_queue_data(self, queues=None, edge=None, edge_type=None, return_header=False):
+    def get_queue_data(
+        self, queues=None, edge=None, edge_type=None, return_header=False
+    ):
         """Gets data from all the queues.
 
         If none of the parameters are given then data from every
@@ -904,7 +920,7 @@ class QueueNetwork(object):
                 data = np.vstack((data, dat))
 
         if return_header:
-            return data, 'arrival,service,departure,num_queued,num_total,q_id'
+            return data, "arrival,service,departure,num_queued,num_total,q_id"
 
         return data
 
@@ -967,8 +983,7 @@ class QueueNetwork(object):
                 msg = "If queues is None, then nActive must be an integer."
                 raise TypeError(msg)
             else:
-                msg = ("If queues is None, then nActive must be a "
-                       "positive int.")
+                msg = "If queues is None, then nActive must be a " "positive int."
                 raise ValueError(msg)
         else:
             queues = _get_queues(self.g, queues, edges, edge_type)
@@ -979,7 +994,7 @@ class QueueNetwork(object):
             raise QueueingToolError("There were no queues to initialize.")
 
         if len(queues) > self.max_agents:
-            queues = queues[:self.max_agents]
+            queues = queues[: self.max_agents]
 
         for ei in queues:
             self.edge2queue[ei].set_active()
@@ -1004,7 +1019,7 @@ class QueueNetwork(object):
             If there are no events then ``None`` is returned.
         """
         if self._fancy_heap.size == 0:
-            event_type = 'Nothing'
+            event_type = "Nothing"
             edge_index = None
         else:
             s = [q._key() for q in self.edge2queue]
@@ -1012,16 +1027,16 @@ class QueueNetwork(object):
             e = s[0][1]
             q = self.edge2queue[e]
 
-            event_type = 'Arrival' if q.next_event_description() == 1 else 'Departure'
+            event_type = "Arrival" if q.next_event_description() == 1 else "Departure"
             edge_index = q.edge[2]
         return event_type, edge_index
 
     def reset_colors(self):
         """Resets all edge and vertex colors to their default values."""
         for k, e in enumerate(self.g.edges()):
-            self.g.set_ep(e, 'edge_color', self.edge2queue[k].colors['edge_color'])
+            self.g.set_ep(e, "edge_color", self.edge2queue[k].colors["edge_color"])
         for v in self.g.nodes():
-            self.g.set_vp(v, 'vertex_fill_color', self.colors['vertex_fill_color'])
+            self.g.set_vp(v, "vertex_fill_color", self.colors["vertex_fill_color"])
 
     def set_transitions(self, mat):
         """Change the routing transitions probabilities for the
@@ -1125,8 +1140,9 @@ class QueueNetwork(object):
         elif isinstance(mat, np.ndarray):
             non_terminal = np.array([self.g.out_degree(v) > 0 for v in self.g.nodes()])
             if mat.shape != (self.nV, self.nV):
-                msg = ("Matrix is the wrong shape, should "
-                       "be {0} x {1}.").format(self.nV, self.nV)
+                msg = ("Matrix is the wrong shape, should " "be {0} x {1}.").format(
+                    self.nV, self.nV
+                )
                 raise ValueError(msg)
             elif not np.allclose(np.sum(mat[non_terminal, :], axis=1), 1):
                 msg = "Sum of transition probabilities at a vertex was not 1."
@@ -1164,7 +1180,7 @@ class QueueNetwork(object):
         """
         g = self.g
         for v in g.nodes():
-            self.g.set_vp(v, 'vertex_color', [0, 0, 0, 0.9])
+            self.g.set_vp(v, "vertex_color", [0, 0, 0, 0.9])
             is_active = False
             my_iter = g.in_edges(v) if g.is_directed() else g.out_edges(v)
             for e in my_iter:
@@ -1173,16 +1189,16 @@ class QueueNetwork(object):
                     is_active = True
                     break
             if is_active:
-                self.g.set_vp(v, 'vertex_fill_color', self.colors['vertex_active'])
+                self.g.set_vp(v, "vertex_fill_color", self.colors["vertex_active"])
             else:
-                self.g.set_vp(v, 'vertex_fill_color', self.colors['vertex_inactive'])
+                self.g.set_vp(v, "vertex_fill_color", self.colors["vertex_inactive"])
 
         for e in g.edges():
             ei = g.edge_index[e]
             if self.edge2queue[ei]._active:
-                self.g.set_ep(e, 'edge_color', self.colors['edge_active'])
+                self.g.set_ep(e, "edge_color", self.colors["edge_active"])
             else:
-                self.g.set_ep(e, 'edge_color', self.colors['edge_inactive'])
+                self.g.set_ep(e, "edge_color", self.colors["edge_inactive"])
 
         self.draw(update_colors=False, **kwargs)
         self._update_all_colors()
@@ -1224,19 +1240,21 @@ class QueueNetwork(object):
         """
         for v in self.g.nodes():
             e = (v, v)
-            if self.g.is_edge(e) and self.g.ep(e, 'edge_type') == edge_type:
+            if self.g.is_edge(e) and self.g.ep(e, "edge_type") == edge_type:
                 ei = self.g.edge_index[e]
-                self.g.set_vp(v, 'vertex_fill_color', self.colors['vertex_highlight'])
-                self.g.set_vp(v, 'vertex_color', self.edge2queue[ei].colors['vertex_color'])
+                self.g.set_vp(v, "vertex_fill_color", self.colors["vertex_highlight"])
+                self.g.set_vp(
+                    v, "vertex_color", self.edge2queue[ei].colors["vertex_color"]
+                )
             else:
-                self.g.set_vp(v, 'vertex_fill_color', self.colors['vertex_inactive'])
-                self.g.set_vp(v, 'vertex_color', [0, 0, 0, 0.9])
+                self.g.set_vp(v, "vertex_fill_color", self.colors["vertex_inactive"])
+                self.g.set_vp(v, "vertex_color", [0, 0, 0, 0.9])
 
         for e in self.g.edges():
-            if self.g.ep(e, 'edge_type') == edge_type:
-                self.g.set_ep(e, 'edge_color', self.colors['edge_active'])
+            if self.g.ep(e, "edge_type") == edge_type:
+                self.g.set_ep(e, "edge_color", self.colors["edge_active"])
             else:
-                self.g.set_ep(e, 'edge_color', self.colors['edge_inactive'])
+                self.g.set_ep(e, "edge_color", self.colors["edge_inactive"])
 
         self.draw(update_colors=False, **kwargs)
         self._update_all_colors()
@@ -1248,6 +1266,7 @@ class QueueNetwork(object):
         - initial_states: A dictionary where keys are edge indices (or tuples representing edges),
         and values are the initial number of jobs in each queue.
         """
+
         def find_key_by_value(d, value):
             for key, val in d.items():
                 if val == value:
@@ -1255,7 +1274,11 @@ class QueueNetwork(object):
             return None
 
         for edge, initial_jobs in initial_states.items():
-            queue_index = find_key_by_value(self.g.edge_index, edge) if isinstance(edge, tuple) else edge
+            queue_index = (
+                find_key_by_value(self.g.edge_index, edge)
+                if isinstance(edge, tuple)
+                else edge
+            )
             queue = self.edge2queue[queue_index]
             # for _ in range(initial_jobs):
             #     queue._add_arrival(None)  # Assuming None can represent a dummy job/agent. Adjust as necessary.
@@ -1314,8 +1337,7 @@ class QueueNetwork(object):
         75...
         """
         if not self._initialized:
-            msg = ("Network has not been initialized. "
-                   "Call '.initialize()' first.")
+            msg = "Network has not been initialized. " "Call '.initialize()' first."
             raise QueueingToolError(msg)
         if t is None:
             for dummy in range(n):
@@ -1331,7 +1353,6 @@ class QueueNetwork(object):
             return
 
         q1k = self._fancy_heap.pop()
-    
 
         q1t = q1k[0]
         q1 = self.edge2queue[q1k[1]]
@@ -1368,8 +1389,11 @@ class QueueNetwork(object):
                     self._update_graph_colors(qedge=q1.edge)
                     self._prev_edge = q1.edge
 
-                if q2._active and self.max_agents < np.infty and \
-                        np.sum(self.num_agents) > self.max_agents - 1:
+                if (
+                    q2._active
+                    and self.max_agents < np.infty
+                    and np.sum(self.num_agents) > self.max_agents - 1
+                ):
                     q2._active = False
 
                 q2.next_event()
@@ -1392,12 +1416,15 @@ class QueueNetwork(object):
                     self._fancy_heap.push(*new_q1k)
 
         elif event == 1:  # This is an arrival
-            if q1._active and self.max_agents < np.infty and \
-                    np.sum(self.num_agents) > self.max_agents - 1:
+            if (
+                q1._active
+                and self.max_agents < np.infty
+                and np.sum(self.num_agents) > self.max_agents - 1
+            ):
                 q1._active = False
 
             q1.next_event()
-            self.num_agents[e1] = q1._num_total 
+            self.num_agents[e1] = q1._num_total
 
             if slow:
                 self._update_graph_colors(qedge=q1.edge)
@@ -1566,13 +1593,13 @@ class QueueNetwork(object):
             e = q.edge[:2]
             v = q.edge[1]
             if q.edge[0] == q.edge[1]:
-                self.g.set_ep(e, 'edge_color', q._current_color(1))
-                self.g.set_vp(v, 'vertex_color', q._current_color(2))
+                self.g.set_ep(e, "edge_color", q._current_color(1))
+                self.g.set_vp(v, "vertex_color", q._current_color(2))
                 if q.edge[3] != 0:
-                    self.g.set_vp(v, 'vertex_fill_color', q._current_color())
+                    self.g.set_vp(v, "vertex_fill_color", q._current_color())
                 do[v] = False
             else:
-                self.g.set_ep(e, 'edge_color', q._current_color())
+                self.g.set_ep(e, "edge_color", q._current_color())
                 if do[v]:
                     self._update_vertex_color(v)
                     do[v] = False
@@ -1592,14 +1619,14 @@ class QueueNetwork(object):
                 nSy += self.edge2queue[ei].num_system
                 cap += self.edge2queue[ei].num_servers
 
-            div = (2 * cap) + 2.
-            tmp = 1. - min(nSy / div, 1.)
+            div = (2 * cap) + 2.0
+            tmp = 1.0 - min(nSy / div, 1.0)
 
-            color = [i * tmp for i in self.colors['vertex_fill_color']]
+            color = [i * tmp for i in self.colors["vertex_fill_color"]]
             color[3] = 1.0
-            self.g.set_vp(v, 'vertex_fill_color', color)
+            self.g.set_vp(v, "vertex_fill_color", color)
             if not ee_is_edge:
-                self.g.set_vp(v, 'vertex_color', self.colors['vertex_color'])
+                self.g.set_vp(v, "vertex_color", self.colors["vertex_color"])
 
     def _update_graph_colors(self, qedge):
         e = qedge[:2]
@@ -1610,24 +1637,24 @@ class QueueNetwork(object):
             q = self.edge2queue[self._prev_edge[2]]
 
             if pe[0] == pe[1]:
-                self.g.set_ep(pe, 'edge_color', q._current_color(1))
-                self.g.set_vp(pv, 'vertex_color', q._current_color(2))
+                self.g.set_ep(pe, "edge_color", q._current_color(1))
+                self.g.set_vp(pv, "vertex_color", q._current_color(2))
                 if q.edge[3] != 0:
-                    self.g.set_vp(v, 'vertex_fill_color', q._current_color())
+                    self.g.set_vp(v, "vertex_fill_color", q._current_color())
 
             else:
-                self.g.set_ep(pe, 'edge_color', q._current_color())
+                self.g.set_ep(pe, "edge_color", q._current_color())
                 self._update_vertex_color(pv)
 
         q = self.edge2queue[qedge[2]]
         if qedge[0] == qedge[1]:
-            self.g.set_ep(e, 'edge_color', q._current_color(1))
-            self.g.set_vp(v, 'vertex_color', q._current_color(2))
+            self.g.set_ep(e, "edge_color", q._current_color(1))
+            self.g.set_vp(v, "vertex_color", q._current_color(2))
             if q.edge[3] != 0:
-                self.g.set_vp(v, 'vertex_fill_color', q._current_color())
+                self.g.set_vp(v, "vertex_fill_color", q._current_color())
 
         else:
-            self.g.set_ep(e, 'edge_color', q._current_color())
+            self.g.set_ep(e, "edge_color", q._current_color())
             self._update_vertex_color(v)
 
 
@@ -1654,7 +1681,7 @@ def _get_queues(g, queues, edge, edge_type):
                 edge_type = set([edge_type])
             tmp = []
             for e in g.edges():
-                if g.ep(e, 'edge_type') in edge_type:
+                if g.ep(e, "edge_type") in edge_type:
                     tmp.append(g.edge_index[e])
 
             queues = np.array(tmp, int)
@@ -1663,6 +1690,7 @@ def _get_queues(g, queues, edge, edge_type):
             queues = range(g.number_of_edges())
 
     return queues
+
 
 # def load_config(env_param_filepath):
 #     """
@@ -1723,13 +1751,13 @@ def _get_queues(g, queues, edge, edge_type):
 #             if end_node not in list(adjacent_list.keys()):
 #                 if end_node not in exit_nodes:
 #                     exit_nodes.append(end_node)
-    
+
 #     for start_node in adjacent_list.keys():
 #         end_node_list = adjacent_list[start_node]
 #         for end_node in end_node_list:
 #             if end_node not in exit_nodes:
 #                 num_connection += 1
-    
+
 #     return num_connection, exit_nodes
 
 # def make_edge_list(adjacent_list, exit_nodes):
@@ -1747,7 +1775,7 @@ def _get_queues(g, queues, edge, edge_type):
 #     edge_type = 1
 #     for start_node in adjacent_list.keys():
 #         end_node_list = adjacent_list[start_node]
-        
+
 #         connection_dict = {}
 #         for end_node in end_node_list:
 #             if end_node not in exit_nodes:
@@ -1755,9 +1783,9 @@ def _get_queues(g, queues, edge, edge_type):
 #                 edge_type += 1
 #             else:
 #                 connection_dict[end_node] = 0
-        
+
 #         edge_list[start_node] = connection_dict
-    
+
 #     return edge_list
 
 # def get_connection_info(adjacent_list):
@@ -1776,7 +1804,7 @@ def _get_queues(g, queues, edge, edge_type):
 #             connect_start_node_list = connection_info.setdefault(end_node, [])
 #             connect_start_node_list.append(start_node)
 #             connection_info[end_node] = connect_start_node_list
-    
+
 #     return connection_info
 
 # def make_unique_edge_type(adjacent_list, edge_list):
@@ -1799,7 +1827,7 @@ def _get_queues(g, queues, edge, edge_type):
 #             edge_type = edge_list[start_node][end_node]
 #             edge_type_list.append(edge_type)
 #         edge_type_info[end_node] = edge_type_list
-    
+
 #     return edge_type_info
 
 # def create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes):
@@ -1834,13 +1862,13 @@ def _get_queues(g, queues, edge, edge_type):
 #                 for edge_type in edge_type_info[end_node]:
 #                     def ser_f(t):
 #                         return t + np.random.exponential(service_rate)
-                    
+
 #                     services_f[edge_type] = ser_f
 
 #         return services_f
 
 #     services_f = get_service_time(edge_type_info, miu_dict, exit_nodes)
-    
+
 #     q_args = {}
 #     for end_node in edge_type_info.keys():
 #         corresponding_edge_types = edge_type_info[end_node]
@@ -1858,14 +1886,14 @@ def _get_queues(g, queues, edge, edge_type):
 #                     'service_f': services_f[edge_type],
 #                     'qbuffer':buffer_size_for_each_queue[edge_type],
 #                     }
-    
+
 #     return q_args
 
 # def explore_state(adja_list, q_args, num_sample):
 #     """
 #     This function is used for state exploration for real word environment
-#     It helps the agent decide which state to explore next based on factors, including Q-values and visit counts. 
-    
+#     It helps the agent decide which state to explore next based on factors, including Q-values and visit counts.
+
 #     Parameters:
 #     - DDPG_agent: the class of the DDPGAGent
 #     - queue_model: the class of the queue model
@@ -1883,7 +1911,7 @@ def _get_queues(g, queues, edge, edge_type):
 #     max_buffer_size = []
 #     for start_node in adja_list.keys():
 #         for end_node in adja_list[start_node]:
-            
+
 #             edge_index = edge_list[start_node][end_node]
 
 #             if edge_index == 0:
@@ -1895,7 +1923,7 @@ def _get_queues(g, queues, edge, edge_type):
 
 #             max_buffer = q_args[edge_index]['qbuffer']
 #             max_buffer_size.append(max_buffer)
-    
+
 #     sample_states = []
 #     for _ in range(num_sample):
 #         array = np.array([np.random.randint(0, max_val) for max_val in max_buffer_size])
@@ -1914,17 +1942,16 @@ def _get_queues(g, queues, edge, edge_type):
 #     return final_state
 
 
-
 # if __name__ == '__main__':
 #     config_file = r"D:\MScDataSparqProject\user_config\configuration.yml"
 #     config_params = load_config(config_file)
 #     miu_dict = config_params['miu_list']
 #     adjacent_list = config_params['adjacent_list']
 #     buffer_size_for_each_queue = config_params['buffer_size_for_each_queue']
-    
+
 #     num_connections, exit_nodes = get_num_connections(adjacent_list)
 #     q_classes = create_q_classes(num_connections)
-#     edge_list = make_edge_list(adjacent_list, exit_nodes) 
+#     edge_list = make_edge_list(adjacent_list, exit_nodes)
 #     edge_type_info = make_unique_edge_type(adjacent_list, edge_list)
 #     q_args = create_q_args(edge_type_info, config_params, miu_dict, buffer_size_for_each_queue, exit_nodes)
 

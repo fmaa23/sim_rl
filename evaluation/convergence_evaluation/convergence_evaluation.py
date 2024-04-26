@@ -1,31 +1,34 @@
-# This script is used to automatically train the agent for varying numbers of training episodes 
-# and then evaluate the performance of each agent on the 
+# This script is used to automatically train the agent for varying numbers of training episodes
+# and then evaluate the performance of each agent on the
 # simulation environment - using total reward over time as the metric for evaluation.
 
-# Change this so that it mimics the gradient based approach 
+# Change this so that it mimics the gradient based approach
 
 
 import sys
 from pathlib import Path
+
 # Get the absolute path of the parent directory (i.e., the root of your project)
 root_dir = Path(__file__).resolve().parent.parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
-import torch 
+import torch
 import matplotlib.pyplot as plt
 from rl_env.RL_Environment import *
-from queue_env.queueing_network import * 
+from queue_env.queueing_network import *
 from foundations.core_functions import *
-from foundations.core_functions import Engine 
+from foundations.core_functions import Engine
 import numpy as np
 import copy
-import os 
+import os
 
 
 class ConvergenceEvaluation(Engine):
-    def __init__(self, window_size, threshold, consecutive_points , timesteps = 100 , num_sim = 100):
-        """ 
-        This class is responsible for tracking the changes in the reward per episode as the agent is trained 
+    def __init__(
+        self, window_size, threshold, consecutive_points, timesteps=100, num_sim=100
+    ):
+        """
+        This class is responsible for tracking the changes in the reward per episode as the agent is trained
         and determining the point at which the agent's performance stabilizes.
 
         Parameters:
@@ -35,39 +38,42 @@ class ConvergenceEvaluation(Engine):
             timesteps (int): Number of timesteps per simulation. Defaults to 100.
             num_sim (int): Number of simulations to average for evaluation. Defaults to 100.
         """
-        self.timesteps = timesteps 
+        self.timesteps = timesteps
         self.total_rewards = []
-        self.num_sim = num_sim  
+        self.num_sim = num_sim
         self.window_size = window_size
         self.threshold = threshold
         self.consecutive_points = consecutive_points
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.reward_data_from_json = self.load_json_data()      
-        self.commence_analysis = 10 # The variable controls when the analysis should commence
+        self.reward_data_from_json = self.load_json_data()
+        self.commence_analysis = (
+            10  # The variable controls when the analysis should commence
+        )
         self.eval_interval = 10  # Interval for evaluating the agent during training
-        self.episode_rewards = {
-            'episodes': [],
-            'rewards': []
-        }
-        
+        self.episode_rewards = {"episodes": [], "rewards": []}
+
     def load_json_data(self):
         # Current directory
         current_dir = os.path.dirname(os.path.dirname(os.getcwd()))
 
         # Construct the relative path to the target JSON file
-        relative_path = os.path.join(root_dir, 'foundations', 'output_csv', 'reward_dict.json')
+        relative_path = os.path.join(
+            root_dir, "foundations", "output_csv", "reward_dict.json"
+        )
 
         # Normalize the path to avoid any cross-platform issues
         normalized_path = os.path.normpath(relative_path)
 
         # Load the JSON file using a context manager
-        with open(normalized_path, 'r') as file:
+        with open(normalized_path, "r") as file:
             data = json.load(file)
         return data
 
     def moving_average(self, data):
         """Calculate moving average of the data using the defined window size."""
-        return np.convolve(data, np.ones(self.window_size) / self.window_size, mode='valid')
+        return np.convolve(
+            data, np.ones(self.window_size) / self.window_size, mode="valid"
+        )
 
     def calculate_derivative(self, data):
         """Calculate the first derivative of the data."""
@@ -80,11 +86,13 @@ class ConvergenceEvaluation(Engine):
             if abs_derivatives[i] < self.threshold:
                 count += 1
                 if count >= self.consecutive_points:
-                    return i - self.consecutive_points + 2  # Adjust for the window of points
+                    return (
+                        i - self.consecutive_points + 2
+                    )  # Adjust for the window of points
             else:
                 count = 0  # Reset counter if the point is above the threshold
         return -1  # Returns -1 if no stabilization point is found
-    
+
     def compute_episode_rewards(data_dict):
         """This function calculates the sum of the the rewards for each episode in the dictionary.
 
@@ -99,19 +107,17 @@ class ConvergenceEvaluation(Engine):
             total_sum = sum(values)
             sums_list.append(total_sum)
         return sums_list
-    
-    
-    
-    def evaluate_convergence(self, reward_data = None):
+
+    def evaluate_convergence(self, reward_data=None):
         """Evaluate the startup behavior of the agent."""
         if reward_data is None:
             reward_data = self.reward_data_from_json
-        
+
         self.rewards = self.compute_episode_rewards(reward_data)
         self.smoothed_rewards = self.moving_average(self.rewards)
         derivatives = self.calculate_derivative(self.smoothed_rewards)
         self.stabilization_point = self.find_stabilization_point(derivatives)
-        #self.plot_results()
+        # self.plot_results()
         return self.stabilization_point
 
     def train(self, params, agent, env, best_params=None, blockage_qn_net=None):
@@ -141,7 +147,9 @@ class ConvergenceEvaluation(Engine):
         actor_loss_list = []
         critic_loss_list = []
         reward_by_episode = {}
-        num_episodes, _, num_epochs, time_steps, _, num_train_AC = self.get_params_for_train(params)
+        num_episodes, _, num_epochs, time_steps, _, num_train_AC = (
+            self.get_params_for_train(params)
+        )
         latest_transition_proba = None
 
         for episode in tqdm(range(num_episodes), desc="Episode Progress"):
@@ -169,13 +177,17 @@ class ConvergenceEvaluation(Engine):
                     node_list.append(value)
                     action_dict[index] = node_list
 
-                next_state_tensor = torch.tensor(env.get_next_state(action)).float().to(self.device)
+                next_state_tensor = (
+                    torch.tensor(env.get_next_state(action)).float().to(self.device)
+                )
                 reward = env.get_reward()
                 reward_list.append(reward)
                 experience = (state_tensor, action, reward, next_state_tensor)
                 agent.store_experience(experience)
 
-            reward_model_loss_list, next_state_loss_list = agent.fit_model(batch_size=time_steps, epochs=num_epochs)
+            reward_model_loss_list, next_state_loss_list = agent.fit_model(
+                batch_size=time_steps, epochs=num_epochs
+            )
             next_state_model_list_all += next_state_loss_list
             reward_model_list_all += reward_model_loss_list
             transition_probas = self.update_transition_probas(transition_probas, env)
@@ -197,53 +209,66 @@ class ConvergenceEvaluation(Engine):
 
             # Logic for handling periodic evaluation of the agent
             if episode % self.eval_interval == 0:
-                episode_reward = self.start_evaluation(env, agent, time_steps, num_simulations=self.num_sim)
-                self.episode_rewards['episodes'].append(episode)
-                self.episode_rewards['rewards'].append(episode_reward)
-                
-            # Logic for handling the stabilization evaluation 
+                episode_reward = self.start_evaluation(
+                    env, agent, time_steps, num_simulations=self.num_sim
+                )
+                self.episode_rewards["episodes"].append(episode)
+                self.episode_rewards["rewards"].append(episode_reward)
+
+            # Logic for handling the stabilization evaluation
             if episode > self.commence_analysis:
-                stabilization_point = self.evaluate_convergence(self.episode_rewards['rewards']) # Evalaute whether the stabilization point has been reached
+                stabilization_point = self.evaluate_convergence(
+                    self.episode_rewards["rewards"]
+                )  # Evalaute whether the stabilization point has been reached
                 if stabilization_point != -1:
                     print(f"Stabilization point found at episode {episode}")
                     break  # Exit the training loop as stabilization point is found
 
         self.save_agent(agent)
         # Return all the collected data
-        return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
-            
+        return (
+            next_state_model_list_all,
+            critic_loss_list,
+            actor_loss_list,
+            reward_by_episode,
+            action_dict,
+            gradient_dict,
+            transition_probas,
+        )
 
     def plot_results(self):
         """Plot the original and smoothed rewards with stabilization point."""
         plt.figure(figsize=(10, 5))
-        episodes = self.episode_rewards['episodes']
+        episodes = self.episode_rewards["episodes"]
         if len(episodes) != len(self.rewards):
-            raise ValueError("The length of episodes list and rewards list must be the same.")
+            raise ValueError(
+                "The length of episodes list and rewards list must be the same."
+            )
 
-        plt.plot(episodes, self.rewards, label='Original Rewards', alpha=0.5)
-        plt.plot(episodes, self.smoothed_rewards, label='Smoothed Rewards', color='red')
+        plt.plot(episodes, self.rewards, label="Original Rewards", alpha=0.5)
+        plt.plot(episodes, self.smoothed_rewards, label="Smoothed Rewards", color="red")
 
         # Plot the stabilization point if it exists
         if self.stabilization_point != -1:
             # Find the episode corresponding to the stabilization point index
             if self.stabilization_point < len(episodes):
                 stabilization_episode = episodes[self.stabilization_point]
-                plt.axvline(x=stabilization_episode, color='green', label='Stabilization Point')
+                plt.axvline(
+                    x=stabilization_episode, color="green", label="Stabilization Point"
+                )
             else:
                 print("Stabilization point is out of the episode range.")
-        
-        plt.title('Reward Stabilization Analysis - Cutoff Episode ' + str(self.episode))
-        plt.xlabel('Episodes')
-        plt.ylabel('Reward per Episode')
+
+        plt.title("Reward Stabilization Analysis - Cutoff Episode " + str(self.episode))
+        plt.xlabel("Episodes")
+        plt.ylabel("Reward per Episode")
         plt.legend()
-        plt.savefig('reward_plot.png', dpi=1000)
+        plt.savefig("reward_plot.png", dpi=1000)
         plt.close()
         print("Plot saved as 'reward_plot.png'.")
 
-         
-        
-        
-# Logic for using this class 
+
+# Logic for using this class
 # Define the parameters for the startup behavior analysis
 window_size = 5
 threshold = 0.01
@@ -252,14 +277,17 @@ consecutive_points = 5
 # Create the startup behavior analysis engine and evaluate the stabilization point
 convergence_eval = ConvergenceEvaluation(window_size, threshold, consecutive_points)
 
-# 2. Specify the file path to the agent's configuration yaml file 
-agent = 'user_config/eval_hyperparams.yml'
+# 2. Specify the file path to the agent's configuration yaml file
+agent = "user_config/eval_hyperparams.yml"
 
 # 3. Speficy the file path for the training and evaluation environment's configuration yaml file
-env = 'user_config/configuration.yml'
+env = "user_config/configuration.yml"
 
-# 4. Initialize the training and evaluation process 
-convergence_eval.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
-
-
-
+# 4. Initialize the training and evaluation process
+convergence_eval.start_train(
+    env,
+    agent,
+    save_file=True,
+    data_filename="output_csv",
+    image_filename="output_plots",
+)

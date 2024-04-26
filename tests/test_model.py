@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 # Get the absolute path of the parent directory (i.e., the root of your project)
 root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
@@ -12,10 +13,14 @@ from unittest.mock import MagicMock, patch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
-    (10, 2, [64, 64], device),
-    (20, 4, [128, 128], device),
-])
+
+@pytest.mark.parametrize(
+    "n_states,n_actions,hidden,device",
+    [
+        (10, 2, [64, 64], device),
+        (20, 4, [128, 128], device),
+    ],
+)
 def test_actor_output_shape(n_states, n_actions, hidden, device):
     """
     Test the Actor model to ensure it produces the correct output shape and values range.
@@ -31,12 +36,18 @@ def test_actor_output_shape(n_states, n_actions, hidden, device):
     assert output.shape == (1, n_actions), "Actor output shape is incorrect"
 
     # Additionally, check if outputs are within the expected range [0, 1]
-    assert torch.all(0 <= output) and torch.all(output <= 1), "Actor output values not in [0, 1]"
+    assert torch.all(0 <= output) and torch.all(
+        output <= 1
+    ), "Actor output values not in [0, 1]"
 
-@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
-    (10, 2, [64, 64], device),
-    (20, 4, [128, 128], device),
-])
+
+@pytest.mark.parametrize(
+    "n_states,n_actions,hidden,device",
+    [
+        (10, 2, [64, 64], device),
+        (20, 4, [128, 128], device),
+    ],
+)
 def test_critic_output_shape(n_states, n_actions, hidden, device):
     """
     Test the Critic model for correct output shape based on given inputs.
@@ -52,10 +63,14 @@ def test_critic_output_shape(n_states, n_actions, hidden, device):
     output = model([sample_state, sample_action])
     assert output.shape == (1, 1), "Critic output shape is incorrect"
 
-@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
-    (10, 2, [64, 64], device),
-    (20, 4, [128, 128], device),
-])
+
+@pytest.mark.parametrize(
+    "n_states,n_actions,hidden,device",
+    [
+        (10, 2, [64, 64], device),
+        (20, 4, [128, 128], device),
+    ],
+)
 def test_reward_model_output_shape(n_states, n_actions, hidden, device):
     """
     Validate the output shape of the RewardModel given the environment state and action.
@@ -71,10 +86,14 @@ def test_reward_model_output_shape(n_states, n_actions, hidden, device):
     output = model([sample_state, sample_action])
     assert output.shape == (1, 1), "RewardModel output shape is incorrect"
 
-@pytest.mark.parametrize("n_states,n_actions,hidden,device", [
-    (10, 2, [64, 64], device),
-    (20, 4, [128, 128], device),
-])
+
+@pytest.mark.parametrize(
+    "n_states,n_actions,hidden,device",
+    [
+        (10, 2, [64, 64], device),
+        (20, 4, [128, 128], device),
+    ],
+)
 def test_next_state_model_output_shape(n_states, n_actions, hidden, device):
     """
     Test the NextStateModel for generating correct output shape, simulating the next state.
@@ -89,6 +108,7 @@ def test_next_state_model_output_shape(n_states, n_actions, hidden, device):
     sample_action = torch.rand(size=(1, n_actions))
     output = model([sample_state, sample_action])
     assert output.shape == (1, n_states), "NextStateModel output shape is incorrect"
+
 
 def check_validity(hidden):
     """
@@ -110,7 +130,7 @@ def check_validity(hidden):
 def test_check_validity():
     """
     Validate the 'check_validity' helper function that checks the integrity of the 'hidden' parameter.
-    
+
     This function ensures that the 'hidden' parameter passed to model constructors is a list of integers
     of length >= 2, throwing appropriate exceptions otherwise.
     """
@@ -118,7 +138,7 @@ def test_check_validity():
         check_validity([64, 64])
     except Exception as e:
         pytest.fail(f"Unexpected exception for valid input: {e}")
-    
+
     # Invalid input: not a list
     with pytest.raises(Exception):
         check_validity("not a list")
@@ -130,6 +150,7 @@ def test_check_validity():
     # Invalid input: length < 2
     with pytest.raises(Exception):
         check_validity([64])
+
 
 # Use this to run tests if you're executing the script directly
 if __name__ == "__main__":

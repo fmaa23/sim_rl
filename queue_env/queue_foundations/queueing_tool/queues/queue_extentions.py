@@ -19,13 +19,16 @@ class ResourceAgent(Agent):
     a resource to that queue by increasing the number of
     servers there by one; the ``ResourceAgent`` is then deleted.
     """
+
     def __init__(self, agent_id=(0, 0)):
         super(ResourceAgent, self).__init__(agent_id)
         self._has_resource = False
         self._had_resource = False
 
     def __repr__(self):
-        return "ResourceAgent; agent_id:{0}. Time: {1}".format(self.agent_id, round(self._time, 3))
+        return "ResourceAgent; agent_id:{0}. Time: {1}".format(
+            self.agent_id, round(self._time, 3)
+        )
 
     def queue_action(self, queue, *args, **kwargs):
         """Function that specifies the interaction with a
@@ -79,10 +82,10 @@ class ResourceQueue(LossQueue):
     """
 
     _default_colors = {
-        'edge_loop_color': [0.7, 0.7, 0.7, 0.50],
-        'edge_color': [0.7, 0.7, 0.7, 0.50],
-        'vertex_fill_color': [1.0, 1.0, 1.0, 1.0],
-        'vertex_pen_color': [0.0, 0.235, 0.718, 1.0]
+        "edge_loop_color": [0.7, 0.7, 0.7, 0.50],
+        "edge_color": [0.7, 0.7, 0.7, 0.50],
+        "vertex_fill_color": [1.0, 1.0, 1.0, 1.0],
+        "vertex_pen_color": [0.0, 0.235, 0.718, 1.0],
     }
 
     def __init__(self, num_servers=10, AgentFactory=ResourceAgent, qbuffer=0, **kwargs):
@@ -97,10 +100,18 @@ class ResourceQueue(LossQueue):
         self.over_max = 0
 
     def __repr__(self):
-        my_str = ("ResourceQueue:{0}. Servers: {1}, max servers: {2}, "
-                  "arrivals: {3}, departures: {4}, next time: {5}")
-        arg = (self.edge[2], self.num_servers, self.max_servers,
-               self.num_arrivals, self.num_departures, round(self._time, 3))
+        my_str = (
+            "ResourceQueue:{0}. Servers: {1}, max servers: {2}, "
+            "arrivals: {3}, departures: {4}, next time: {5}"
+        )
+        arg = (
+            self.edge[2],
+            self.num_servers,
+            self.max_servers,
+            self.num_arrivals,
+            self.num_departures,
+            round(self._time, 3),
+        )
         return my_str.format(*arg)
 
     def set_num_servers(self, n):
@@ -143,9 +154,13 @@ class ResourceQueue(LossQueue):
                     if self.collect_data:
                         t = arrival._time
                         if arrival.agent_id not in self.data:
-                            self.data[arrival.agent_id] = [[t, t, t, len(self.queue), self.num_system]]
+                            self.data[arrival.agent_id] = [
+                                [t, t, t, len(self.queue), self.num_system]
+                            ]
                         else:
-                            self.data[arrival.agent_id].append([t, t, t, len(self.queue), self.num_system])
+                            self.data[arrival.agent_id].append(
+                                [t, t, t, len(self.queue), self.num_system]
+                            )
 
                     if self._arrivals[0]._time < self._departures[0]._time:
                         self._time = self._arrivals[0]._time
@@ -164,9 +179,13 @@ class ResourceQueue(LossQueue):
 
                     if self.collect_data:
                         if arrival.agent_id not in self.data:
-                            self.data[arrival.agent_id] = [[arrival._time, 0, 0, len(self.queue), self.num_system]]
+                            self.data[arrival.agent_id] = [
+                                [arrival._time, 0, 0, len(self.queue), self.num_system]
+                            ]
                         else:
-                            self.data[arrival.agent_id].append([arrival._time, 0, 0, len(self.queue), self.num_system])
+                            self.data[arrival.agent_id].append(
+                                [arrival._time, 0, 0, len(self.queue), self.num_system]
+                            )
 
                     if self._arrivals[0]._time < self._departures[0]._time:
                         self._time = self._arrivals[0]._time
@@ -179,25 +198,25 @@ class ResourceQueue(LossQueue):
         if which == 1:
             nSy = self.num_servers
             cap = self.max_servers
-            div = 5. if cap <= 1 else (3. * cap)
+            div = 5.0 if cap <= 1 else (3.0 * cap)
             tmp = 0.9 - min(nSy / div, 0.9)
 
-            color = [i * tmp / 0.9 for i in self.colors['edge_loop_color']]
+            color = [i * tmp / 0.9 for i in self.colors["edge_loop_color"]]
             color[3] = 0.0
 
         elif which == 2:
-            color = self.colors['vertex_pen_color']
+            color = self.colors["vertex_pen_color"]
         else:
             nSy = self.num_servers
             cap = self.max_servers
-            div = 5. if cap <= 1 else (3. * cap)
+            div = 5.0 if cap <= 1 else (3.0 * cap)
             tmp = 0.9 - min(nSy / div, 0.9)
 
             if self.edge[0] == self.edge[1]:
-                color = [i * tmp / 0.9 for i in self.colors['vertex_fill_color']]
+                color = [i * tmp / 0.9 for i in self.colors["vertex_fill_color"]]
                 color[3] = 1.0
             else:
-                color = [i * tmp / 0.9 for i in self.colors['edge_color']]
+                color = [i * tmp / 0.9 for i in self.colors["edge_color"]]
                 color[3] = 0.5
 
         return color
@@ -229,6 +248,7 @@ class InfoAgent(Agent):
     **kwargs :
         Any arguments to pass to :class:`.Agent`.
     """
+
     def __init__(self, agent_id=(0, 0), net_size=1, **kwargs):
         super(InfoAgent, self).__init__(agent_id, **kwargs)
 
@@ -236,9 +256,13 @@ class InfoAgent(Agent):
         self.net_data = np.ones((net_size, 3)) * -1
 
     def __repr__(self):
-        return "InfoAgent; agent_id:{0}. Time: {1}".format(self.agent_id, round(self._time, 3))
+        return "InfoAgent; agent_id:{0}. Time: {1}".format(
+            self.agent_id, round(self._time, 3)
+        )
 
-    def add_loss(self, qedge, *args, **kwargs):  # qedge[2] is the edge_index of the queue
+    def add_loss(
+        self, qedge, *args, **kwargs
+    ):  # qedge[2] is the edge_index of the queue
         self.stats[qedge[2], 2] += 1
 
     def get_beliefs(self):
@@ -247,16 +271,24 @@ class InfoAgent(Agent):
     def queue_action(self, queue, *args, **kwargs):
         if isinstance(queue, InfoQueue):
             # update information
-            a = logical_or(self.net_data[:, 0] < queue.net_data[:, 0], self.net_data[:, 0] == -1)
+            a = logical_or(
+                self.net_data[:, 0] < queue.net_data[:, 0], self.net_data[:, 0] == -1
+            )
             self.net_data[a, :] = queue.net_data[a, :]
 
             # stamp this information
-            n = queue.edge[2]    # This is the edge_index of the queue
+            n = queue.edge[2]  # This is the edge_index of the queue
             if self.agent_id in queue.data:
-                tmp = queue.data[self.agent_id][-1][1] - queue.data[self.agent_id][-1][0]
+                tmp = (
+                    queue.data[self.agent_id][-1][1] - queue.data[self.agent_id][-1][0]
+                )
                 self.stats[n, 0] = self.stats[n, 0] + tmp
                 self.stats[n, 1] += 1 if tmp > 0 else 0
-            self.net_data[n, :] = queue._current_t, queue.num_servers, queue.num_system / queue.num_servers
+            self.net_data[n, :] = (
+                queue._current_t,
+                queue.num_servers,
+                queue.num_system / queue.num_servers,
+            )
 
 
 class InfoQueue(LossQueue):
@@ -284,16 +316,27 @@ class InfoQueue(LossQueue):
     **kwargs :
         Extra parameters to pass to :class:`.LossQueue`.
     """
+
     def __init__(self, net_size=1, AgentFactory=InfoAgent, qbuffer=np.infty, **kwargs):
-        super(InfoQueue, self).__init__(AgentFactory=AgentFactory, qbuffer=qbuffer, **kwargs)
+        super(InfoQueue, self).__init__(
+            AgentFactory=AgentFactory, qbuffer=qbuffer, **kwargs
+        )
 
         self.networking(net_size)
 
     def __repr__(self):
-        my_str = ("InfoQueue:{0}. Servers: {1}, queued: {2}, "
-                  "arrivals: {3}, departures: {4}, next time: {5}")
-        arg = (self.edge[2], self.num_servers, len(self.queue),
-               self.num_arrivals, self.num_departures, round(self._time, 3))
+        my_str = (
+            "InfoQueue:{0}. Servers: {1}, queued: {2}, "
+            "arrivals: {3}, departures: {4}, next time: {5}"
+        )
+        arg = (
+            self.edge[2],
+            self.num_servers,
+            len(self.queue),
+            self.num_arrivals,
+            self.num_departures,
+            round(self._time, 3),
+        )
         return my_str.format(*arg)
 
     def networking(self, network_size):
@@ -317,7 +360,9 @@ class InfoQueue(LossQueue):
                     return
 
                 self._num_total += 1
-                new_agent = self.AgentFactory((self.edge[2], self._oArrivals), len(self.net_data))
+                new_agent = self.AgentFactory(
+                    (self.edge[2], self._oArrivals), len(self.net_data)
+                )
                 new_agent._time = self._next_ct
                 heappush(self._arrivals, new_agent)
 

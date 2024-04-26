@@ -3,6 +3,7 @@ import unittest.mock as mock
 
 try:
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -14,7 +15,8 @@ import pytest
 import queueing_tool as qt
 
 
-CI_TEST = os.environ.get('CI_TEST', False)
+CI_TEST = os.environ.get("CI_TEST", False)
+
 
 @pytest.fixture(scope="module", name="queue_network")
 def fixture_queue_network():
@@ -73,18 +75,20 @@ class TestQueueNetwork:
 
         trans = qn.transitions(False)
 
-        np.testing.assert_allclose(trans[1][2], p0, atol=10**(-2))
-        np.testing.assert_allclose(trans[1][3], p1, atol=10**(-2))
+        np.testing.assert_allclose(trans[1][2], p0, atol=10 ** (-2))
+        np.testing.assert_allclose(trans[1][3], p1, atol=10 ** (-2))
 
     @staticmethod
     @pytest.mark.filterwarnings("ignore:Matplotlib is currently using agg")
-    @pytest.mark.filterwarnings("ignore:Animation was deleted without rendering anything")
+    @pytest.mark.filterwarnings(
+        "ignore:Animation was deleted without rendering anything"
+    )
     def test_QueueNetwork_animate(qn):
         if HAS_MATPLOTLIB:
-            plt.switch_backend('Agg')
+            plt.switch_backend("Agg")
             qn.animate(frames=5)
         else:
-            with mock.patch('queueing_tool.network.queue_network.plt.show'):
+            with mock.patch("queueing_tool.network.queue_network.plt.show"):
                 qn.animate(frames=5)
 
     @staticmethod
@@ -97,18 +101,18 @@ class TestQueueNetwork:
             3: qt.InfoQueue,
             4: qt.ResourceQueue,
             5: qt.ResourceQueue,
-            6: qt.QueueServer
+            6: qt.QueueServer,
         }
 
         q_arg = {
-            3: {'net_size': g.number_of_edges()},
-            4: {'num_servers': 500},
-            6: {'AgentFactory': qt.GreedyAgent}
+            3: {"net_size": g.number_of_edges()},
+            4: {"num_servers": 500},
+            6: {"AgentFactory": qt.GreedyAgent},
         }
 
         qn = qt.QueueNetwork(g, q_classes=q_cls, q_args=q_arg, seed=17)
-        qn.blocking = 'RS'
-        assert qn.blocking == 'RS'
+        qn.blocking = "RS"
+        assert qn.blocking == "RS"
         assert qn._blocking == False
 
         qn.clear()
@@ -116,7 +120,7 @@ class TestQueueNetwork:
 
     @staticmethod
     def test_QueueNetwork_blocking_setter_error(qn):
-        qn.blocking = 'RS'
+        qn.blocking = "RS"
         with pytest.raises(TypeError):
             qn.blocking = 2
 
@@ -146,11 +150,10 @@ class TestQueueNetwork:
             2: qt.QueueServer,
             3: qt.InfoQueue,
             4: qt.ResourceQueue,
-            5: qt.ResourceQueue
+            5: qt.ResourceQueue,
         }
 
-        q_arg = {3: {'net_size': g.number_of_edges()},
-                 4: {'num_servers': 500}}
+        q_arg = {3: {"net_size": g.number_of_edges()}, 4: {"num_servers": 500}}
 
         qn = qt.QueueNetwork(g, q_classes=q_cls, q_args=q_arg, seed=17)
         qn.max_agents = np.infty
@@ -174,21 +177,23 @@ class TestQueueNetwork:
 
     @staticmethod
     def test_QueueNetwork_drawing(qn):
-        with mock.patch('queueing_tool.network.queue_network.HAS_MATPLOTLIB', True):
-            scatter_kwargs = {'c': 'b'}
-            kwargs = {'bgcolor': 'green'}
+        with mock.patch("queueing_tool.network.queue_network.HAS_MATPLOTLIB", True):
+            scatter_kwargs = {"c": "b"}
+            kwargs = {"bgcolor": "green"}
             qn.draw(scatter_kwargs=scatter_kwargs, **kwargs)
-            qn.g.draw_graph.assert_called_with(scatter_kwargs=scatter_kwargs,
-                                                    line_kwargs=None, **kwargs)
+            qn.g.draw_graph.assert_called_with(
+                scatter_kwargs=scatter_kwargs, line_kwargs=None, **kwargs
+            )
 
             qn.draw(scatter_kwargs=scatter_kwargs)
-            bgcolor = qn.colors['bgcolor']
-            qn.g.draw_graph.assert_called_with(scatter_kwargs=scatter_kwargs,
-                                                    line_kwargs=None, bgcolor=bgcolor)
+            bgcolor = qn.colors["bgcolor"]
+            qn.g.draw_graph.assert_called_with(
+                scatter_kwargs=scatter_kwargs, line_kwargs=None, bgcolor=bgcolor
+            )
 
     @staticmethod
     def test_QueueNetwork_drawing_importerror(qn):
-        with mock.patch('queueing_tool.network.queue_network.HAS_MATPLOTLIB', False):
+        with mock.patch("queueing_tool.network.queue_network.HAS_MATPLOTLIB", False):
             with pytest.raises(ImportError):
                 qn.draw()
 
@@ -199,7 +204,7 @@ class TestQueueNetwork:
             qn.animate()
 
         qn.initialize()
-        with mock.patch('queueing_tool.network.queue_network.HAS_MATPLOTLIB', False):
+        with mock.patch("queueing_tool.network.queue_network.HAS_MATPLOTLIB", False):
             with pytest.raises(ImportError):
                 qn.animate()
 
@@ -270,26 +275,15 @@ class TestQueueNetwork:
             return t
 
         adj = {
-            0: {1: {'edge_type': 1}},
-            1: {
-                2: {'edge_type': 2},
-                3: {'edge_type': 2},
-                4: {'edge_type': 2}
-            }
+            0: {1: {"edge_type": 1}},
+            1: {2: {"edge_type": 2}, 3: {"edge_type": 2}, 4: {"edge_type": 2}},
         }
         g = qt.adjacency2graph(adj)
 
         qcl = {1: qt.QueueServer, 2: qt.QueueServer}
         arg = {
-            1: {
-                'arrival_f': arr,
-                'service_f': ser_id,
-                'AgentFactory': qt.GreedyAgent
-            },
-            2: {
-                'service_f': ser,
-                'num_servers': nSe
-            }
+            1: {"arrival_f": arr, "service_f": ser_id, "AgentFactory": qt.GreedyAgent},
+            2: {"service_f": ser, "num_servers": nSe},
         }
 
         qn = qt.QueueNetwork(g, q_classes=qcl, q_args=arg)
@@ -304,9 +298,11 @@ class TestQueueNetwork:
 
         while c < num_events:
             qn.simulate(n=1)
-            if qn.next_event_description() == ('Departure', e01):
+            if qn.next_event_description() == ("Departure", e01):
                 d0 = qn.edge2queue[e01]._departures[0].desired_destination(qn, edg)
-                a1 = np.argmin([qn.edge2queue[e].number_queued() for e in qn.out_edges[1]])
+                a1 = np.argmin(
+                    [qn.edge2queue[e].number_queued() for e in qn.out_edges[1]]
+                )
                 d1 = qn.out_edges[1][a1]
                 ans[c] = d0 == d1
                 c += 1
@@ -324,7 +320,7 @@ class TestQueueNetwork:
 
         _get_queues_mock = mock.Mock()
         _get_queues_mock.return_value = []
-        mock_location = 'queueing_tool.network.queue_network._get_queues'
+        mock_location = "queueing_tool.network.queue_network._get_queues"
 
         with mock.patch(mock_location, _get_queues_mock):
             with pytest.raises(qt.QueueingToolError):
@@ -518,28 +514,20 @@ class TestQueueNetwork:
 
     @staticmethod
     def test_QueueNetwork_show_type(qn):
-        with mock.patch('queueing_tool.network.queue_network.HAS_MATPLOTLIB', True):
-            args = {'c': 'b', 'bgcolor': 'green'}
+        with mock.patch("queueing_tool.network.queue_network.HAS_MATPLOTLIB", True):
+            args = {"c": "b", "bgcolor": "green"}
             qn.show_type(edge_type=2, **args)
             qn.g.draw_graph.assert_called_with(
-                scatter_kwargs=None,
-                line_kwargs=None,
-                **args
+                scatter_kwargs=None, line_kwargs=None, **args
             )
 
     @staticmethod
     def test_QueueNetwork_show_active(qn):
-        with mock.patch('queueing_tool.network.queue_network.HAS_MATPLOTLIB', True):
-            args = {
-                'fname': 'types.png',
-                'figsize': (3, 3),
-                'bgcolor': 'green'
-            }
+        with mock.patch("queueing_tool.network.queue_network.HAS_MATPLOTLIB", True):
+            args = {"fname": "types.png", "figsize": (3, 3), "bgcolor": "green"}
             qn.show_active(**args)
             qn.g.draw_graph.assert_called_with(
-                scatter_kwargs=None,
-                line_kwargs=None,
-                **args
+                scatter_kwargs=None, line_kwargs=None, **args
             )
 
     @staticmethod
@@ -551,7 +539,7 @@ class TestQueueNetwork:
             queue_times.sort()
             tmp = queue_times[0]
             qn.simulate(n=1)
-            ans[k] = (tmp == qn._qkey[0])
+            ans[k] = tmp == qn._qkey[0]
 
         qn.simulate(n=10000)
 
@@ -560,7 +548,7 @@ class TestQueueNetwork:
             queue_times.sort()
             tmp = queue_times[0]
             qn.simulate(n=1)
-            ans[k] = (tmp == qn._qkey[0])
+            ans[k] = tmp == qn._qkey[0]
 
         assert ans.all()
 
