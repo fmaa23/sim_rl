@@ -25,17 +25,14 @@ import yaml
 
 
 class ControlEvaluation(Engine):
-    """
-    This class contains all the methods needed for the agent to control the network 
-    Inputs: 
-    - environment - testing RL Environment 
-    - agent - trained agent with the learnt policy 
-    """
-
+ 
     def __init__(self, queue_index = 2, metric='throughput'):
 
-        """
-            Initiates the class with the environment and the agent 
+        """   
+        This class reponsible for evaluating the learnt policy of the agent in a simulated environment.
+        Parameters:
+        queue_index (int): Index of the queue for which metrics are evaluated.
+        metric (str): The performance metric to evaluate (Available options: 'throughput', 'waiting_time').
         """
 
         self.config_param_filepath = 'user_config/configuration.yml'
@@ -122,8 +119,8 @@ class ControlEvaluation(Engine):
         
 
 
-    def evaluation(self, agent, time_steps):
-        """Evaluating agent performance on a simulated environment"""
+    def start_evaluation(self, agent, time_steps):
+        """Modified evaluation function that supports plotting of queue metrics and transition probabilities."""
         source_edge = self.environment.net.edge2queue[queue_index].edge[0]
         target_edge = self.environment.net.edge2queue[queue_index].edge[1]
         
@@ -204,13 +201,13 @@ if __name__=="__main__":
     sim_jobs = 100
     env  = 'user_config/configuration.yml'
     agent = nc.load_agent()
-    _, queue_transition_proba_before_disrupt = nc.evaluation(agent=agent, time_steps=time_steps)
+    _, queue_transition_proba_before_disrupt = nc.start_evaluation(agent=agent, time_steps=time_steps)
 
     ## Static Disruption 
     queue_index = 2
     metric = 'throughput'
     sd = DisruptionEvaluation(queue_index, metric)
-    _, queue_transition_proba_after_disrupt=sd.evaluation(agent= agent, time_steps=time_steps)
+    _, queue_transition_proba_after_disrupt=sd.start_evaluation(agent= agent, time_steps=time_steps)
 
     # Changes in transition proba
     # _, queue_transition_proba_before_disrupt = nc.evaluation(agent=agent, time_steps=time_steps)

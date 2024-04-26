@@ -22,8 +22,19 @@ data_filename = 'output_csv'
 image_filename = 'output_plots'  
 
 # Training Multiple Agents
-class NumRuns: 
+class RobustnessEvaluation: 
     def __init__(self, confidence_level=0.95, desired_error=1, num_runs=10, time_steps=100, num_sim=100): 
+        """
+        This class is designed to handle the training of multiple agents to estimate
+        statistical properties of their performance.
+
+        Parameters:
+            confidence_level (float): The confidence level for the error estimation - defaults to 0.95.
+            desired_error (int): The desired margin of error for the estimation - defaults to 1.
+            num_runs (int): The number of different agents to train - defaults to 10.
+            time_steps (int): The number of time steps to run for each simulation - defaults to 100.
+            num_sim (int): The number of simulations to average for statistical estimation - defaults to 100.
+        """
         self.agents = None 
         self.num_runs = num_runs
         self.time_steps = time_steps 
@@ -83,13 +94,18 @@ class NumRuns:
 
 
 if __name__=="__main__": 
+    # Example usage
+    # 1. Set up the parameters for the robustness evaluation
     confidence_level = 0.95
     desired_error = 1
     num_runs = 10
     time_steps = 100
     num_sim = 100
 
-    nr = NumRuns()
+    # 2. Initialize the robustness evaluation class
+    nr = RobustnessEvaluation(confidence_level=confidence_level, desired_error=desired_error, num_runs=num_runs, time_steps=time_steps, num_sim=num_sim)
+    
+    # 3. Train multiple agents and obtain the transition probabilities
     std = nr.get_std(config_param_filepath=config_param_filepath,
                      eval_param_filepath=eval_param_filepath)
     nr.get_req_runs()

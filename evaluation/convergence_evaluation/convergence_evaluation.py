@@ -24,12 +24,16 @@ import os
 
 class ConvergenceEvaluation(Engine):
     def __init__(self, window_size, threshold, consecutive_points , timesteps = 100 , num_sim = 100):
-        """_summary_
+        """ 
+        This class is responsible for tracking the changes in the reward per episode as the agent is trained 
+        and determining the point at which the agent's performance stabilizes.
 
-        Args:
-            num_episodes (_type_): _description_
-            timesteps (_type_): _description_
-            num_sim (int, optional): _description_. Defaults to 100.
+        Parameters:
+            window_size (int): Number of points used to compute the moving average of rewards.
+            threshold (float): Threshold for the derivative of rewards to determine stabilization.
+            consecutive_points (int): Number of consecutive points below the threshold to declare convergence.
+            timesteps (int): Number of timesteps per simulation. Defaults to 100.
+            num_sim (int): Number of simulations to average for evaluation. Defaults to 100.
         """
         self.timesteps = timesteps 
         self.total_rewards = []
@@ -84,7 +88,7 @@ class ConvergenceEvaluation(Engine):
     def compute_episode_rewards(data_dict):
         """This function calculates the sum of the the rewards for each episode in the dictionary.
 
-        Args:
+        Parameters:
             data_dict (dictionary): dictionary of lists of rewards for each episode
 
         Returns:

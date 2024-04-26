@@ -5,7 +5,7 @@ root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
 sys.path.append(str(root_dir))
 
-from evaluation.robustness_evaluation.runs import *
+from evaluation.robustness_evaluation.robustness_evaluation import *
 
 import pytest
 from unittest.mock import patch, MagicMock

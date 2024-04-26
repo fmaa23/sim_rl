@@ -21,7 +21,17 @@ from foundations.core_functions import Engine
 
 class StartupBehavior(Engine):
     def __init__(self, window_size, threshold, consecutive_points, episode):
-        """Initialize parameters for the startup behavior analysis."""
+        """
+            This class is responsible for tracking the changes in the reward per timestep within an epsiode as the agent is trained 
+            and determining the point at which the agent's performance stabilizes.    
+            Parameters:
+            window_size (int): The number of episodes over which the moving average is computed.
+            threshold (float): The threshold for the derivative of the moving average, below which
+                               the system is considered to have stabilized.
+            consecutive_points (int): The required number of consecutive points that must meet the
+                                      threshold criterion to declare stabilization.
+            episode (int): Episode number to specifically analyze for stabilization.
+        """
         self.window_size = window_size
         self.threshold = threshold
         self.consecutive_points = consecutive_points

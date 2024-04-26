@@ -596,8 +596,11 @@ def start_evaluation(environment, agent, time_steps):
         return total_reward
     
 
-# Converting this folder into a class
 class Engine():
+    """
+    This class encapsulates the core functions necessary for training and evaluating the reinforcement learning agent 
+    and is used as the parent class for the advanced classes in the evaluation module.
+    """
     def __init__(self):
         pass 
     def load_config(self, env_param_filepath):
