@@ -41,16 +41,15 @@ class ControlEvaluation(Engine):
         self.config_param_filepath = 'user_config/configuration.yml'
         self.eval_param_filepath = 'user_config/eval_hyperparams.yml'
         params, hidden = self.load_hyperparams(self.eval_param_filepath)
-        self.environment = create_simulation_env(params, self.config_param_filepath, disrupt_case = True)
+        self.environment = create_simulation_env(params, self.config_param_filepath, disrupt_case = False)
 
         self.agent = create_ddpg_agent(self.environment, params, hidden)
         self.metric = metric 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.queue_index = queue_index
         self.queue_metrics = [] 
-
-        self.call_plot_num = 0
         self.case = 'Normal'
+
     def load_hyperparams(self, eval_param_filepath):
         """
         Load hyperparameters from a YAML file.
@@ -95,7 +94,7 @@ class ControlEvaluation(Engine):
         save_filepath = os.path.join(full_path, figure_name)
 
         plt.savefig(save_filepath)
-        self.call_plot_num+=1
+        
         
   
     def plot_queue(self, labels, *queue_metrics_lists):
@@ -120,34 +119,34 @@ class ControlEvaluation(Engine):
         save_filepath = os.path.join(full_path, figure_name)
 
         plt.savefig(save_filepath)
-        self.call_plot_num+=1
+        
 
 
-    def evaluation(self, environment, agent, time_steps):
+    def evaluation(self, agent, time_steps):
+        """Evaluating agent performance on a simulated environment"""
         source_edge = self.environment.net.edge2queue[queue_index].edge[0]
         target_edge = self.environment.net.edge2queue[queue_index].edge[1]
+        
         queue_metrics = []
         queue_transition_proba = [] 
+        
         self.environment.simulate()
-        for time_step in range(time_steps): 
+        for _ in range(time_steps): 
             state = self.environment.get_state()
             action = agent.actor(state).detach()
             state = self.environment.get_next_state(action)[0]
             queue_metrics.append(self.environment.return_queue(queue_index, metric=metric))
             queue_transition_proba.append(self.environment.transition_proba[source_edge][target_edge])
-        self.plot_queue(metric,queue_metrics)  # Plot once after completing the loop
+        self.plot_queue(metric,queue_metrics)
         self.plot_transition_proba(queue_transition_proba)
         
         return queue_metrics, queue_transition_proba
     
-    def start_evaluation(self, environment, agent, time_steps):
-        return self.evaluation(environment, agent, time_steps)
     
     def load_agent(self):
         project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         agent_path = os.path.join(project_dir, 'agents', 'trained_agent.pt')
         agent = torch.load(agent_path)
-
         return agent
 
 
@@ -157,12 +156,16 @@ class DisruptionEvaluation(ControlEvaluation):
     """
     def __init__(self, queue_index, metric):
         super().__init__(queue_index, metric)
-        
+
+        self.config_param_filepath = 'user_config/configuration.yml'
+        self.eval_param_filepath = 'user_config/eval_hyperparams.yml'
+        params, hidden = self.load_hyperparams(self.eval_param_filepath)
         self.queue_index = queue_index
         self.metric = metric
-        self.case='Blocked'
+        self.case ='Blocked'
+        self.environment = create_simulation_env(params, self.config_param_filepath, disrupt_case=True, disrupt=True, queue_index=self.queue_index)
 
-        
+    
     def plot_transition_proba_changes(self, queue_transition_proba_before_disrupt, queue_transition_proba_after_disrupt):
         self.param_file = "user_config\\evaluation_params\\blockage_demonstration_params.yml"
         self.save_file = "evaluation\\decision_evaluation\output_plots"
@@ -184,25 +187,7 @@ class DisruptionEvaluation(ControlEvaluation):
         save_filepath = os.path.join(full_path, figure_name)
 
         plt.savefig(save_filepath)
-        self.call_plot_num+=1
         
-    def start_evaluation(self , agent, time_steps):
-        """
-        This function shows the agent interacting with the original environment and the disrupted environment in parallel.
-        """
-        params, hidden = self.load_hyperparams(self.eval_param_filepath)
-
-        standard_environment = create_simulation_env(params, config_file=self.config_param_filepath, disrupt_case=False)
-        
-        disrupted_environment = create_simulation_env(params=params,
-                                                           config_file=self.config_param_filepath,
-                                                           disrupt_case=True, disrupt=True, queue_index=self.queue_index)
-        normal_metrics,normal_transition_proba = self.evaluation(standard_environment, agent, time_steps)
-        disrupted_metrics,disrupted_transition_proba = self.evaluation(disrupted_environment, agent, time_steps)
-        
-        labels = ['Normal', 'Disrupted']
-        self.plot_queue(labels, normal_metrics, disrupted_metrics)
-        self.plot_transition_proba_changes(normal_transition_proba, disrupted_transition_proba)
 
 # Example Usage
 if __name__=="__main__": 
@@ -216,22 +201,16 @@ if __name__=="__main__":
     time_steps = 100
     sim_jobs = 100
     env  = 'user_config/configuration.yml'
-    # env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath) - will be doing for OOP structure
+    #env = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath, disrupt_case=False)
     agent = nc.load_agent()
-    nc.start_evaluation(environment=env , agent=agent, time_steps=time_steps)
+    nc.evaluation(agent=agent, time_steps=time_steps)
 
     ## Static Disruption 
     queue_index = 2
     metric = 'throughput'
     sd = DisruptionEvaluation(queue_index, metric)
-    sd.start_evaluation(agent= agent, time_steps=time_steps)
+    #nv = create_simulation_env({'num_sim':sim_jobs}, config_param_filepath, disrupt_case=True)
+    sd.evaluation(agent= agent, time_steps=time_steps)
 
     # Save Plot
-    queue_metrics, queue_transition_proba_before_disrupt = None , None 
-    
-    ### CHANGES ### 
-    # 1. Add functionality for saving the plots to a specified file path 
-    # 2. Ensure that the function calls in the static disruption are correct 
-    # 3. Clean up names 
-    # 4. Ensure that the saving is being done correclty 
-    # Change to OOP structure
+    queue_metrics, queue_transition_proba_before_disrupt = None , None
