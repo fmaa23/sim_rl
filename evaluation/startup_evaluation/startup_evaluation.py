@@ -27,10 +27,10 @@ class StartupBehavior(Engine):
         self.consecutive_points = consecutive_points
         self.episode = episode
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.reward_data_from_json = self.load_json_data()
         self.commence_analysis = 10 # The variable controls when the analysis should commence
-
-    def load_json_data(self):
+        self.data_path = self.get_data_path()
+    
+    def get_data_path(self):
         # Current directory
         current_dir = os.path.dirname(os.path.dirname(os.getcwd()))
 
@@ -40,9 +40,14 @@ class StartupBehavior(Engine):
         # Normalize the path to avoid any cross-platform issues
         normalized_path = os.path.normpath(relative_path)
 
+        return normalized_path
+    
+    def load_json_data(self, datapath):
+
         # Load the JSON file using a context manager
-        with open(normalized_path, 'r') as file:
+        with open(datapath, 'r') as file:
             data = json.load(file)
+
         return data
 
     def moving_average(self, data):
@@ -67,8 +72,13 @@ class StartupBehavior(Engine):
 
     def evaluate_convergence(self, reward_data = None):
         """Evaluate the startup behavior of the agent."""
+
+        datapath = self.get_data_path()
+        reward_data_from_json = self.load_json_data(datapath)
+
         if reward_data is None:
-            reward_data = self.reward_data_from_json
+            reward_data = reward_data_from_json
+            
         self.rewards = reward_data[str(self.episode)]
         self.smoothed_rewards = self.moving_average(self.rewards)
         derivatives = self.calculate_derivative(self.smoothed_rewards)

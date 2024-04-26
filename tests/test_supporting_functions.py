@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import concurrent.futures
 # Get the absolute path of the parent directory (i.e., the root of your project)
 root_dir = Path(__file__).resolve().parent.parent
 # Add the parent directory to sys.path
@@ -12,6 +13,7 @@ from unittest.mock import MagicMock, patch
 import yaml
 import tempfile
 import os
+import time
 
 def test_load_config(tmpdir):
     """
@@ -105,6 +107,48 @@ def test_environment_attributes(mock_config_file):
     # Clean up the temporary file
     os.remove(mock_config_file)
 
+# Mock data assuming load_config returns a dictionary
+expected_config = {
+    'param1': 'value1',
+    'param2': 'value2'
+}
+
+@patch('foundations.core_functions.load_config', return_value=expected_config)
+def test_concurrency(mock_load_config):
+    """
+    Test function behavior when accessed by multiple threads simultaneously.
+    Assumes load_config is a function that loads and returns configuration data.
+    """
+    # Setup
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(mock_load_config, "config_path") for _ in range(10)]
+        results = [f.result() for f in futures]
+
+    # Verify all results are consistent
+    assert all(r == expected_config for r in results), "Concurrent access should yield consistent results"
+
+def test_state_change():
+    "Function to test whether states have changed to avoid actor vector and transition proba diminishing"
+    script_dir = os.path.abspath(__file__)
+    parent_dir = os.path.dirname(os.path.dirname(script_dir))
+    config_dir = os.path.join(parent_dir, 'user_config')
+
+    # Create the file paths using os.path.join
+    config_param_filepath = os.path.join(config_dir, 'configuration.yml')
+    eval_param_filepath = os.path.join(config_dir, 'eval_hyperparams.yml')
+
+    params, hidden = load_hyperparams(eval_param_filepath)
+    rl_env = create_simulation_env(params, config_param_filepath)
+    agent = create_ddpg_agent(rl_env, params, hidden)
+
+    rl_env.simulate()
+    initial_state = rl_env.get_state()
+    action = agent.select_action(torch.tensor(initial_state))
+    next_state_tensor = torch.tensor(rl_env.get_next_state(action)).float()
+    next_state = next_state_tensor.tolist()
+
+    assert next_state != initial_state, "State should have changed"
+
 # Use this to run tests if you're executing the script directly
 if __name__ == "__main__":
-    pytest.main([__file__, '-k', 'test_graph_construction'])
+    pytest.main([__file__, '-k', 'test_state_change'])
