@@ -32,7 +32,7 @@ class StartupBehavior(Engine):
 
     def load_json_data(self):
         # Current directory
-        current_dir = os.path.dirname(os.path.dirname(os.getcwd()))
+        current_dir = root_dir.parent.parent
 
         # Construct the relative path to the target JSON file
         relative_path = os.path.join(current_dir, 'foundations', 'output_csv', 'reward_dict.json')
@@ -184,6 +184,12 @@ class StartupBehavior(Engine):
         plt.close()
         print("Plot saved as 'reward_plot.png'.")
     
+    def print_results(self): 
+        if self.stabilization_point==-1: 
+            print(f"No Stabilization point found")
+        else:  
+            print(f"Stabilization point found at timestep: {self.stabilization_point}")
+    
     
 if __name__ == "__main__":
     
@@ -191,7 +197,7 @@ if __name__ == "__main__":
     window_size = 5
     threshold = 0.01
     consecutive_points = 5
-    episode = 14 # The episode to evaluate for a saved json file 
+    episode = 8 # The episode to evaluate for a saved json file 
 
     # Create the startup behavior analysis engine and evaluate the stabilization point
     startup_evaluation = StartupBehavior(window_size, threshold, consecutive_points, episode)
@@ -205,5 +211,5 @@ if __name__ == "__main__":
     startup_evaluation.start_train(env, agent,save_file = True, data_filename = 'output_csv', image_filename = 'output_plots')
   
     # Plot the results and evaluate the attributes for addtional analysis 
-    startup_evaluation.plot_results()   
-    print(f"Stabilization point found at timestep: {startup_evaluation.stabilization_point}")
+    startup_evaluation.plot_results()  
+    startup_evaluation.print_results()

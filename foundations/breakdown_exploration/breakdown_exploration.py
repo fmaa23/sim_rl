@@ -158,11 +158,10 @@ class BreakdownEngine:
 
                 key_name = f"bn_{key}" 
                 blockage_cases[key_name] = new_miu_dict
-        
-        current_path = os.getcwd() + "MScDataSparqProject\\"
-        relative_path = "features\\breakdown_exploration\\output_data"
 
-        output_file_path = os.path.join(current_path, relative_path, "all_breakdown_cases.json")
+        relative_path = "foundations\\breakdown_exploration\\output_data"
+
+        output_file_path = os.path.join(root_dir, relative_path, "all_breakdown_cases.json")
         with open(output_file_path, 'w') as json_file:
             json.dump(blockage_cases, json_file)
 
@@ -360,6 +359,8 @@ class BreakdownEngine:
 
 
 if __name__ == "__main__":
+
+    print(root_dir)
     
     # Filepath Used
     param_file = 'user_config/eval_hyperparams.yml'
