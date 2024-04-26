@@ -33,10 +33,14 @@ global rewards_list
 rewards_list = []
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 def require_gpu():
     if not torch.cuda.is_available():
-        raise EnvironmentError("This operation requires a GPU, but none is available. Please run on GPU")
-    
+        raise EnvironmentError(
+            "This operation requires a GPU, but none is available. Please run on GPU"
+        )
+
+
 def load_tuning_config(tune_param_filepath):
 
     # Get the directory of the current script
@@ -237,5 +241,6 @@ def ray_tune():
 
     return results
 
-if __name__ == "__main__": 
+
+if __name__ == "__main__":
     ray_tune()
