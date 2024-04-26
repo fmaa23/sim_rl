@@ -26,7 +26,6 @@ def load_config(env_param_filepath):
     Returns:
     - dict: A dictionary containing the configuration parameters.
     """
-
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Go up one directory to the MScDataSparqProject directory
@@ -58,7 +57,6 @@ def load_hyperparams(eval_param_filepath):
     Returns:
     - tuple: A tuple containing two dictionaries, `params` for hyperparameters and `hidden` for hidden layer configurations.
     """
-
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(script_dir)
     abs_file_path = os.path.join(project_dir, eval_param_filepath)
@@ -81,7 +79,6 @@ def create_params(config_file, disrupt_case = False, disrupt = False, queue_inde
     Returns:
     - Multiple return values including lists and dictionaries essential for creating the queueing environment.
     """
-    
     config_params = load_config(config_file)
     miu_dict = config_params['miu_list']  
     adjacent_list = config_params['adjacent_list']
@@ -277,6 +274,7 @@ def convert_format(state):
         initial_states[index] = num
     return initial_states
 
+
 def save_agent(agent): 
     """
     Saves the trained RL agent to a file.
@@ -294,6 +292,7 @@ def save_agent(agent):
     file_path = os.path.join(agent_dir, 'trained_agent.pt')
     torch.save(agent, file_path)
     print(f"Agent saved successfully at {file_path}")
+
 
 def train(params, agent, env, best_params=None, blockage_qn_net=None):
     """
@@ -384,6 +383,7 @@ def train(params, agent, env, best_params=None, blockage_qn_net=None):
     # save_agent(agent)
     return next_state_model_list_all, critic_loss_list, actor_loss_list, reward_by_episode, action_dict, gradient_dict, transition_probas
 
+
 def create_ddpg_agent(environment, params, hidden):
     """
     Create a DDPG (Deep Deterministic Policy Gradient) agent.
@@ -400,6 +400,7 @@ def create_ddpg_agent(environment, params, hidden):
     n_actions = environment.net.num_edges
     agent = DDPGAgent(n_states, n_actions, hidden, params, device)
     return agent
+
 
 def get_transition_proba_df(transition_probas):
     """
@@ -482,7 +483,6 @@ def start_train(config_file, param_file,
 
     This function orchestrates the loading of configurations, creation of environments and agents, and the training process.
     """
-
     params, hidden = load_hyperparams(param_file)
     sim_environment = create_simulation_env(params, config_file)
     agent = create_ddpg_agent(sim_environment, params, hidden)
@@ -1002,7 +1002,8 @@ class Engine():
             
             
     def start_evaluation(self, environment, agent, time_steps, num_simulations):
-        """ This function is used to allow a trained agent to actively make decisions in the environment and returns the total reward obtained after a specified number of time steps.
+        """ 
+        This function is used to allow a trained agent to actively make decisions in the environment and returns the total reward obtained after a specified number of time steps.
         env = file path to the environment configuration file - should the object passed instead ? 
         agent = the trained agent object 
         time_steps = the number of time steps to run the interaction with the simulation environment 
