@@ -31,8 +31,12 @@ import argparse
 
 global rewards_list
 rewards_list = []
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+def require_gpu():
+    if not torch.cuda.is_available():
+        raise EnvironmentError("This operation requires a GPU, but none is available. Please run on GPU")
+    
 def load_tuning_config(tune_param_filepath):
 
     # Get the directory of the current script
@@ -163,6 +167,8 @@ def train(config, eval_param_filepath="user_config/eval_hyperparams.yml"):
 
 def ray_tune():
 
+    require_gpu()
+
     config = load_tuning_config(
         tune_param_filepath="user_config/tuning_hyperparams.yml"
     )
@@ -230,3 +236,6 @@ def ray_tune():
     results = tuner.fit()
 
     return results
+
+if __name__ == "__main__": 
+    ray_tune()
