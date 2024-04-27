@@ -1,22 +1,17 @@
 import os
 from tqdm import tqdm
 
-# Set the environment variable
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-
 import sys
 from pathlib import Path
 
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
-
+sys.path.insert(0,str(root_dir))
 
 from agents.ddpg_agent import DDPGAgent
 from rl_env.RL_Environment import RLEnv
 import torch
 import numpy as np
-import wandb
 import yaml
 import os
 import random
@@ -27,7 +22,6 @@ import ray
 from ray import train as train_ray
 from ray import tune
 from ray.tune.schedulers import PopulationBasedTraining
-import argparse
 
 global rewards_list
 rewards_list = []
@@ -83,6 +77,8 @@ def load_tuning_config(tune_param_filepath):
             },
             "num_episodes": {"values": tune_params["num_episodes"]},
             "time_steps": {"values": tune_params["time_steps"]},
+            "target_update_frequency":{"values": tune_params["target_update_frequency"]},
+            "num_train_AC":{"values": tune_params["num_train_AC"]}
         },
     }
 
@@ -96,6 +92,10 @@ def get_agent_parameters(config):
     params["discount"] = config["discount"]
     params["epsilon"] = config["epsilon"]
     params["planning_steps"] = config["planning_steps"]
+    params["critic_lr"] = config["learning_rate"]
+    params["actor_lr"] = config["learning_rate"]
+    params["planning_std"] = config["epsilon"]
+    params['buffer_size'] = 10000
 
     return params
 
@@ -103,7 +103,7 @@ def get_agent_parameters(config):
 def train(config, eval_param_filepath="user_config/eval_hyperparams.yml"):
 
     environment = create_simulation_env(
-        params={"num_sim": 5000}, config_file="user_config/configuration.yml"
+        params={"num_sim": 5000, "temperature": 0.15}, config_file="user_config/configuration.yml"
     )
 
     n_states = len(environment.get_state())
@@ -112,61 +112,73 @@ def train(config, eval_param_filepath="user_config/eval_hyperparams.yml"):
     agent_params = get_agent_parameters(config)
     _, hidden = load_hyperparams(eval_param_filepath)
 
-    agent = DDPGAgent(n_states, n_actions, hidden=hidden, params=agent_params)
+    agent = DDPGAgent(n_states, n_actions, hidden=hidden, params=agent_params,device=device)
     env = environment
 
-    num_episodes = config["n_episodes"]
-    max_episode_length = config["max_episode_length"]
-    batch_size_buffer_sampling = config["batch_size_buffer_sampling"]
-    threshold = config["batch_size"]
+    print(config)
+    num_episodes = config["num_episodes"]
+    time_steps = config["time_steps"]
+    threshold = config["threshold"]
     batch_size = config["batch_size"]
     epochs = config["epochs"]
     target_update_frequency = config["target_update_frequency"]
+    num_train_AC = config['num_train_AC']
 
+    transition_probas = init_transition_proba(env)
     reward_list = []
     action_dict = {}
 
-    agent.train()
-    for episode in range(num_episodes):
-        env.reset()
-        state = env.explore_state(agent, env.qn_net, episode)
-        t = 0
-        while t < max_episode_length:
-            if type(state) == np.ndarray:
-                state = torch.from_numpy(state).to(device)
-            action = agent.select_action(state).to(device)
+    latest_transition_proba = None
 
+    for episode in tqdm(range(num_episodes), desc="Episode Progress"):
+        agent.train()
+
+        if latest_transition_proba is not None:
+            env.net.set_transitions(latest_transition_proba)
+
+        env.simulate()
+        update = 0
+
+        for _ in tqdm(range(batch_size), desc="Time Steps Progress"):
+
+            state = env.get_state()
+
+            state_tensor = torch.tensor(state)
+            action = agent.select_action(state_tensor).to(device)
             action_list = action.cpu().numpy().tolist()
+
             for index, value in enumerate(action_list):
                 node_list = action_dict.setdefault(index, [])
                 node_list.append(value)
                 action_dict[index] = node_list
-                # line 5
 
-            next_state = env.get_next_state(action)
-            next_state = torch.tensor(next_state).float()
+            next_state_tensor = (
+                torch.tensor(env.get_next_state(action)).float().to(device)
+            )
             reward = env.get_reward()
-            rewards_list.append(reward)
-
-            # Use tune.report to log the metric for hyperparameter optimization
-            ray.train.report({"reward": reward})
-            experience = (state, action, reward, next_state)
+            if np.isnan(reward):
+                continue
+            else:
+                reward_list.append(reward)
+                ray.train.report({"reward": reward})
+            experience = (state_tensor, action, reward, next_state_tensor)
             agent.store_experience(experience)
 
-            if agent.buffer.current_size > batch_size:
-                agent.fit_model(batch_size=batch_size, epochs=epochs)
-                batch = agent.buffer.sample(batch_size=batch_size)
-                agent.update_critic_network(batch)
-                agent.update_actor_network(batch)
-                agent.plan(batch)
+        agent.fit_model(batch_size=batch_size, epochs=epochs)
+        transition_probas = update_transition_probas(transition_probas, env)
 
-            t += 1
-            state = next_state
+        for _ in tqdm(range(num_train_AC), desc="Train Agent"):
 
-            if t % target_update_frequency == 0:
-                agent.soft_update(network="critic")
-                agent.soft_update(network="actor")
-        return {"reward": np.mean(np.array(rewards_list))}
+            batch = agent.buffer.sample(batch_size=batch_size)
+            agent.update_critic_network(batch)
+            agent.update_actor_network(batch)
+
+        agent.plan(batch)
+        agent.soft_update(network="critic")
+        agent.soft_update(network="actor")
+        agent.buffer.clear()
+        latest_transition_proba = env.transition_proba
+    return {"reward": np.mean(np.array(reward_list))}
 
 
 def ray_tune():
@@ -180,8 +192,7 @@ def ray_tune():
     hyperparam_mutations = {
         "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
         "train_batch_size": lambda: random.randint(8, 64),
-        "n_episodes": lambda: random.randint(10, 50),
-        "threshold": lambda: random.randint(8, 64),
+        "num_episodes": lambda: random.randint(10, 50),
         "max_episode_length": lambda: random.randint(8, 64),
         "batch_size_buffer_sampling": lambda: random.randint(8, 64),
         "batch_size": lambda: random.randint(8, 64),
@@ -214,15 +225,14 @@ def ray_tune():
             config["parameters"]["epsilon"]["min"],
             config["parameters"]["epsilon"]["max"],
         ),
-        "planning_steps": config["parameters"]["planning_steps"]["values"],
-        "n_episodes": tune.choice(config["parameters"]["num_episodes"]["values"]),
+        "planning_steps": tune.choice(config["parameters"]["planning_steps"]["values"]),
+        "num_episodes": tune.choice(config["parameters"]["num_episodes"]["values"]),
         "threshold": tune.choice(config["parameters"]["batch_size"]["values"]),
-        "max_episode_length": tune.choice(config["parameters"]["time_steps"]["values"]),
-        "batch_size_buffer_sampling": tune.choice(
-            config["parameters"]["batch_size"]["values"]
-        ),
+        "time_steps": tune.choice(config["parameters"]["time_steps"]["values"]),
         "batch_size": tune.choice(config["parameters"]["batch_size"]["values"]),
         "epochs": tune.choice(config["parameters"]["epochs"]["values"]),
+        "target_update_frequency": tune.choice(config["parameters"]["target_update_frequency"]["values"]),
+        "num_train_AC": tune.choice(config["parameters"]["num_train_AC"]["values"])
     }
     tuner = tune.Tuner(
         tune.with_resources(train, resources={"gpu": 0.5, "cpu": 0.5}),
@@ -236,6 +246,12 @@ def ray_tune():
         run_config=train_ray.RunConfig(),
     )
 
+    ray.init(
+    runtime_env={
+        "working_dir": root_dir,
+    })
+
+
     # Start Tuning
     results = tuner.fit()
 
@@ -243,4 +259,5 @@ def ray_tune():
 
 
 if __name__ == "__main__":
+    print(root_dir)
     ray_tune()
