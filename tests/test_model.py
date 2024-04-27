@@ -11,7 +11,7 @@ from agents.model import *
 import pytest
 from unittest.mock import MagicMock, patch
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ def test_actor_output_shape(n_states, n_actions, hidden, device):
     - hidden (list): List of integers representing the size of hidden layers.
     """
     model = Actor(n_states, n_actions, hidden, device)
-    sample_input = torch.rand(size=(1, n_states))
+    sample_input = torch.rand(size=(1, n_states), device=device)
     output = model(sample_input)
     assert output.shape == (1, n_actions), "Actor output shape is incorrect"
 
@@ -58,8 +58,8 @@ def test_critic_output_shape(n_states, n_actions, hidden, device):
     - hidden (list): List of integers representing the size of hidden layers.
     """
     model = Critic(n_states, n_actions, hidden, device)
-    sample_state = torch.rand(size=(1, n_states))
-    sample_action = torch.rand(size=(1, n_actions))
+    sample_state = torch.rand(size=(1, n_states), device=device)
+    sample_action = torch.rand(size=(1, n_actions), device = device)
     output = model([sample_state, sample_action])
     assert output.shape == (1, 1), "Critic output shape is incorrect"
 
