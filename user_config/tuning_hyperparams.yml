@@ -44,3 +44,6 @@ epsilon_state_exploration:
 
 target_update_frequency:
   - 10
+
+num_train_AC: 
+  - 10
