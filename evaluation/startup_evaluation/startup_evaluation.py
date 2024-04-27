@@ -250,7 +250,7 @@ if __name__ == "__main__":
     window_size = 5
     threshold = 0.01
     consecutive_points = 5
-    episode = 8  # The episode to evaluate for a saved json file
+    episode = 0  # The episode to evaluate for a saved json file
 
     # Create the startup behavior analysis engine and evaluate the stabilization point
     startup_evaluation = StartupBehavior(

@@ -23,7 +23,6 @@ import yaml
 import os
 from queue_env.queue_base_functions import *
 
-
 def load_hyperparams(eval_param_filepath):
     """
     Load hyperparameters from a YAML file.
@@ -152,7 +151,7 @@ def init_wandb(
             agent_parameters = get_agent_parameters(config)
             agent = DDPGAgent(
                 n_states, n_actions, hidden=hidden, params=agent_parameters
-            )
+            ).to(device)
 
             agent.train()
             for episode in tqdm(range(num_episodes), desc="Training Progress"):

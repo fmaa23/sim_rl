@@ -7,6 +7,21 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 import pytest
+import unittest
+from unittest.mock import patch, MagicMock, mock_open
+import numpy as np
+
+from foundations.breakdown_exploration.breakdown_exploration import *
+
+import sys
+from pathlib import Path
+
+# Get the absolute path of the parent directory (i.e., the root of your project)
+root_dir = Path(__file__).resolve().parent.parent
+# Add the parent directory to sys.path
+sys.path.append(str(root_dir))
+
+import pytest
 from unittest.mock import patch, MagicMock, mock_open
 import numpy as np
 
@@ -86,7 +101,7 @@ def test_save_coverage_metric(mock_show, mock_savefig, breakdown_engine):
 def test_create_queue_env(breakdown_engine):
     """Test create_queue_env method with mocking create_params."""
     with patch(
-        "foundations.supporting_functions.create_params",
+        "foundations.core_functions.create_params",
         return_value=(
             0.1,
             {"1": 1.0},

@@ -32,6 +32,7 @@ class RobustnessEvaluation:
         num_runs=10,
         time_steps=100,
         num_sim=100,
+        temperature = 0.15
     ):
         """
         This class is designed to handle the training of multiple agents to estimate
@@ -51,6 +52,7 @@ class RobustnessEvaluation:
         self.z_value = norm.ppf((1 + confidence_level) / 2)
         self.desired_error = desired_error
         self.num_sim = num_sim
+        self.temperature = temperature
 
     def train_multi_agents(self, config_param_filepath, eval_param_filepath):
 
@@ -73,7 +75,7 @@ class RobustnessEvaluation:
 
         for agent in self.agents:
             env = create_simulation_env(
-                {"num_sim": self.num_sim}, config_param_filepath
+                {"num_sim": self.num_sim, 'temperature': self.temperature}, config_param_filepath
             )
             for time_step in range(self.time_steps):
                 state = env.get_state()

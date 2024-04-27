@@ -21,7 +21,7 @@ from queue_env.queue_base_functions import *
 
 # Definition of the Noisy Network class variant
 class NoisyNetwork:
-    def __init__(self, config_file, frequency, mean, variance, num_sim=100):
+    def __init__(self, config_file, frequency, mean, variance, num_sim=100, temperature = 0.15):
         """
         Args:
             frequency(float ): the frequency at which noise is added to the environment - enforce that its between 0 and 1
@@ -32,7 +32,8 @@ class NoisyNetwork:
         self.mean = mean
         self.variance = variance
         self.num_sim = num_sim
-        self.environment = create_simulation_env({"num_sim": self.num_sim}, config_file)
+        self.temperature = temperature
+        self.environment = create_simulation_env({"num_sim": self.num_sim, 'temperature': self.temperature}, config_file)
         self.config_params = load_config(config_file)
 
     def compute_increment(self):
@@ -138,11 +139,12 @@ if __name__ == "__main__":
     mean = 0
     variance = 1
     timesteps = 100
+    temperature = 0.15
 
     # # Define the object of the NoiseEvaluator class
     config_file = "user_config/configuration.yml"
     eval_file = "user_config/eval_hyperparams.yml"
-    noisy_net = NoisyNetwork(config_file, frequency, mean, variance)
+    noisy_net = NoisyNetwork(config_file, frequency, mean, variance, temperature)
     noisy_env = noisy_net.get_noisy_env()
 
     # # When introducing noise in the training we call the start_train method of the NoiseEvaluator object
