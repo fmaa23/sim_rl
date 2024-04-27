@@ -1,0 +1,46 @@
+stages:
+  #- prepare
+  - test
+
+variables:
+  GIT_STRATEGY: fetch
+
+# sync_files:
+#   stage: prepare
+#   image: ubuntu:20.04
+#   script:
+#     - echo "Syncing files from Supporting_files to tests..."
+#     - cp -r Supporting_files/* tests/
+#     - echo "Listing files in tests/ for verification:"
+#     - ls -lah tests/
+#   artifacts:
+#     paths:
+#       - tests/
+#   only:
+#     - debug_branch
+
+functional_tests:
+  stage: test
+  image: python:3.8 # ask the team what version of python they are using
+  before_script:
+    - apt-get update -qq  # -qq for less output
+    - apt-get install -y make  # Install make
+    - pip3 install --cache-dir .cache/pip -r requirements.txt  # Use the requirements file for dependencies
+  script:
+    - echo "Running tests..."
+    - make test # after we add a functional test test folder , and we change the call in the make file , change this line to make functional_test
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+
+integration_tests:
+  stage: test
+  image: python:3.8 
+  before_script:
+    - apt-get update -qq  
+    - apt-get install -y make 
+    - pip3 install --cache-dir .cache/pip -r requirements.txt  
+  script:
+    - echo "Running tests..."
+    - make test # After adding an integration test folder, and changing the call in the make file, change this line to make integration_test
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "release"'
