@@ -2,7 +2,14 @@
 name = "sim-rl"
 version = "0.1.0"
 description = "Simulation Driven RL Package Utilized to Optimize Queueing Systems"
-authors = ["Fatima Alani  <fma23@ic.ac.uk>"]
+authors = [
+    "Fatima Alani <fatima.al-ani23@imperial.ac.uk>",
+    "Jinyan Wang <jinyan.wang23@imperial.ac.uk>",
+    "Jevon Charles <jevon.charles23@imperial.ac.uk>",
+    "Joshua Forday <joshua.forday20@imperial.ac.uk>",
+    "Aaron Ong <aaron.ong20@imperial.ac.uk>",
+    "Vinayak Modi <vinayak.modi22@imperial.ac.uk>"
+]
 readme = "README.md"
 
 [tool.poetry.dependencies]
