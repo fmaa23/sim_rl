@@ -126,8 +126,8 @@ class ControlEvaluation(Engine):
 
     def start_evaluation(self, agent, time_steps):
         """Modified evaluation function that supports plotting of queue metrics and transition probabilities."""
-        source_edge = self.environment.net.edge2queue[queue_index].edge[0]
-        target_edge = self.environment.net.edge2queue[queue_index].edge[1]
+        source_edge = self.environment.net.edge2queue[self.queue_index].edge[0]
+        target_edge = self.environment.net.edge2queue[self.queue_index].edge[1]
 
         queue_metrics = []
         queue_transition_proba = []
@@ -138,12 +138,12 @@ class ControlEvaluation(Engine):
             action = agent.actor(state).detach()
             state = self.environment.get_next_state(action)[0]
             queue_metrics.append(
-                self.environment.return_queue(queue_index, metric=metric)
+                self.environment.return_queue(self.queue_index, metric=self.metric)
             )
             queue_transition_proba.append(
                 self.environment.transition_proba[source_edge][target_edge]
             )
-        self.plot_queue(metric, queue_metrics)
+        self.plot_queue([self.metric], queue_metrics)
         self.plot_transition_proba(queue_transition_proba)
 
         return queue_metrics, queue_transition_proba
