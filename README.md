@@ -9,7 +9,6 @@ This repository implements a Dyna-DDPG (Deep Deterministic Policy Gradient) Rein
 - `queue_env`: Defines the simulated queueing environment, utilizing functionalities from the `queueing-tool` package.
 - `rl_env`: Hosts the RL environment, which is portable and compatible with different agent types.
 - `features`: Includes several utility features:
-  - **Breakdown Exploration**: Explores key states versus peripheral states
   - **Decision Evaluation**: Demonstrates how the agent responds to a server outage by adjusting routing probabilities.
   - **Convergence Evaluation**: Assesses the stability and reliability of the agent across different training setups
   - **Noise Evaluation**: Evaluate the effect of environmental noise on the performance of the agent
