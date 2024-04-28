@@ -463,13 +463,3 @@ class RLEnv:
                 return throughput
             except UnboundLocalError:
                 return 0
-
-
-if __name__ == "__main__":
-    config_param_filepath = "user_config/configuration.yml"
-    eval_param_filepath = "user_config/eval_hyperparams.yml"
-    from foundations.core_functions import create_simulation_env
-
-    env = create_simulation_env(
-        {"num_sim": 5000, "entry_nodes": [(0, 1)]}, config_param_filepath
-    )
