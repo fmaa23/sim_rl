@@ -9,7 +9,6 @@ This repository implements a Dyna-DDPG (Deep Deterministic Policy Gradient) Rein
 - `queue_env`: Defines the simulated queueing environment, utilizing functionalities from the `queueing-tool` package.
 - `rl_env`: Hosts the RL environment, which is portable and compatible with different agent types.
 - `features`: Includes several utility features:
-  - **Breakdown Exploration**: Explores key states versus peripheral states
   - **Decision Evaluation**: Demonstrates how the agent responds to a server outage by adjusting routing probabilities.
   - **Convergence Evaluation**: Assesses the stability and reliability of the agent across different training setups
   - **Noise Evaluation**: Evaluate the effect of environmental noise on the performance of the agent
@@ -20,13 +19,16 @@ This repository implements a Dyna-DDPG (Deep Deterministic Policy Gradient) Rein
 
 Before running the simulations, ensure you have the following installed:
 - Python >=3.10 <3.11
-- PyTorch 1.7+
-- NumPy
-- Pandas
-- Matplotlib
-- queueing-tool
-- wandb
-- Ray
+- torch = "2.2.0"
+- numpy = "1.26.4"
+- pandas = "2.2.0"
+- queueing_tool = "1.2.5"
+- matplotlib = "3.8.3"
+- wandb = "0.16.3"
+- PyYAML = "6.0.1"
+- ray = { version = "2.9.2", extras = ["train", "tune"] }
+- tqdm = "4.57.0"
+- scipy = "1.12.0"
 
 ## Installation
 
@@ -120,7 +122,7 @@ The simulation environment requires the following parameters to be defined in th
 
    sim_jobs: 100
 
-   max_arr_rate_list: [375, 375, 375]
+   max_arr_rate_list: [0.3]
 
    entry_nodes:
    - [0, 1] 
@@ -256,6 +258,9 @@ Set up the hyperparameter tuning ranges in `tuning_params.yml`:
 
    time_steps: 
    - 10
+
+   num_train_AC: 
+   - 10
    ```
 
 ## Step 2: Running Simulations
@@ -320,9 +325,9 @@ Set up the parameters in `user_config\features_params\blockage_demonstration_par
 - `queue_index`: Defines the queue index that record the metrics for.
 - `metric`: Defines the metric to be reported for the selected queue.
 
-To use this feature, navigate to `/evaluation/blockage_demonstration` and run:
+To use this feature, navigate to `/foundations/blockage_demonstration` and run:
    ```bash
-   python demonstrations.py
+   python blockage_demonstration.py
    ```
 
 ### 3. **Startup Evaluation**
@@ -336,9 +341,9 @@ Set up the parameters in the script:
 - `consecutive_points`: The number of consecutive data points that must all be below the threshold for the rewards to be considered as having stabilized. 
 - `episode`: Specify which episode's rewards to analyze from a dataset.
 
-To perform the feature, navigate to `/evaluation/startup_behavior` and run:
+To perform the feature, navigate to `/evaluation/startup_evaluation.py` and run:
    ```bash
-   python startup.py
+   python startup_evaluation.py
    ```
 
 ### 4. **Convergence Evaluation**
@@ -351,9 +356,9 @@ Set up the parameters in the script:
 - `threshold`: Defines the maximum acceptable absolute value of the derivative of the smoothed rewards below which a reward is considered stable. 
 - `consecutive_points`: The number of consecutive data points that must all be below the threshold for the rewards to be considered as having stabilized. 
 
-To run this feature, navigate to `/evaluation/confidence_evaluation` and run:
+To run this feature, navigate to `/evaluation/convergence_evaluation` and run:
    ```bash
-   python confidence.py
+   python convergence_evaluation.py
    ```
 
 ### 5. **Robustness Evaluation**
@@ -370,12 +375,12 @@ Set up the parameters in the script:
 
 To run this feature, navigate to `/evaluation/robustness_evaluation` and run:
    ```bash
-   python runs.py
+   python robustness_evaluation.py
    ```
 
 ### 6. **Noise Evaluation** 
 
-This feature allows the user to evaluate the effect of environmental noise on the performance of the agent. (how is env noise defined here?) 
+This feature allows the user to evaluate the effect of environmental noise on the performance of the agent. Noise is incorporated as an increment to the interarrival time.
 
 Set up the parameters in the script:
 
