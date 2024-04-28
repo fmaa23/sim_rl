@@ -268,26 +268,28 @@ class ConvergenceEvaluation(Engine):
         print("Plot saved as 'reward_plot.png'.")
 
 
-# Logic for using this class
-# Define the parameters for the startup behavior analysis
-window_size = 5
-threshold = 0.01
-consecutive_points = 5
+if __name__ == "__main__":
 
-# Create the startup behavior analysis engine and evaluate the stabilization point
-convergence_eval = ConvergenceEvaluation(window_size, threshold, consecutive_points)
+    # Logic for using this class
+    # Define the parameters for the startup behavior analysis
+    window_size = 5
+    threshold = 0.01
+    consecutive_points = 5
 
-# 2. Specify the file path to the agent's configuration yaml file
-agent = "user_config/eval_hyperparams.yml"
+    # Create the startup behavior analysis engine and evaluate the stabilization point
+    convergence_eval = ConvergenceEvaluation(window_size, threshold, consecutive_points)
 
-# 3. Speficy the file path for the training and evaluation environment's configuration yaml file
-env = "user_config/configuration.yml"
+    # 2. Specify the file path to the agent's configuration yaml file
+    agent = "user_config/eval_hyperparams.yml"
 
-# 4. Initialize the training and evaluation process
-convergence_eval.start_train(
-    env,
-    agent,
-    save_file=True,
-    data_filename="output_csv",
-    image_filename="output_plots",
-)
+    # 3. Speficy the file path for the training and evaluation environment's configuration yaml file
+    env = "user_config/configuration.yml"
+
+    # 4. Initialize the training and evaluation process
+    convergence_eval.start_train(
+        env,
+        agent,
+        save_file=True,
+        data_filename="output_csv",
+        image_filename="output_plots",
+    )
