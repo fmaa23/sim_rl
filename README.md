@@ -1,7 +1,7 @@
 
 # RL-Diven Queueing Network Simulation
 
-This repository implements a Dyna-DDPG (Deep Deterministic Policy Gradient) Reinforcement Learning agent that optimizes routing probabilities to maximize end-to-end delay and throughput in a simulated queueing network.
+This repository implements a Dyna-DDPG (Deep Deterministic Policy Gradient) Reinforcement Learning agent that optimizes routing probabilities to maximize End-to-End (EtE) delay and throughput in a simulated queueing network.
 
 ## Project Structure
 
@@ -13,12 +13,12 @@ This repository implements a Dyna-DDPG (Deep Deterministic Policy Gradient) Rein
   - **Convergence Evaluation**: Assesses the stability and reliability of the agent across different training setups
   - **Noise Evaluation**: Evaluate the effect of environmental noise on the performance of the agent
   - **Startup Evaluation**: Identifies the burn-in period of the agent
-  - **Robustness Evaluation**: Assess the robustness by finding the variance in decisions across multiple trained agents.
+  - **Robustness Evaluation**: Assess robustness of decisions across multiple trained agents
 
 ## Prerequisites
 
 Before running the simulations, ensure you have the following installed:
-- Python >=3.10 <3.11
+- Python >=3.10 <3.12
 - torch = "2.2.0"
 - numpy = "1.26.4"
 - pandas = "2.2.0"
@@ -35,8 +35,8 @@ Before running the simulations, ensure you have the following installed:
 Clone the repository and install the required dependencies:
 
 ```bash
-git clone https://gitlab.doc.ic.ac.uk/jw923/MScDataSparqProject.git
-cd MScDataSparqProject
+git clone https://github.com/ao-420/sim_rl.git
+cd sim_rl
 pip install -r requirements.txt
 ```
 
@@ -180,6 +180,8 @@ Set up the RL environment parameters in `eval_hyperparams.yml`:
    
    planning_std: 0.1
 
+   account_for_blockage: False
+
    actor_network:
    - 64
    - 64
@@ -258,9 +260,10 @@ Set up the hyperparameter tuning ranges in `tuning_params.yml`:
 
    time_steps: 
    - 10
-
+   
    num_train_AC: 
    - 10
+
    ```
 
 ## Step 2: Running Simulations
@@ -294,14 +297,14 @@ python main.py --function tune --config_file user_config/configuration.yml --par
 
 ## Step 3: Explore Features
 
-### 1. **Breakdown Evaluation**
+### 1. **Explore Breakdown Scenarios**
 
 This feature allows the user to train the agent based on customed exploration preferences between key states and peripheral states using weight parameter `w1_key` and `w2_peripheral`. The purpose of this feature is to enable the agent to not only generate high rewards for key states but also visit all breadown scenarios sufficiently enough. 
 
-Set up the parameters in `user_config\eval_hyperparams.yml`:
+Set up the parameters in `user_config\features_params\bloackage_explore_params.yml`:
 
-- `w1`: Weight parameter to control favor exploring key states.
-- `w2`: Weight parameter to control favor exploring peripheral states.
+- `w1_key`: Weight parameter to control favor exploring key states.
+- `w2_peripheral`: Weight parameter to control favor exploring peripheral states.
 - `reset`: A bool value that controls whether to reset weight parameters during training.
 - `reset_frequency`: A value that defines the number of episodes frequency to reset the weight parameters.
 - `num_output`: A value that defines the number of top and least reward/visits states to plot in a histogram
@@ -309,28 +312,26 @@ Set up the parameters in `user_config\eval_hyperparams.yml`:
 - `output_histogram`: A bool value that determines whether to output the histogram that shows the rewards and visits of the top and least states.
 - `output_coverage_metric`: A bool value that determines whether to output the current coverage metric.
 
-To run this feature, navigate to `/evaluation/breakdown_exploration` and run:
+To run this feature, navigate to `/foundations/breakdown_exploration` and run:
    ```bash
    python breakdown_exploration.py
    ```
 
-### 2. **Decision Evaluation**
+### 2. **Decision Evaluation (Blockage Demonstrations)**
 
 This feature allows the user to test a trained agent's performance on a simulated server blockage queueing environment by visualizing the changes in transition probabilities. The purpose of this feature is to show how effectice the tranied agent is acting on breakdown cases. 
 
-Set up the parameters in `user_config\features_params\blockage_demonstration_params.yml`:
-
-- `sim_jobs`: Defines the number of jobs to simulate for each time step during training.
+- `num_sim`: Defines the number of jobs to simulate for each time step during training.
 - `time_steps`: Defines the number of time steps to perform for each episode.
 - `queue_index`: Defines the queue index that record the metrics for.
 - `metric`: Defines the metric to be reported for the selected queue.
 
-To use this feature, navigate to `/foundations/blockage_demonstration` and run:
+To use this feature, navigate to `/evaluation/decision_evaluation` and run:
    ```bash
-   python blockage_demonstration.py
+   python decision_evaluation.py
    ```
 
-### 3. **Startup Evaluation**
+### 3. **Startup Behavior Identification**
 
 This feature allows the user to visualize when the burn-in periods end on the learning curve. 
 
@@ -341,27 +342,26 @@ Set up the parameters in the script:
 - `consecutive_points`: The number of consecutive data points that must all be below the threshold for the rewards to be considered as having stabilized. 
 - `episode`: Specify which episode's rewards to analyze from a dataset.
 
-To perform the feature, navigate to `/evaluation/startup_evaluation.py` and run:
+To perform the feature, navigate to `/evaluation/startup_evaluation` and run:
    ```bash
    python startup_evaluation.py
    ```
 
-### 4. **Convergence Evaluation**
+### 4. **Convergence Evaluation** 
 
 This feature allows the user train multiple versions of the agent for different numbers of training episodes and then evaluate the performance of each agent on the simulation environment.
 
 Set up the parameters in the script:
 
-- `window_size`: Specifies the number of data points used to compute the moving average of the rewards.
-- `threshold`: Defines the maximum acceptable absolute value of the derivative of the smoothed rewards below which a reward is considered stable. 
-- `consecutive_points`: The number of consecutive data points that must all be below the threshold for the rewards to be considered as having stabilized. 
+- `num_episodes_list`: A list that contains different numbers of episodes to train the agents.
+- `timesteps`: A value that defines the number of timesteps to train the agent during each episode.
 
 To run this feature, navigate to `/evaluation/convergence_evaluation` and run:
    ```bash
    python convergence_evaluation.py
    ```
 
-### 5. **Robustness Evaluation**
+### 5. **Robustness Evaluation** 
 
 This feature allows the user to train multiple agents, analyze their behavior, and calculate statistical metrics based on their performance.
 
@@ -380,15 +380,13 @@ To run this feature, navigate to `/evaluation/robustness_evaluation` and run:
 
 ### 6. **Noise Evaluation** 
 
-This feature allows the user to evaluate the effect of environmental noise on the performance of the agent. Noise is incorporated as an increment to the interarrival time.
+This feature allows the user to evaluate the effect of environmental noise on the performance of the agent.
 
 Set up the parameters in the script:
 
 - `frequency `: The likelihood or frequency at which noise is introduced to the system. It must be a value between 0 and 1. This parameter determines how often, proportionally, noise will be added during the simulation. 
 - `mean`: The mean of the normal distribution from which the noise values are sampled. This represents the average value of the noise that will be introduced.
 - `variance`: The variance of the normal distribution from which the noise values are sampled. This parameter indicates the spread or dispersion of the noise around the mean.
-- `timesteps`: Number of time steps to run during training
-- `temperature`: Parameter that constrols the exaggeration of the influence of action vector has on transition probability
 
 To run the feature, navigate to `/evaluation/noise_evaluation` and run:
    ```bash
