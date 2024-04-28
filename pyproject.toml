@@ -1,19 +1,12 @@
 [tool.poetry]
-name = "sim-rl"
-version = "0.1.0"
+name = "sim_rl"
+version = "0.1.4"
 description = "Simulation Driven RL Package Utilized to Optimize Queueing Systems"
-authors = [
-    "Fatima Alani <fatima.al-ani23@imperial.ac.uk>",
-    "Jinyan Wang <jinyan.wang23@imperial.ac.uk>",
-    "Jevon Charles <jevon.charles23@imperial.ac.uk>",
-    "Joshua Forday <joshua.forday20@imperial.ac.uk>",
-    "Aaron Ong <aaron.ong20@imperial.ac.uk>",
-    "Vinayak Modi <vinayak.modi22@imperial.ac.uk>"
-]
+authors = ["Fatima Alani, Jinyan Wang, Jevon Charles, Joshua Forday, Aaron Ong, Vinayak Modi <fatima.al-ani23@imperial.ac.uk>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10, <3.11"
+python = ">=3.10, <3.12"
 torch = "2.2.0"
 numpy = "1.26.4"
 pandas = "2.2.0"
@@ -22,6 +15,8 @@ matplotlib = "3.8.3"
 wandb = "0.16.3"
 PyYAML = "6.0.1"
 ray = "2.9.2"
+tqdm = "4.57.0"
+scipy = "1.12.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.1.1"
