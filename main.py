@@ -13,9 +13,9 @@ def main(args):
         start_tuning(
             project_name,
             num_runs,
-            args.param_file,
+            args.tuning_file,
             args.config_file,
-            args.param_file,
+            args.eval_file,
             wandb_api_key,
             plot_best_param,
             tuner=args.tuner,
@@ -23,7 +23,7 @@ def main(args):
     elif args.function == "train":
         start_train(
             args.config_file,
-            args.param_file,
+            args.eval_file,
             data_filename=args.data_file,
             image_filename=args.image_file,
             save_file=args.save_file,
@@ -43,8 +43,13 @@ if __name__ == "__main__":
         "--config_file", required=True, help="File path for configuration parameters"
     )
     parser.add_argument(
-        "--param_file",
+        "--eval_file",
         required=True,
+        help="File path for evaluation or tuning parameters",
+    )
+    parser.add_argument(
+        "--tuning_file",
+        required=False,
         help="File path for evaluation or tuning parameters",
     )
     parser.add_argument(

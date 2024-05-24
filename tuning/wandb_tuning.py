@@ -56,6 +56,7 @@ def load_tuning_config(tune_param_filepath):
 
     with open(abs_file_path, "r") as tune_params_file:
         tune_params = yaml.load(tune_params_file, Loader=yaml.FullLoader)
+        print(tune_params)
 
     config = {
         "method": "bayes",  # or 'grid', 'random'
